@@ -484,10 +484,9 @@ public class Config implements Serializable {
     @Schema(description = "重命名剔除 TMDB ID")
     private Boolean renameDelTmdbId;
 
-    /**
-     * 消息模版
-     */
-    @Schema(description = "消息模版")
+    /** @deprecated Replaced by named templates in notificationTemplateList; retained for old config migration. */
+    @Deprecated
+    @Schema(description = "旧版消息模板，仅用于迁移")
     private String notificationTemplate;
 
     /**
@@ -531,6 +530,9 @@ public class Config implements Serializable {
 
     /** Custom torrent file endpoint. Supports <info_hash> and ${info_hash}. */
     private String customTorrentUrl;
+
+    /** Whether authenticated developer-only configuration controls are enabled. */
+    private Boolean developerOptionsEnabled;
 
     /**
      * 自定义集数获取规则

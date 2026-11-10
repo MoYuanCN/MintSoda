@@ -78,7 +78,7 @@ import {testNotification} from "@/js/http.js";
 
 let notificationConfig = ref({
   "comment": "无备注",
-  "notificationTemplate": "${notification}",
+  "notificationTemplate": "${text}",
   "notificationType": "TELEGRAM",
   "telegramBotToken": "",
   "telegramChatId": "",

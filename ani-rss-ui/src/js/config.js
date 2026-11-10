@@ -101,6 +101,7 @@ export let configData = {
     "cardBlur": 8,
     "appCornerRadius": 12,
     "customTorrentUrl": "",
+    "developerOptionsEnabled": false,
     "customEpisode": false,
     "customEpisodeStr": "",
     "customEpisodeGroupIndex": 0,

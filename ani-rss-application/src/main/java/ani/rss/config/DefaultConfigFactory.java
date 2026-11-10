@@ -42,25 +42,6 @@ public class DefaultConfigFactory {
 
         String password = SecureUtil.md5("admin");
 
-        String notificationTemplate = """
-                ${emoji}${emoji}${emoji}
-                事件类型: ${action}
-                标题: ${title}
-                评分: ${score}
-                TMDB: ${tmdburl}
-                TMDB标题: ${themoviedbName}
-                BGM: ${bgmUrl}
-                季: ${season}
-                集: ${episode}
-                字幕组: ${subgroup}
-                进度: ${currentEpisodeNumber}/${totalEpisodeNumber}
-                首播:  ${year}年${month}月${date}日
-                事件: ${text}
-                下载位置: ${downloadPath}
-                TMDB集标题: ${episodeTitle}
-                ${emoji}${emoji}${emoji}
-                """;
-
         String apiKey = RandomUtil.randomString(64).toLowerCase();
 
         String downloadToolHost = SystemUtil.get("DOWNLOAD_TOOL_HOST", "");
@@ -194,21 +175,22 @@ public class DefaultConfigFactory {
                 .setConfigBackupDay(7)
                 .setCompleted(false)
                 .setCompletedPathTemplate(completedPathTemplate)
-                .setNotificationTemplate(notificationTemplate)
+                .setNotificationTemplate("")
                 .setNotificationConfigList(new ArrayList<>())
+                .setDeveloperOptionsEnabled(false)
                 .setNotificationTemplateList(new ArrayList<>(List.of(
                         new NotificationTemplate()
                                 .setId("default")
                                 .setName("默认文本")
                                 .setType("TEXT")
-                                .setContent("${notification}")
-                                .setTelegramTemplate("${notification}"),
+                                .setContent(NotificationTemplate.DEFAULT_TEXT_CONTENT)
+                                .setTelegramTemplate(NotificationTemplate.DEFAULT_TEXT_CONTENT),
                         new NotificationTemplate()
                                 .setId("default-json")
                                 .setName("默认 JSON")
                                 .setType("JSON")
-                                .setContent("{\"text\":\"${notification}\"}")
-                                .setCustomRequestBody("{\"text\":\"${notification}\"}"))))
+                                .setContent(NotificationTemplate.DEFAULT_JSON_CONTENT)
+                                .setCustomRequestBody(NotificationTemplate.DEFAULT_JSON_CONTENT))))
                 .setApiKey(apiKey)
                 .setSortType(AniSortTypeEnum.SCORE)
                 .setTmdbIdPlexMode(false)

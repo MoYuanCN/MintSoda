@@ -71,7 +71,7 @@ public class ConfigController extends BaseController {
                 && !(customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
             return Result.error("自定义种子地址必须以 http:// 或 https:// 开头");
         }
-        ConfigUtil.CONFIG.setCustomTorrentUrl(customUrl);
+        ConfigUtil.CONFIG.setCustomTorrentUrl(customUrl).setDeveloperOptionsEnabled(true);
         ConfigUtil.sync();
         return Result.success("开发者选项已保存");
     }

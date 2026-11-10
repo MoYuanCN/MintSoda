@@ -45,8 +45,8 @@
       </el-badge>
     </div>
   </div>
-  <el-dialog v-model="developerDialogVisible" center title="开发者选项" width="520">
-    <el-form v-if="!developerUnlocked" label-position="top" @submit.prevent>
+  <el-dialog v-model="developerDialogVisible" center title="开启开发者选项" width="520">
+    <el-form label-position="top" @submit.prevent>
       <el-form-item label="登录账号">
         <el-input v-model="developerCredentials.username" autocomplete="username"/>
       </el-form-item>
@@ -55,20 +55,9 @@
                   autocomplete="current-password" @keyup.enter="unlockDeveloperMode"/>
       </el-form-item>
       <div class="developer-dialog-actions">
-        <el-button type="primary" :loading="developerLoading" @click="unlockDeveloperMode">开启开发者模式</el-button>
+        <el-button type="primary" :loading="developerLoading" @click="unlockDeveloperMode">验证并开启</el-button>
       </div>
     </el-form>
-    <div v-else>
-      <SettingsItem label="自定义种子地址">
-        <el-input v-model="props.config.customTorrentUrl" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }"
-                  placeholder="https://torrent.example.com/api/public/<info_hash>"/>
-      </SettingsItem>
-      <el-alert :closable="false" show-icon type="info"
-                title="读取到 info_hash 后会请求此地址并下载种子。支持 <info_hash> 或 ${info_hash}；未写占位符时会自动追加哈希。"/>
-      <div class="developer-dialog-actions">
-        <el-button type="primary" :loading="developerLoading" @click="saveDeveloperSettings">保存开发者设置</el-button>
-      </div>
-    </div>
   </el-dialog>
   <el-dialog v-if="dialogVisible" v-model="dialogVisible" align-center center title="版本更新"
              class="about-dialog">
@@ -123,7 +112,7 @@
 <script setup>
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {computed, onMounted, ref} from "vue";
-import {ElMessage, ElText} from "element-plus";
+import {ElMessage, ElMessageBox, ElText} from "element-plus";
 import PopconfirmView from "@/view/custom/PopconfirmView.vue";
 import {Github} from "@vicons/fa";
 
@@ -135,6 +124,7 @@ import 'markdown-it-github-alerts/styles/github-base.css'
 
 import {authorization} from "@/js/global.js";
 import * as http from "@/js/http.js";
+import {md5} from "js-md5";
 import {uiCustomization, uiAssetUrl} from "@/js/global.js";
 
 let md = markdownit({
@@ -155,7 +145,6 @@ const appLogo = computed(() => uiCustomization.value.appLogoImage
     ? uiAssetUrl(uiCustomization.value.appLogoImage)
     : '/icon.svg')
 const developerDialogVisible = ref(false)
-const developerUnlocked = ref(false)
 const developerLoading = ref(false)
 const developerCredentials = ref({username: '', password: ''})
 let developerTapCount = 0
@@ -175,17 +164,29 @@ const developerTap = () => {
 const unlockDeveloperMode = () => {
   developerLoading.value = true
   http.verifyDeveloperCredentials(developerCredentials.value)
-      .then(() => { developerUnlocked.value = true })
-      .finally(() => { developerLoading.value = false })
-}
-
-const saveDeveloperSettings = () => {
-  developerLoading.value = true
-  http.setDeveloperSettings({
-    ...developerCredentials.value,
-    customTorrentUrl: props.config.customTorrentUrl
-  })
-      .then(res => ElMessage.success(res.message))
+      .then(() => ElMessageBox.confirm(
+          '账号密码验证通过。继续后会立即保存当前已修改的全部设置到配置文件，启用开发者选项，并刷新页面。',
+          '确认开启开发者选项',
+          {confirmButtonText: '保存并开启', cancelButtonText: '取消', type: 'warning'}
+      ))
+      .then(() => {
+        const configToSave = JSON.parse(JSON.stringify(props.config))
+        configToSave.developerOptionsEnabled = true
+        configToSave.login.username = configToSave.login.username.trim()
+        configToSave.login.password = configToSave.login.password.trim()
+        if (configToSave.login.password) configToSave.login.password = md5(configToSave.login.password)
+        return http.setConfig(configToSave)
+      })
+      .then(res => {
+        ElMessage.success(res.message || '开发者选项已开启，页面即将刷新')
+        developerDialogVisible.value = false
+        setTimeout(() => window.location.reload(), 500)
+      })
+      .catch(error => {
+        if (error !== 'cancel' && error !== 'close') {
+          ElMessage.error(error?.message || '开启开发者选项失败')
+        }
+      })
       .finally(() => { developerLoading.value = false })
 }
 

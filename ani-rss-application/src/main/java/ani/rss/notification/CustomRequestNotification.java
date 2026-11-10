@@ -108,7 +108,7 @@ public class CustomRequestNotification implements BaseNotification {
         try {
             json = JsonParser.parseString(template);
         } catch (Exception e) {
-            throw new IllegalArgumentException("JSON 请求体模板格式无效。请将占位符放在 JSON 字符串值中，例如 {\"text\":\"${notification}\"}", e);
+            throw new IllegalArgumentException("JSON 请求体模板格式无效。请将占位符放在 JSON 字符串值中，例如 {\"subgroup\":\"${subgroup}\"}", e);
         }
         return GsonStatic.toJson(renderJson(json, ani, text, status));
     }

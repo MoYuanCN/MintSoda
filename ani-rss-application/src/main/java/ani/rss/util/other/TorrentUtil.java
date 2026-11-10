@@ -116,7 +116,9 @@ public class TorrentUtil {
 
         if (!ReUtil.contains(StringEnum.MAGNET_REG, torrent)
                 && !ReUtil.contains(StringEnum.ED2K_REG, torrent)) {
-            String customUrl = StrUtil.trimToEmpty(CONFIG.getCustomTorrentUrl());
+            String customUrl = Boolean.TRUE.equals(CONFIG.getDeveloperOptionsEnabled())
+                    ? StrUtil.trimToEmpty(CONFIG.getCustomTorrentUrl())
+                    : "";
             String infoHash = StrUtil.trimToEmpty(item.getInfoHash());
             if (StrUtil.isNotBlank(customUrl) && StrUtil.isNotBlank(infoHash)) {
                 String normalizedHash = infoHash.toLowerCase(Locale.ROOT);

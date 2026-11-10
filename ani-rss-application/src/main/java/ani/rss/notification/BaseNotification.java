@@ -2,7 +2,6 @@ package ani.rss.notification;
 
 import ani.rss.commons.NumberFormatUtils;
 import ani.rss.entity.Ani;
-import ani.rss.entity.Config;
 import ani.rss.entity.NotificationConfig;
 import ani.rss.entity.NotificationTemplate;
 import ani.rss.enums.NotificationStatusEnum;
@@ -173,17 +172,6 @@ public interface BaseNotification {
         }
 
         notificationTemplate = RenameUtil.replaceEpisodeTitle(notificationTemplate, episode, ani);
-
-        if (!notificationTemplate.contains("${notification}")) {
-            return notificationTemplate.trim();
-        }
-
-        Config config = ConfigUtil.CONFIG;
-        String template = config.getNotificationTemplate();
-
-        template = replaceNotificationTemplate(ani, template, text, notificationStatusEnum);
-
-        notificationTemplate = notificationTemplate.replace("${notification}", template);
 
         return notificationTemplate.trim();
     }

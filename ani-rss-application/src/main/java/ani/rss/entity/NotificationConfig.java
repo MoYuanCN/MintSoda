@@ -151,7 +151,7 @@ public class NotificationConfig implements Serializable {
                 .setRetry(3)
                 .setSort(10L)
                 .setNotificationType(NotificationTypeEnum.TELEGRAM)
-                .setNotificationTemplate("${notification}")
+                .setNotificationTemplate(NotificationTemplate.DEFAULT_TEXT_CONTENT)
                 .setComment("")
                 .setStatusList(List.of(
                         NotificationStatusEnum.DOWNLOAD_START,

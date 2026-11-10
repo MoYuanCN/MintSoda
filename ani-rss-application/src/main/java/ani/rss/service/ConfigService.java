@@ -64,6 +64,14 @@ public class ConfigService {
 
     public void setConfig(Config newConfig) {
         Config config = ConfigUtil.CONFIG;
+        if (newConfig.getCustomTorrentUrl() != null) {
+            String customTorrentUrl = StrUtil.trimToEmpty(newConfig.getCustomTorrentUrl());
+            if (StrUtil.isNotBlank(customTorrentUrl)
+                    && !(customTorrentUrl.startsWith("http://") || customTorrentUrl.startsWith("https://"))) {
+                throw new IllegalArgumentException("自定义种子地址必须以 http:// 或 https:// 开头");
+            }
+            newConfig.setCustomTorrentUrl(customTorrentUrl);
+        }
         Login login = config.getLogin();
         String username = login.getUsername();
         String password = login.getPassword();

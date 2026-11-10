@@ -30,20 +30,7 @@
         </el-button>
       </div>
       <el-alert class="notification-template-help" :closable="false" show-icon type="info"
-                title="可创建多个命名模板；Telegram 使用普通文本，自定义请求可使用普通文本或 JSON。JSON 中的变量会自动转义。"/>
-    </el-collapse-item>
-  </el-collapse>
-  <el-collapse>
-    <el-collapse-item title="通知模板">
-      <el-input v-model="props.config['notificationTemplate']" :autosize="{ minRows: 4, maxRows: 10}"
-                placeholder="${emoji} ${action}\n${title} S${seasonFormat}E${episodeFormat}\n${text}" type="textarea"/>
-      <el-alert class="notification-template-help" :closable="false" show-icon type="info"
-                title="支持 title、text、notification、season、episode、subgroup、tmdburl、bgmUrl、downloadPath、image 等变量。自定义请求的 JSON 请求体会自动转义字符串变量。"/>
-      <div class="flex notification-template-link">
-        <el-link type="primary" href="https://github.com/MoYuanCN/ani-rss-Yuri" target="_blank">
-          通知模版示例
-        </el-link>
-      </div>
+                title="可创建多个命名模板；Telegram 使用普通文本，自定义请求可使用普通文本或 JSON。模板直接填写 ${title}、${subgroup}、${text} 等字段变量；JSON 字符串变量会自动转义。"/>
     </el-collapse-item>
   </el-collapse>
   <div class="notification-container">
@@ -124,13 +111,13 @@ const addTemplate = () => {
     id: globalThis.crypto?.randomUUID?.() || `template-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: `模板 ${templateList.value.length + 1}`,
     type: 'TEXT',
-    content: '${notification}'
+    content: '${title} S${seasonFormat}E${episodeFormat}\n字幕组: ${subgroup}\n${text}'
   })
 }
 
 const templatePlaceholder = template => template.type === 'JSON'
-    ? '{"text":"${notification}"}'
-    : '${notification}'
+    ? '{"subgroup":"${subgroup}","event":"${text}"}'
+    : '${title} S${seasonFormat}E${episodeFormat}\n字幕组: ${subgroup}\n${text}'
 
 const invalidJson = body => {
   if (!body?.trim()) return false
@@ -195,11 +182,6 @@ let props = defineProps(['config'])
 
 .template-json-error {
   margin-top: 6px;
-}
-
-.notification-template-link {
-  width: 100%;
-  justify-content: end;
 }
 
 .notification-container {

@@ -174,6 +174,9 @@ public class ConfigUtil {
         if (config.getEnabledExclude() == null) config.setEnabledExclude(false);
         if (config.getNotificationTemplateList() == null) config.setNotificationTemplateList(new java.util.ArrayList<>());
         if (config.getNotificationConfigList() == null) config.setNotificationConfigList(new java.util.ArrayList<>());
+        if (config.getDeveloperOptionsEnabled() == null) {
+            config.setDeveloperOptionsEnabled(StrUtil.isNotBlank(config.getCustomTorrentUrl()));
+        }
         migrateLegacyGlobalReverseRules(config);
         if (config.getCardOpacity() == null) config.setCardOpacity(92);
         if (config.getCardBlur() == null) config.setCardBlur(8);
@@ -202,8 +205,7 @@ public class ConfigUtil {
         formatPath(config);
         formatUrl(config);
 
-        String messageTemplate = config.getNotificationTemplate();
-        config.setNotificationTemplate(messageTemplate.trim());
+        String legacyNotificationTemplate = StrUtil.trimToEmpty(config.getNotificationTemplate());
 
         NotificationConfig newNotificationConfig = NotificationConfig.createNotificationConfig();
 
@@ -240,13 +242,25 @@ public class ConfigUtil {
             BeanUtil.copyProperties(newNotificationConfig, notificationConfig, copyOptions);
         }
 
-        Map<String, String> migratedJsonTemplateIds = migrateNotificationTemplates(config);
+        String notificationContent = StrUtil.blankToDefault(legacyNotificationTemplate,
+                NotificationTemplate.DEFAULT_TEXT_CONTENT);
+        Map<String, String> migratedJsonTemplateIds = migrateNotificationTemplates(config, legacyNotificationTemplate);
         for (NotificationConfig notificationConfig : notificationConfigList) {
+            notificationConfig.setWebHookUrl(NotificationTemplate.replaceLegacyNotificationPlaceholder(
+                    notificationConfig.getWebHookUrl(), notificationContent, false));
+            notificationConfig.setWebHookHeader(NotificationTemplate.replaceLegacyNotificationPlaceholder(
+                    notificationConfig.getWebHookHeader(), notificationContent, false));
+            notificationConfig.setNotificationTemplate(NotificationTemplate.replaceLegacyNotificationPlaceholder(
+                    notificationConfig.getNotificationTemplate(), notificationContent, false));
+            notificationConfig.setWebHookBody(NotificationTemplate.replaceLegacyNotificationPlaceholder(
+                    notificationConfig.getWebHookBody(), notificationContent,
+                    StrUtil.containsIgnoreCase(notificationConfig.getWebHookContentType(), "json")));
             if (notificationConfig.getNotificationType() == ani.rss.enums.NotificationTypeEnum.CUSTOM_REQUEST) {
                 String jsonTemplateId = migratedJsonTemplateIds.get(notificationConfig.getNotificationTemplateId());
                 if (jsonTemplateId != null) notificationConfig.setNotificationTemplateId(jsonTemplateId);
             }
         }
+        config.setNotificationTemplate("");
     }
 
     private static void migrateLegacyGlobalReverseRules(Config config) {
@@ -271,7 +285,9 @@ public class ConfigUtil {
     }
 
     /** Split old dual-purpose templates into text and JSON templates without losing selections. */
-    private static Map<String, String> migrateNotificationTemplates(Config config) {
+    private static Map<String, String> migrateNotificationTemplates(Config config, String legacyNotificationTemplate) {
+        String notificationContent = StrUtil.blankToDefault(legacyNotificationTemplate,
+                NotificationTemplate.DEFAULT_TEXT_CONTENT);
         List<NotificationTemplate> templates = config.getNotificationTemplateList();
         Map<String, String> jsonTemplateIds = new java.util.HashMap<>();
         java.util.Set<String> usedIds = templates.stream()
@@ -286,17 +302,30 @@ public class ConfigUtil {
             if (StrUtil.isNotBlank(template.getType()) && template.getContent() != null) {
                 boolean json = "JSON".equalsIgnoreCase(template.getType());
                 template.setType(json ? "JSON" : "TEXT");
+                String content = template.getContent();
+                if (StrUtil.isNotBlank(legacyNotificationTemplate)
+                        && "default".equals(template.getId())
+                        && NotificationTemplate.DEFAULT_TEXT_CONTENT.equals(content)) {
+                    content = legacyNotificationTemplate;
+                } else if ("default-json".equals(template.getId())
+                        && NotificationTemplate.LEGACY_DEFAULT_JSON_CONTENT.equals(content)) {
+                    content = NotificationTemplate.DEFAULT_JSON_CONTENT;
+                }
+                content = NotificationTemplate.replaceLegacyNotificationPlaceholder(content, notificationContent, json);
+                template.setContent(content);
                 if (json) {
-                    template.setCustomRequestBody(template.getContent()).setTelegramTemplate(null);
+                    template.setCustomRequestBody(content).setTelegramTemplate(null);
                 } else {
-                    template.setTelegramTemplate(template.getContent()).setCustomRequestBody(null);
+                    template.setTelegramTemplate(content).setCustomRequestBody(null);
                 }
                 normalized.add(template);
                 continue;
             }
 
-            String textContent = template.getTelegramTemplate();
-            String jsonContent = template.getCustomRequestBody();
+            String textContent = NotificationTemplate.replaceLegacyNotificationPlaceholder(
+                    template.getTelegramTemplate(), notificationContent, false);
+            String jsonContent = NotificationTemplate.replaceLegacyNotificationPlaceholder(
+                    template.getCustomRequestBody(), notificationContent, true);
             if (StrUtil.isNotBlank(textContent) && StrUtil.isNotBlank(jsonContent)) {
                 String legacyId = template.getId();
                 template.setType("TEXT").setContent(textContent).setCustomRequestBody(null);

@@ -41,6 +41,8 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 - Java 使用现有包结构和 Lombok 实体风格；前端使用 Vue 3 `<script setup>` 与现有组件样式。
 - 配置字段需覆盖四处：实体类、后端默认值和旧配置补齐、前端默认对象、对应设置界面。
 - 复用通知模板使用 `id / name / type / content` 字段；`type` 为 `TEXT` 或 `JSON`。更改持久化格式时，保留旧字段读取能力并在 `ConfigUtil.format` 中迁移已有配置。
+- 旧版 `Config.notificationTemplate` 是完整消息正文，迁移时应并入默认文本通知模板；模板应直接渲染 `${title}`、`${subgroup}`、`${text}` 等字段，不再嵌套 `${notification}`。
+- 开发者设置由 `developerOptionsEnabled` 控制是否显示；通过关于页的凭据验证后，先确认并保存整份当前配置，再启用该标记并刷新页面。
 - 过滤规则或业务条件有多个调用点时抽取共享逻辑。RSS 下载、RSS 预览和合集预览应保持一致。
 - 修改配置语义时更新用户指南；修改发布流程时同步检查 workflow、安装脚本、README 和更新说明。
 - 保持上游配置字段兼容。已有 JSON 中缺少新字段时应采用安全默认值，不要求用户手工重建配置。
