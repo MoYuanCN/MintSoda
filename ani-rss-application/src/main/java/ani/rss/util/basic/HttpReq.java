@@ -40,7 +40,7 @@ public class HttpReq {
         req.timeout(1000 * 20)
                 .setFollowRedirects(true);
 
-        String ua = "ani-rss/{} (https://github.com/wushuo894/ani-rss)";
+        String ua = "ani-rss-yuri/{} (https://github.com/MoYuanCN/ani-rss-Yuri)";
         ua = StrUtil.format(ua, MavenUtils.getVersion());
 
         req.header(Header.USER_AGENT, ua);

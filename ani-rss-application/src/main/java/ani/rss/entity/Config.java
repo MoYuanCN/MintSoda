@@ -63,12 +63,6 @@ public class Config implements Serializable {
     private String downloadToolHost;
 
     /**
-     * 下载工具 用户名
-     */
-    @Schema(description = "下载工具用户名")
-    private String downloadToolUsername;
-
-    /**
      * 下载工具 密码
      */
     @Schema(description = "下载工具密码")
@@ -151,10 +145,15 @@ public class Config implements Serializable {
     @Schema(description = "延迟下载(分钟)")
     private Integer delayedDownload;
 
+    /** RSS interval in seconds. */
+    @Schema(description = "RSS 间隔(秒)")
+    private Integer rssSleepSeconds;
+
     /**
-     * RSS 间隔(分钟)
+     * Legacy interval in minutes, retained only to migrate config.v2.json files from older versions.
      */
-    @Schema(description = "RSS 间隔(分钟)")
+    @Deprecated
+    @Schema(hidden = true)
     private Integer rssSleepMinutes;
 
     /**
@@ -539,12 +538,6 @@ public class Config implements Serializable {
     private Integer customEpisodeGroupIndex;
 
     /**
-     * 添加行订阅是是否开启自动上传
-     */
-    @Schema(description = "新增订阅自动上传")
-    private Boolean upload;
-
-    /**
      * 上传速度限制
      */
     @Schema(description = "上传速度限制")
@@ -556,29 +549,10 @@ public class Config implements Serializable {
     @Schema(description = "下载速度限制")
     private Long dlLimit;
 
-    /**
-     * 捐赠过期时间
-     */
-    @Schema(description = "捐赠过期时间")
-    private Long expirationTime;
-
-    /**
-     * 爱发电订单号
-     */
-    @Schema(description = "爱发电订单号")
+    /** Legacy key for existing score-cache data. No donation or expiry check uses this value. */
+    @Deprecated
+    @Schema(hidden = true)
     private String outTradeNo;
-
-    /**
-     * 捐赠或试用是否过期
-     */
-    @Schema(description = "捐赠或试用是否过期")
-    private Boolean verifyExpirationTime;
-
-    /**
-     * 试用
-     */
-    @Schema(description = "试用")
-    private Boolean tryOut;
 
     /**
      * 摸鱼

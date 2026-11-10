@@ -24,15 +24,8 @@
         </el-checkbox-group>
       </SettingsItem>
       <EmbyRefreshNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <MailNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <ServerChanNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <BarkNotificationView v-model:config="props.config" v-model:notification-config="notificationConfig"/>
       <TelegramNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
       <WebhookNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <SystemNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <ShellNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <FileMoveNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <OpenListUploadNotificationView v-model:config="props.config" v-model:notification-config="notificationConfig"/>
       <SettingsItem label="顺序">
         <div>
           <el-input-number
@@ -66,36 +59,17 @@
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {ref} from "vue";
 import EmbyRefreshNotificationView from "./notification/EmbyRefreshNotificationView.vue";
-import MailNotificationView from "./notification/MailNotificationView.vue";
-import ServerChanNotificationView from "./notification/ServerChanNotificationView.vue";
 import TelegramNotificationView from "./notification/TelegramNotificationView.vue";
 import WebhookNotificationView from "./notification/WebhookNotificationView.vue";
-import ShellNotificationView from "./notification/ShellNotificationView.vue";
-import SystemNotificationView from "./notification/SystemNotificationView.vue";
 import {notificationTypeList} from "@/js/notification-type.js";
 import {ElMessage} from "element-plus";
-import FileMoveNotificationView from "./notification/FileMoveNotificationView.vue";
-import OpenListUploadNotificationView from "./notification/OpenListUploadNotificationView.vue";
 import {testNotification} from "@/js/http.js";
-import BarkNotificationView from "./notification/BarkNotificationView.vue";
 
 
 let notificationConfig = ref({
   "comment": "无备注",
   "notificationTemplate": "${notification}",
   "notificationType": "TELEGRAM",
-  "mailSMTPHost": "smtp.qq.com",
-  "mailSMTPPort": 465,
-  "mailFrom": "",
-  "mailPassword": "",
-  "mailSSLEnable": true,
-  "mailTLSEnable": false,
-  "mailAddressee": "",
-  "mailImage": true,
-  "serverChanType": "SERVER_CHAN",
-  "serverChanSendKey": "",
-  "serverChan3ApiUrl": "",
-  "serverChanTitleAction": true,
   "telegramBotToken": "",
   "telegramChatId": "",
   "telegramTopicId": -1,
@@ -104,7 +78,9 @@ let notificationConfig = ref({
   "telegramFormat": "",
   "webHookMethod": "POST",
   "webHookUrl": "",
+  "webHookHeader": "",
   "webHookBody": "",
+  "webHookContentType": "application/json",
   "embyRefresh": false,
   "embyApiKey": "",
   "embyRefreshViewIds": [],

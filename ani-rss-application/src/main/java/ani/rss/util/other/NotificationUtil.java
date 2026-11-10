@@ -30,15 +30,9 @@ public class NotificationUtil {
             NOTIFICATION_MAP =
             Map.of(
                     NotificationTypeEnum.EMBY_REFRESH, EmbyRefreshNotification.class,
-                    NotificationTypeEnum.MAIL, MailNotification.class,
-                    NotificationTypeEnum.SERVER_CHAN, ServerChanNotification.class,
-                    NotificationTypeEnum.SYSTEM, SystemNotification.class,
                     NotificationTypeEnum.TELEGRAM, TelegramNotification.class,
-                    NotificationTypeEnum.WEB_HOOK, WebHookNotification.class,
-                    NotificationTypeEnum.SHELL, ShellNotification.class,
-                    NotificationTypeEnum.FILE_MOVE, FileMoveNotification.class,
-                    NotificationTypeEnum.OPEN_LIST_UPLOAD, OpenListUploadNotification.class,
-                    NotificationTypeEnum.BARK, BarkNotification.class
+                    NotificationTypeEnum.CUSTOM_REQUEST, CustomRequestNotification.class,
+                    NotificationTypeEnum.WEB_HOOK, CustomRequestNotification.class
             );
 
     /**

@@ -6,6 +6,7 @@ import ani.rss.entity.Config;
 import ani.rss.service.DownloadService;
 import ani.rss.util.other.AniUtil;
 import ani.rss.util.other.ConfigUtil;
+import ani.rss.util.other.ItemsUtil;
 import ani.rss.util.other.TorrentUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.spring.SpringUtil;
@@ -64,44 +65,49 @@ public class RssTask implements BaseTask {
         if (!TorrentUtil.login()) {
             return;
         }
-        for (Ani ani : aniList) {
-            if (!LOOP.get()) {
-                // 停止循环
-                return;
-            }
+        ItemsUtil.beginRssBatch();
+        try {
+            for (Ani ani : aniList) {
+                if (!LOOP.get()) {
+                    // 停止循环
+                    return;
+                }
 
-            if (!ANI_LIST.contains(ani)) {
-                // 订阅可能已经被删除
-                continue;
-            }
+                if (!ANI_LIST.contains(ani)) {
+                    // 订阅可能已经被删除
+                    continue;
+                }
 
-            String title = ani.getTitle();
-            Boolean enable = ani.getEnable();
-            if (!enable) {
-                log.debug("{} 未启用", title);
-                continue;
-            }
+                String title = ani.getTitle();
+                Boolean enable = ani.getEnable();
+                if (!enable) {
+                    log.debug("{} 未启用", title);
+                    continue;
+                }
 
-            try {
-                downloadService.downloadAni(ani);
-            } catch (Exception e) {
-                String message = ExceptionUtils.getMessage(e);
-                log.error("{} {}", title, message);
-                log.error(message, e);
+                try {
+                    downloadService.downloadAni(ani);
+                } catch (Exception e) {
+                    String message = ExceptionUtils.getMessage(e);
+                    log.error("{} {}", title, message);
+                    log.error(message, e);
+                }
+                // 避免短时间频繁请求导致流控
+                ThreadUtil.sleep(500);
             }
-            // 避免短时间频繁请求导致流控
-            ThreadUtil.sleep(500);
+        } finally {
+            ItemsUtil.endRssBatch();
         }
     }
 
     @Override
     public void accept(AtomicBoolean loop) {
         Config config = ConfigUtil.CONFIG;
-        Integer sleep = config.getRssSleepMinutes();
+        Integer sleep = config.getRssSleepSeconds();
 
         if (!config.getRss()) {
             log.debug("rss未启用");
-            ThreadUtil.sleep(sleep, TimeUnit.MINUTES);
+            ThreadUtil.sleep(sleep, TimeUnit.SECONDS);
             return;
         }
 
@@ -112,6 +118,6 @@ public class RssTask implements BaseTask {
             String message = ExceptionUtils.getMessage(e);
             log.error(message, e);
         }
-        ThreadUtil.sleep(sleep, TimeUnit.MINUTES);
+        ThreadUtil.sleep(sleep, TimeUnit.SECONDS);
     }
 }

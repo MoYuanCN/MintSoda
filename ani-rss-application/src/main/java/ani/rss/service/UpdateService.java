@@ -40,7 +40,7 @@ public class UpdateService {
 
             String filename = currentFile.isJar() ? "ani-rss.jar" : "ani-rss.exe";
 
-            UpdateInfo updateInfo = githubService.getUpdateInfo("wushuo894", "ani-rss", filename, version);
+            UpdateInfo updateInfo = githubService.getUpdateInfo("MoYuanCN", "ani-rss-Yuri", filename, version);
 
             BeanUtil.copyProperties(updateInfo, about, "version");
         } catch (Exception e) {

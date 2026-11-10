@@ -84,9 +84,6 @@
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="自动上传">
-    <el-switch v-model="props.config['upload']"/>
-  </SettingsItem>
 </template>
 
 <script setup>

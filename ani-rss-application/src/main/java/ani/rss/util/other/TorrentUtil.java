@@ -3,6 +3,7 @@ package ani.rss.util.other;
 import ani.rss.commons.ExceptionUtils;
 import ani.rss.commons.PinyinUtils;
 import ani.rss.download.BaseDownload;
+import ani.rss.download.qBittorrent;
 import ani.rss.entity.Ani;
 import ani.rss.entity.Config;
 import ani.rss.entity.Item;
@@ -16,7 +17,6 @@ import ani.rss.util.basic.HttpReq;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
@@ -329,14 +329,9 @@ public class TorrentUtil {
      * 初始化下载工具
      */
     public static void loadDownloadTool() {
-        String download = CONFIG.getDownloadToolType();
-
-        if (!List.of("Aria2", "qBittorrent", "Transmission").contains(download)) {
-            download = "qBittorrent";
-        }
-
-        DOWNLOAD = SpringUtil.getBean(ClassUtil.loadClass("ani.rss.download." + download));
-        log.info("下载工具 {}", download);
+        CONFIG.setDownloadToolType("qBittorrent");
+        DOWNLOAD = SpringUtil.getBean(qBittorrent.class);
+        log.info("下载工具 qBittorrent");
     }
 
     /**

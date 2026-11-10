@@ -14,7 +14,6 @@
         </div>
         <div>
           <el-text class="mx-1" size="small">
-            该功能暂不支持 Transmission
           </el-text>
         </div>
       </div>

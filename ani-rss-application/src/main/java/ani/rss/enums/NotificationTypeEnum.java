@@ -5,13 +5,8 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum NotificationTypeEnum {
     EMBY_REFRESH,
-    MAIL,
-    SERVER_CHAN,
-    SYSTEM,
     TELEGRAM,
-    WEB_HOOK,
-    SHELL,
-    FILE_MOVE,
-    OPEN_LIST_UPLOAD,
-    BARK
+    CUSTOM_REQUEST,
+    /** 仅用于读取旧版配置，加载时会迁移为 CUSTOM_REQUEST。 */
+    WEB_HOOK
 }

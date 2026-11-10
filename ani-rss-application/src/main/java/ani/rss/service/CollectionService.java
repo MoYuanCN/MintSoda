@@ -168,9 +168,6 @@ public class CollectionService {
      * @param tags        标签
      */
     public void download(String name, File torrentFile, String savePath, List<String> tags) {
-        String download = CONFIG.getDownloadToolType();
-        Assert.isTrue("qBittorrent".equals(download), "合集下载暂时只支持 qBittorrent");
-
         Assert.isTrue(TorrentUtil.login(), "下载器登录失败");
 
         Integer ratioLimit = CONFIG.getRatioLimit();
@@ -231,6 +228,7 @@ public class CollectionService {
 
         List<String> match = ani.getMatch();
         List<String> exclude = ani.getExclude();
+        boolean reverseMatchEnabled = Boolean.TRUE.equals(ani.getReverseMatchEnabled());
         Boolean globalExclude = ani.getGlobalExclude();
         List<String> globalExcludeList = CONFIG.getExclude();
 
@@ -269,7 +267,11 @@ public class CollectionService {
                     }
 
                     // 匹配
-                    if (!match.isEmpty()) {
+                    if (reverseMatchEnabled) {
+                        if (!ItemsUtil.matchesReverse(ani, name)) {
+                            return false;
+                        }
+                    } else if (!match.isEmpty()) {
                         if (match.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> !ReUtil.contains(s, name))) {
                             return false;
                         }

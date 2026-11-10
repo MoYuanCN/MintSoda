@@ -20,7 +20,7 @@ public class SwaggerConfig {
 
         License license = new License()
                 .name("GPL-2.0")
-                .url("https://github.com/wushuo894/ani-rss/blob/master/LICENSE");
+                .url("https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/LICENSE");
 
         String version = MavenUtils.getVersion();
 
@@ -32,7 +32,7 @@ public class SwaggerConfig {
 
         ExternalDocumentation externalDocumentation = new ExternalDocumentation()
                 .description("外部文档")
-                .url("https://docs.wushuo.top/");
+                .url("https://github.com/MoYuanCN/ani-rss-Yuri");
 
         Components components = new Components()
                 .addSecuritySchemes("api-key",

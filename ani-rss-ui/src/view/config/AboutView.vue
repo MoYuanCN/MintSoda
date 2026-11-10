@@ -3,7 +3,7 @@
     <div class="flex about-header">
       <img alt="icon.svg" height="80" src="/public/icon.svg" width="80"/>
       <div>
-        <h1>ANI-RSS</h1>
+        <h1>ANI-RSS-Yuri</h1>
         <el-tooltip
             :content="`${props.config.gitInfo.branch} ${props.config.gitInfo.shortCommitId}`"
             placement="right">
@@ -14,14 +14,8 @@
       </div>
     </div>
     <div class="flex button-list">
-      <el-button :icon="Github" bg text type="info" @click="openUrl('https://github.com/wushuo894/ani-rss')">
+      <el-button :icon="Github" bg text type="info" @click="openUrl('https://github.com/MoYuanCN/ani-rss-Yuri')">
         GitHub
-      </el-button>
-      <el-button :icon="Book" bg text type="info" @click="openUrl('https://docs.wushuo.top')">
-        使用文档
-      </el-button>
-      <el-button :icon="Telegram" bg text type="info" @click="openUrl('https://t.me/ani_rss')">
-        TG群
       </el-button>
     </div>
     <div v-loading.fullscreen.lock="actionLoading" class="button-list">
@@ -54,7 +48,7 @@
     <div v-if="about.update">
       <div>
         <SettingsItem label="版本号">
-          <el-link type="default" :href="`https://github.com/wushuo894/ani-rss/releases/tag/v${about.latest}`"
+          <el-link type="default" :href="`https://github.com/MoYuanCN/ani-rss-Yuri/releases/tag/v${about.latest}`"
                    target="_blank">
             {{ about.latest }}
           </el-link>
@@ -84,7 +78,7 @@
     </div>
     <div class="flex about-dialog-footer">
       <el-button bg text icon="Tickets"
-                 @click="openUrl('https://docs.wushuo.top/history')"
+                 @click="openUrl('https://github.com/MoYuanCN/ani-rss-Yuri/releases')"
                  type="primary">
         更新历史
       </el-button>
@@ -104,7 +98,7 @@ import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {onMounted, ref} from "vue";
 import {ElMessage, ElText} from "element-plus";
 import PopconfirmView from "@/view/custom/PopconfirmView.vue";
-import {Book, Github, Telegram} from "@vicons/fa";
+import {Github} from "@vicons/fa";
 
 import markdownit from 'markdown-it'
 import MarkdownItGitHubAlerts from 'markdown-it-github-alerts'

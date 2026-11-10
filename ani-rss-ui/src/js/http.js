@@ -180,19 +180,6 @@ export let searchBgm = (name) => api.post(`api/searchBgm?name=${name}`)
 export let testProxy = (url, config) => api.post(`api/testProxy?url=${url}`, config)
 
 /**
- * 下载列表
- * @returns {Promise<unknown>}
- */
-export let torrentsInfos = () => api.post('api/torrentsInfos')
-
-/**
- * 订单号校验
- * @param config 设置
- * @returns {Promise<unknown>}
- */
-export let verifyNo = (config) => api.post('api/verifyNo', config)
-
-/**
  * 更新总集数
  * @param force 强制
  * @param ids ids

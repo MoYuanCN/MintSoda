@@ -3,7 +3,7 @@
     <aside class="app-nav">
       <div class="app-brand">
         <img class="app-logo" src="/icon.svg" alt="ANI-RSS">
-        <span>ANI-RSS</span>
+        <span>ANI-RSS-Yuri</span>
       </div>
       <el-menu
           :default-active="route.path"
@@ -21,12 +21,6 @@
             <Collection/>
           </el-icon>
           <span>订阅</span>
-        </el-menu-item>
-        <el-menu-item index="/downloads">
-          <el-icon>
-            <Download/>
-          </el-icon>
-          <span>下载</span>
         </el-menu-item>
         <el-menu-item index="/logs">
           <el-icon>
@@ -55,7 +49,7 @@
 <script setup>
 import {onMounted} from "vue";
 import {RouterView, useRoute} from "vue-router";
-import {Collection, Download, House, Setting, Tickets} from "@element-plus/icons-vue";
+import {Collection, House, Setting, Tickets} from "@element-plus/icons-vue";
 import {initLayout} from "@/js/global.js";
 
 const route = useRoute()

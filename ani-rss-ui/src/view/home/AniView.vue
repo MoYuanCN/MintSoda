@@ -118,6 +118,9 @@
             <el-form-item label="匹配">
               <ExcludeView v-model:exclude="props.ani.match" :import-exclude="false"/>
             </el-form-item>
+            <el-form-item label="反匹配">
+              <ReverseMatchView :ani="props.ani"/>
+            </el-form-item>
             <el-form-item label="排除">
               <ExcludeView v-model:exclude="props.ani.exclude" :import-exclude="true"/>
             </el-form-item>
@@ -174,21 +177,6 @@
                 </div>
               </div>
             </el-form-item>
-            <el-form-item label="自定义上传">
-              <div class="full-width">
-                <div>
-                  <el-switch v-model="props.ani.customUploadEnable"/>
-                </div>
-                <div>
-                  <el-input
-                      v-model="props.ani.customUploadPathTarget"
-                      :autosize="{ minRows: 2}"
-                      :disabled="!props.ani.customUploadEnable"
-                      class="full-width"
-                      type="textarea"/>
-                </div>
-              </div>
-            </el-form-item>
             <el-form-item label="自定义完结迁移">
               <div class="full-width">
                 <div>
@@ -241,7 +229,6 @@
             </el-form-item>
             <el-form-item label="其它">
               <el-checkbox v-model="props.ani.omit" label="遗漏检测"/>
-              <el-checkbox v-model="props.ani.upload" label="自动上传"/>
               <el-checkbox v-model="props.ani.downloadNew" label="只下载最新集"/>
               <el-checkbox v-model="props.ani['procrastinating']" label="摸鱼检测"/>
               <el-checkbox v-model="props.ani['message']" label="通知"/>
@@ -303,6 +290,7 @@
 <script setup>
 
 import ExcludeView from "@/view/config/ExcludeView.vue";
+import ReverseMatchView from "@/view/config/ReverseMatchView.vue";
 import PrioKeysView from "@/view/config/PrioKeysView.vue";
 import PreviewView from "./PreviewView.vue";
 import {onMounted, ref} from "vue";

@@ -6,11 +6,7 @@
         <h3>下载器连接</h3>
       </div>
       <SettingsItem label="下载工具">
-        <el-select v-model:model-value="props.config.downloadToolType">
-          <el-option label="qBittorrent" value="qBittorrent"/>
-          <el-option label="Transmission" value="Transmission"/>
-          <el-option label="Aria2" value="Aria2"/>
-        </el-select>
+        <el-tag type="primary">qBittorrent</el-tag>
       </SettingsItem>
       <SettingsItem label="地址">
         <el-input
@@ -38,45 +34,6 @@
           </el-alert>
         </div>
       </SettingsItem>
-      <SettingsItem v-else-if="props.config.downloadToolType === 'Aria2'" label="RPC 密钥">
-        <el-input
-            v-model.trim="props.config.downloadToolPassword"
-            show-password
-            autocomplete="new-password">
-          <template #prefix>
-            <el-icon class="el-input__icon">
-              <Key/>
-            </el-icon>
-          </template>
-        </el-input>
-      </SettingsItem>
-      <template v-else>
-        <SettingsItem label="用户名">
-          <el-input
-              v-model.trim="props.config.downloadToolUsername"
-              placeholder="username"
-              autocomplete="new-password">
-            <template #prefix>
-              <el-icon class="el-input__icon">
-                <User/>
-              </el-icon>
-            </template>
-          </el-input>
-        </SettingsItem>
-        <SettingsItem label="密码">
-          <el-input
-              v-model.trim="props.config.downloadToolPassword"
-              placeholder="password"
-              show-password
-              autocomplete="new-password">
-            <template #prefix>
-              <el-icon class="el-input__icon">
-                <Key/>
-              </el-icon>
-            </template>
-          </el-input>
-        </SettingsItem>
-      </template>
       <SettingsItem>
         <div class="download-test-button">
           <el-button @click="downloadLoginTest" bg text :loading="downloadLoginTestLoading" icon="Odometer">测试
@@ -204,38 +161,11 @@
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {ref} from "vue";
 import {ElMessage, ElText} from "element-plus";
-import {Key, User} from "@element-plus/icons-vue";
+import {Key} from "@element-plus/icons-vue";
 import qBittorrentView from "@/view/config/download/qBittorrentView.vue";
 import PrioKeysView from "@/view/config/PrioKeysView.vue";
 import CustomTagsView from "@/view/config/CustomTagsView.vue";
 import * as http from "@/js/http.js";
-
-const offlineList = ref([
-  {
-    label: '115 开放平台',
-    value: '115 Open'
-  },
-  {
-    label: '115 网盘',
-    value: '115 Cloud'
-  },
-  {
-    label: '123 开放平台',
-    value: '123 Open'
-  },
-  {
-    label: '123 网盘',
-    value: '123Pan'
-  },
-  {
-    label: '迅雷',
-    value: 'Thunder'
-  },
-  {
-    label: 'PikPak',
-    value: 'PikPak'
-  }
-])
 
 const downloadLoginTestLoading = ref(false)
 const downloadLoginTest = () => {

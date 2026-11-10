@@ -5,14 +5,14 @@
 
     <groupId>ani.rss</groupId>
     <artifactId>ani-rss</artifactId>
-    <version>3.2.57</version>
+    <version>3.3.0</version>
 
-    <name>ani-rss</name>
+    <name>ANI-RSS-Yuri</name>
     <inceptionYear>2025</inceptionYear>
     <description>基于RSS自动追番、订阅、下载、刮削、洗版</description>
-    <url>https://docs.wushuo.top</url>
+    <url>https://github.com/MoYuanCN/ani-rss-Yuri</url>
     <organization>
-        <name>wushuo894</name>
+        <name>MoYuanCN</name>
     </organization>
 
     <packaging>pom</packaging>
@@ -48,19 +48,9 @@
                 <version>4.4.0</version>
             </dependency>
             <dependency>
-                <groupId>org.commonmark</groupId>
-                <artifactId>commonmark</artifactId>
-                <version>0.30.1</version>
-            </dependency>
-            <dependency>
                 <groupId>wushuo.tmdb.api</groupId>
                 <artifactId>tmdb-api</artifactId>
                 <version>1.0.10</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.angus</groupId>
-                <artifactId>jakarta.mail</artifactId>
-                <version>2.0.5</version>
             </dependency>
             <dependency>
                 <groupId>io.github.biezhi</groupId>

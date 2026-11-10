@@ -22,9 +22,6 @@ import java.util.Map;
 @Service
 public class CacheService {
 
-    @Resource
-    private AfdianService afdianService;
-
     /**
      * k: Bgm Id, v: Bgm Score
      *
@@ -44,13 +41,9 @@ public class CacheService {
     }
 
     public JsonObject getScore(String source) {
-        if (!afdianService.verifyExpirationTime()) {
-            return new JsonObject();
-        }
         Config config = ConfigUtil.CONFIG;
         String outTradeNo = config.getOutTradeNo();
-        boolean tryOut = config.getTryOut();
-        if (StrUtil.isBlank(outTradeNo) || tryOut) {
+        if (StrUtil.isBlank(outTradeNo)) {
             return new JsonObject();
         }
 
@@ -78,13 +71,9 @@ public class CacheService {
     }
 
     public Map<String, MikanBgm> getMikanBgm() {
-        if (!afdianService.verifyExpirationTime()) {
-            return new HashMap<>();
-        }
         Config config = ConfigUtil.CONFIG;
         String outTradeNo = config.getOutTradeNo();
-        boolean tryOut = config.getTryOut();
-        if (StrUtil.isBlank(outTradeNo) || tryOut) {
+        if (StrUtil.isBlank(outTradeNo)) {
             return new HashMap<>();
         }
 

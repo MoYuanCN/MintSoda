@@ -6,7 +6,7 @@
         <div style="text-align: center;">
           <img src="/public/icon.svg" height="80" width="80" alt="icon.svg"/>
         </div>
-        <h2 class="title-h2">ANI-RSS</h2>
+        <h2 class="title-h2">ANI-RSS-Yuri</h2>
         <el-form @submit.prevent
                  @keyup.enter="login">
           <el-form-item>
@@ -38,15 +38,9 @@
     </div>
     <div class="footer">
       <el-link type="default"
-               href="https://docs.wushuo.top"
+               href="https://github.com/MoYuanCN/ani-rss-Yuri"
                target="_blank">
-        ani-rss
-      </el-link>
-      &nbsp;
-      <el-link type="default"
-               href="https://github.com/wushuo894/ani-rss"
-               target="_blank">
-        github
+        ANI-RSS-Yuri
       </el-link>
     </div>
   </div>

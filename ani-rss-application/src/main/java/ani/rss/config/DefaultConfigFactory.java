@@ -62,9 +62,7 @@ public class DefaultConfigFactory {
 
         String apiKey = RandomUtil.randomString(64).toLowerCase();
 
-        String downloadToolType = SystemUtil.get("DOWNLOAD_TOOL_TYPE", "qBittorrent");
         String downloadToolHost = SystemUtil.get("DOWNLOAD_TOOL_HOST", "");
-        String downloadToolUsername = SystemUtil.get("DOWNLOAD_TOOL_USERNAME", "");
         String downloadToolPassword = SystemUtil.get("DOWNLOAD_TOOL_PASSWORD", "");
 
         String proxyList = """
@@ -86,7 +84,7 @@ public class DefaultConfigFactory {
                 raw.githubusercontent.com
                 telegram.org
                 """;
-        return config.setRssSleepMinutes(15)
+        return config.setRssSleepSeconds(15 * 60)
                 .setMikanHost("https://mikanani.me")
                 .setTmdbApi("https://api.themoviedb.org")
                 .setTmdbApiKey("")
@@ -109,9 +107,8 @@ public class DefaultConfigFactory {
                 .setDownloadPathTemplate(downloadPathTemplate)
                 .setOvaDownloadPathTemplate(ovaDownloadPathTemplate)
                 .setDownloadToolHost(downloadToolHost)
-                .setDownloadToolType(downloadToolType)
+                .setDownloadToolType("qBittorrent")
                 .setDownloadRetry(3)
-                .setDownloadToolUsername(downloadToolUsername)
                 .setDownloadToolPassword(downloadToolPassword)
                 .setQbUseDownloadPath(false)
                 .setQbContentLayout("Original")
@@ -173,13 +170,8 @@ public class DefaultConfigFactory {
                 .setCustomEpisode(false)
                 .setCustomEpisodeStr(RenameUtil.REG_STR)
                 .setCustomEpisodeGroupIndex(2)
-                .setUpload(true)
                 .setUpLimit(0L)
                 .setDlLimit(0L)
-                .setExpirationTime(0L)
-                .setOutTradeNo("")
-                .setTryOut(false)
-                .setVerifyExpirationTime(false)
                 .setProcrastinating(false)
                 .setProcrastinatingDay(14)
                 .setGithubToken("")

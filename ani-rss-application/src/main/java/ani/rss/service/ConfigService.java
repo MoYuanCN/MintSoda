@@ -2,7 +2,7 @@ package ani.rss.service;
 
 import ani.rss.commons.FileUtils;
 import ani.rss.commons.MavenUtils;
-import ani.rss.download.BaseDownload;
+import ani.rss.download.qBittorrent;
 import ani.rss.entity.Config;
 import ani.rss.entity.GitInfo;
 import ani.rss.entity.Login;
@@ -18,7 +18,6 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ClassUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
@@ -38,9 +37,6 @@ import java.util.UUID;
 public class ConfigService {
 
     @Resource
-    private AfdianService afdianService;
-
-    @Resource
     private ClearService clearService;
 
     @Resource
@@ -54,7 +50,7 @@ public class ConfigService {
         Config config = ObjectUtil.clone(ConfigUtil.CONFIG);
         config.getLogin().setPassword("");
         config.setVersion(version)
-                .setGitInfo(getGitInfo()).setVerifyExpirationTime(afdianService.verifyExpirationTime()).setJwtKey("");
+                .setGitInfo(getGitInfo()).setOutTradeNo("").setJwtKey("");
         return config;
     }
 
@@ -71,12 +67,13 @@ public class ConfigService {
         String username = login.getUsername();
         String password = login.getPassword();
         Integer renameSleepSeconds = config.getRenameSleepSeconds();
-        Integer sleep = config.getRssSleepMinutes();
-        String download = config.getDownloadToolType();
+        Integer sleep = config.getRssSleepSeconds();
         Boolean autoStart = config.getAutoStart();
 
-        newConfig.setExpirationTime(null)
-                .setOutTradeNo(null).setTryOut(null).setJwtKey(null);
+        newConfig.setOutTradeNo(null).setJwtKey(null);
+        if (newConfig.getRssSleepSeconds() == null && newConfig.getRssSleepMinutes() != null) {
+            newConfig.setRssSleepSeconds(newConfig.getRssSleepMinutes() * 60);
+        }
 
         CopyOptions copyOptions = CopyOptions
                 .create()
@@ -115,7 +112,7 @@ public class ConfigService {
 
         ConfigUtil.sync();
         Integer newRenameSleepSeconds = config.getRenameSleepSeconds();
-        Integer newSleep = config.getRssSleepMinutes();
+        Integer newSleep = config.getRssSleepSeconds();
         Boolean newAutoStart = config.getAutoStart();
 
         // 时间间隔发生改变，重启任务
@@ -124,10 +121,6 @@ public class ConfigService {
                         !Objects.equals(newRenameSleepSeconds, renameSleepSeconds)
         ) {
             taskService.restart();
-        }
-        // 下载工具发生改变
-        if (!download.equals(config.getDownloadToolType())) {
-            TorrentUtil.loadDownloadTool();
         }
         // 开机自启发生改变
         if (!newAutoStart.equals(autoStart)) {
@@ -184,10 +177,9 @@ public class ConfigService {
 
     public Boolean downloadLoginTest(Config config) {
         ConfigUtil.format(config);
-        String download = config.getDownloadToolType();
-        Class<BaseDownload> loadClass = ClassUtil.loadClass("ani.rss.download." + download);
-        BaseDownload baseDownload = SpringUtil.getBean(loadClass);
-        return baseDownload.login(true, config);
+        config.setDownloadToolType("qBittorrent");
+        qBittorrent download = SpringUtil.getBean(qBittorrent.class);
+        return download.login(true, config);
     }
 
 

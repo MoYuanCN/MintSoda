@@ -131,6 +131,19 @@ public class Ani implements Serializable {
     private List<String> match;
 
     /**
+     * 是否按 RSS 条目标题进行反向匹配。
+     * 开启后，reverseMatchKeywords 中任一正则命中标题时，该条目归入当前订阅及其字幕组。
+     */
+    @Schema(description = "反匹配开关")
+    private Boolean reverseMatchEnabled;
+
+    /**
+     * 反匹配关键词（正则表达式）；多条规则采用任一命中。
+     */
+    @Schema(description = "反匹配关键词")
+    private List<String> reverseMatchKeywords;
+
+    /**
      * 排除
      */
     @Schema(description = "排除")
@@ -250,12 +263,6 @@ public class Ani implements Serializable {
     private Tmdb tmdb;
 
     /**
-     * 自动上传
-     */
-    @Schema(description = "自动上传")
-    private Boolean upload;
-
-    /**
      * 摸鱼
      */
     @Schema(description = "摸鱼")
@@ -290,20 +297,6 @@ public class Ani implements Serializable {
      */
     @Schema(description = "上次下载完成时间")
     private Long lastDownloadTime;
-
-    /**
-     * 自定义上传
-     */
-    @SerializedName(value = "customUploadEnable", alternate = "customAlistPath")
-    @Schema(description = "自定义上传开关")
-    private Boolean customUploadEnable;
-
-    /**
-     * 自定义上传
-     */
-    @SerializedName(value = "customUploadPathTarget", alternate = "alistPath")
-    @Schema(description = "自定义上传目标路径")
-    private String customUploadPathTarget;
 
     /**
      * 消息通知

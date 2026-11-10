@@ -96,7 +96,7 @@
             <el-alert
                 :closable="false"
                 show-icon
-                title="含有磁力链接的 RSS 不支持 Aria2。"
+            title="将由 qBittorrent 接收 RSS 下载任务。"
                 type="warning"/>
           </div>
         </el-tab-pane>

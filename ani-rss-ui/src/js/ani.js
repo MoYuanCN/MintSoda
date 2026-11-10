@@ -12,6 +12,8 @@ export let aniData = {
     "image": "",
     "subgroup": "",
     "match": [],
+    "reverseMatchEnabled": false,
+    "reverseMatchKeywords": [],
     "exclude": [
         "720[Pp]",
         "\\d-\\d",
@@ -41,14 +43,11 @@ export let aniData = {
         "name": "",
         "date": "2025-01-01 00:00:00"
     },
-    "upload": true,
     "procrastinating": true,
     "customRenameTemplateEnable": false,
     "customRenameTemplate": "[${subgroup}] ${title} S${seasonFormat}E${episodeFormat}",
     "lastDownloadTime": 0,
     "message": true,
-    "customUploadEnable": false,
-    "customUploadPathTarget": "",
     "completed": true,
     "customCompleted": false,
     "customCompletedPathTemplate": "",

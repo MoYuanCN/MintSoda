@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public class ConfigUtil {
@@ -73,6 +74,12 @@ public class ConfigUtil {
         Config config = JsonReader.getInstance(configFile)
                 .toObject(Config.class, CONFIG);
 
+        // JsonReader returns a fresh object, so convert the legacy minutes field before
+        // copying over the defaults, which already contain rssSleepSeconds.
+        if (config.getRssSleepSeconds() == null && config.getRssSleepMinutes() != null) {
+            config.setRssSleepSeconds(config.getRssSleepMinutes() * 60);
+        }
+
         CopyOptions copyOptions = CopyOptions
                 .create()
                 .setIgnoreNullValue(true);
@@ -110,6 +117,16 @@ public class ConfigUtil {
      * @param config 设置
      */
     public static void format(Config config) {
+        // Migrate existing settings to the only supported download client.
+        config.setDownloadToolType("qBittorrent");
+        Integer intervalSeconds = config.getRssSleepSeconds();
+        if (intervalSeconds == null) {
+            Integer legacyMinutes = config.getRssSleepMinutes();
+            intervalSeconds = legacyMinutes == null ? 15 * 60 : legacyMinutes * 60;
+        }
+        intervalSeconds = Math.max(1, intervalSeconds);
+        config.setRssSleepSeconds(intervalSeconds)
+                .setRssSleepMinutes((int) ((intervalSeconds + 59L) / 60L));
         formatPath(config);
         formatUrl(config);
 
@@ -120,6 +137,24 @@ public class ConfigUtil {
 
         List<NotificationConfig> notificationConfigList = config.getNotificationConfigList();
 
+        // Migrate supported legacy webhook entries and discard removed notification integrations.
+        notificationConfigList.removeIf(notificationConfig -> {
+            if (notificationConfig == null || notificationConfig.getNotificationType() == null) {
+                return true;
+            }
+            if (notificationConfig.getNotificationType() == ani.rss.enums.NotificationTypeEnum.WEB_HOOK) {
+                notificationConfig.setNotificationType(ani.rss.enums.NotificationTypeEnum.CUSTOM_REQUEST);
+                notificationConfig.setWebHookUrl(replaceLegacyMessageVariable(notificationConfig.getWebHookUrl()));
+                notificationConfig.setWebHookHeader(replaceLegacyMessageVariable(notificationConfig.getWebHookHeader()));
+                notificationConfig.setWebHookBody(replaceLegacyMessageVariable(notificationConfig.getWebHookBody()));
+            }
+            return !Set.of(
+                    ani.rss.enums.NotificationTypeEnum.TELEGRAM,
+                    ani.rss.enums.NotificationTypeEnum.EMBY_REFRESH,
+                    ani.rss.enums.NotificationTypeEnum.CUSTOM_REQUEST
+            ).contains(notificationConfig.getNotificationType());
+        });
+
         CopyOptions copyOptions = CopyOptions
                 .create()
                 .setIgnoreNullValue(true)
@@ -129,6 +164,10 @@ public class ConfigUtil {
         for (NotificationConfig notificationConfig : notificationConfigList) {
             BeanUtil.copyProperties(newNotificationConfig, notificationConfig, copyOptions);
         }
+    }
+
+    private static String replaceLegacyMessageVariable(String template) {
+        return template == null ? null : template.replace("${message}", "${notification}");
     }
 
     /**

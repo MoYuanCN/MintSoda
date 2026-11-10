@@ -29,6 +29,16 @@ import java.util.function.Function;
 @Slf4j
 public class ItemsUtil {
     private static final Config CONFIG = ConfigUtil.CONFIG;
+    private static final ThreadLocal<Map<String, String>> RSS_BATCH_CACHE = new ThreadLocal<>();
+
+    /** Share identical RSS fetches across subscriptions during one download pass. */
+    public static void beginRssBatch() {
+        RSS_BATCH_CACHE.set(new HashMap<>());
+    }
+
+    public static void endRssBatch() {
+        RSS_BATCH_CACHE.remove();
+    }
 
     /**
      * 获取视频列表
@@ -84,6 +94,7 @@ public class ItemsUtil {
 
         List<String> exclude = ani.getExclude();
         List<String> match = ani.getMatch();
+        boolean reverseMatchEnabled = Boolean.TRUE.equals(ani.getReverseMatchEnabled());
 
         List<Item> items = new ArrayList<>();
 
@@ -239,7 +250,11 @@ public class ItemsUtil {
             }
 
             // 匹配
-            if (!match.isEmpty()) {
+            if (reverseMatchEnabled) {
+                if (!matchesReverse(ani, addNewItem.getTitle())) {
+                    continue;
+                }
+            } else if (!match.isEmpty()) {
                 if (match.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> !ReUtil.contains(s, addNewItem.getTitle()))) {
                     continue;
                 }
@@ -268,12 +283,37 @@ public class ItemsUtil {
     }
 
     /**
+     * 判断 RSS 条目是否匹配订阅配置的反向关键词。每条规则均为正则表达式，任意一条命中即可。
+     * 无有效规则或规则表达式错误时均不匹配，避免错误配置导致泛 RSS 全量下载。
+     */
+    public static boolean matchesReverse(Ani ani, String title) {
+        List<String> keywords = Optional.ofNullable(ani.getReverseMatchKeywords()).orElseGet(List::of);
+        for (String keyword : keywords) {
+            if (StrUtil.isBlank(keyword)) {
+                continue;
+            }
+            try {
+                if (ReUtil.contains(keyword, title)) {
+                    return true;
+                }
+            } catch (Exception e) {
+                log.warn("反匹配正则无效: {}", keyword);
+            }
+        }
+        return false;
+    }
+
+    /**
      * 获取rss内容
      *
      * @param url RSS链接
      * @return XML
      */
     public static String getRss(String url) {
+        Map<String, String> batchCache = RSS_BATCH_CACHE.get();
+        if (batchCache != null && batchCache.containsKey(url)) {
+            return batchCache.get(url);
+        }
         String xml = HttpReq.get(url)
                 .timeout(CONFIG.getRssTimeout() * 1000)
                 .thenFunction(res -> {
@@ -285,6 +325,10 @@ public class ItemsUtil {
         Assert.notBlank(xml, "xml is blank");
         boolean isXml = StrUtil.startWith(xml, '<');
         Assert.isTrue(isXml, "xml error");
+
+        if (batchCache != null) {
+            batchCache.put(url, xml);
+        }
 
         return xml;
     }
