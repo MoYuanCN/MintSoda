@@ -23,8 +23,12 @@ check_root() {
 install_jdk() {
     echo -e "${YELLOW}正在检查Java环境...${NC}"
     if command -v java >/dev/null 2>&1; then
-        echo -e "${GREEN}检测到JDK已安装${NC}"
-        return
+        JAVA_MAJOR_VERSION=$(java -version 2>&1 | sed -nE '1s/.*version "([0-9]+)(\.[0-9]+)?".*/\1/p')
+        if [[ "$JAVA_MAJOR_VERSION" =~ ^[0-9]+$ ]] && [ "$JAVA_MAJOR_VERSION" -ge 25 ]; then
+            echo -e "${GREEN}检测到 Java 25 或更高版本${NC}"
+            return
+        fi
+        echo -e "${YELLOW}检测到的 Java 版本低于 25，将安装 Java 25${NC}"
     fi
 
     echo -e "${YELLOW}正在安装OpenJDK 25...${NC}"
@@ -66,14 +70,6 @@ deploy_app() {
     fi
     echo "下载完成 ani-rss.jar"
 
-    echo "正在下载 run.sh"
-    # 下载启动脚本
-    if ! wget -q https://github.com/MoYuanCN/ani-rss-Yuri/raw/main/docker/run.sh -O "$INSTALL_DIR/run.sh"; then
-        echo -e "${RED}下载启动脚本失败${NC}"
-        exit 1
-    fi
-    echo "下载完成 run.sh"
-
     echo "正在下载 ani-rss.sh"
     # 下载管理脚本
     if ! wget -q https://github.com/MoYuanCN/ani-rss-Yuri/raw/main/linux/ani-rss.sh -O "/usr/local/bin/ani-rss"; then
@@ -87,7 +83,7 @@ deploy_app() {
     # 设置权限
     chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
     chmod 750 "$INSTALL_DIR"
-    chmod 770 "$INSTALL_DIR/run.sh"
+    chmod 640 "$INSTALL_DIR/ani-rss.jar"
     echo -e "${GREEN}程序部署完成${NC}"
 }
 
@@ -124,7 +120,7 @@ Type=simple
 User=$SERVICE_USER
 Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/bin/bash $INSTALL_DIR/run.sh
+ExecStart=/usr/bin/java -Xms64m -Xmx512m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UseCompactObjectHeaders -XX:TieredStopAtLevel=1 -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/sun.net.www.protocol.https=ALL-UNNAMED -Dfile.encoding=UTF-8 -jar $INSTALL_DIR/ani-rss.jar
 Restart=on-failure
 RestartSec=30
 LimitNOFILE=65535
@@ -134,7 +130,6 @@ Environment="SERVER_PORT=$SERVER_PORT"
 Environment="CONFIG=$INSTALL_DIR/config"
 Environment="SWAGGER_ENABLED=false"
 Environment="MCP_ENABLED=false"
-Environment="JAVA_OPTS=-Xms64m -Xmx512m -Xss256k -XX:+UseG1GC"
 
 [Install]
 WantedBy=multi-user.target

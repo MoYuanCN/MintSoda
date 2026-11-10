@@ -92,6 +92,16 @@
               <el-form-item label="全局匹配">
                 <el-switch v-model="data.ani.globalMatch"/>
               </el-form-item>
+              <el-form-item label="全局反匹配">
+                <el-switch v-model="data.ani.globalReverseMatch"/>
+              </el-form-item>
+              <el-form-item v-if="data.ani.globalReverseMatch" label="反匹配未命中">
+                <el-select v-model="data.ani.reverseMatchMissBehavior" class="full-width">
+                  <el-option value="SKIP" label="跳过，不下载"/>
+                  <el-option value="NORMAL" label="继续普通匹配规则"/>
+                  <el-option value="ALLOW" label="直接放行"/>
+                </el-select>
+              </el-form-item>
               <el-form-item label="剧场版">
                 <el-switch v-model:model-value="data.ani.ova"/>
               </el-form-item>
@@ -127,7 +137,7 @@
                   <el-link
                       style="font-size: var(--el-font-size-extra-small)"
                       type="primary"
-                      href="https://docs.wushuo.top/config/basic/rename#rename-template"
+                      href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
                       target="_blank">
                     详细说明
                   </el-link>

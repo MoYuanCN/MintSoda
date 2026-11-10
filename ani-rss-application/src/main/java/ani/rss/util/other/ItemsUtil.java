@@ -89,19 +89,11 @@ public class ItemsUtil {
     public static List<Item> getItems(Ani ani, String rssUrl, String subgroupName) {
         String xml = getRss(rssUrl);
 
-        List<String> exclude = ani.getExclude();
-        List<String> match = ani.getMatch();
-        boolean reverseMatchEnabled = Boolean.TRUE.equals(ani.getReverseMatchEnabled());
-
         List<Item> items = new ArrayList<>();
 
         Document document = XmlUtil.readXML(xml);
         Node channel = document.getElementsByTagName("channel").item(0);
         NodeList childNodes = channel.getChildNodes();
-        List<String> globalExcludeList = CONFIG.getExclude();
-        Boolean globalExclude = ani.getGlobalExclude();
-        List<String> globalMatchList = Optional.ofNullable(CONFIG.getGlobalMatch()).orElseGet(List::of);
-        Boolean globalMatch = ani.getGlobalMatch();
 
         for (int i = childNodes.getLength() - 1; i >= 0; i--) {
             Node item = childNodes.item(i);
@@ -230,48 +222,8 @@ public class ItemsUtil {
                     .setFormatSize(formatSize)
                     .setPubDate(pubDate);
 
-            Function<String, String> map = s -> {
-                String subgroup = ReUtil.get(StringEnum.SUBGROUP_REG_STR, s, 1);
-                if (StrUtil.isBlank(subgroup)) {
-                    return s;
-                }
-                if (subgroup.equals(subgroupName)) {
-                    return ReUtil.get(StringEnum.SUBGROUP_REG_STR, s, 2);
-                }
-                return "";
-            };
-
-            // 排除
-            if (!exclude.isEmpty()) {
-                if (exclude.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> ReUtil.contains(s, addNewItem.getTitle()))) {
-                    continue;
-                }
-            }
-
-            // 匹配
-            if (reverseMatchEnabled) {
-                if (!matchesReverse(ani, addNewItem.getTitle())) {
-                    continue;
-                }
-            } else if (!match.isEmpty()) {
-                if (match.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> !ReUtil.contains(s, addNewItem.getTitle()))) {
-                    continue;
-                }
-            }
-
-            // 全局匹配作为额外条件；兼容旧订阅中缺失的开关字段。
-            if (Boolean.TRUE.equals(globalMatch) && !globalMatchList.isEmpty()) {
-                if (globalMatchList.stream().map(map).filter(StrUtil::isNotBlank)
-                        .anyMatch(s -> !ReUtil.contains(s, addNewItem.getTitle()))) {
-                    continue;
-                }
-            }
-
-            // 全局排除
-            if (globalExclude) {
-                if (globalExcludeList.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> ReUtil.contains(s, addNewItem.getTitle()))) {
-                    continue;
-                }
+            if (!MatchRuleUtil.accepts(ani, addNewItem.getTitle(), subgroupName)) {
+                continue;
             }
             items.add(addNewItem);
         }
@@ -294,20 +246,7 @@ public class ItemsUtil {
      * 无有效规则或规则表达式错误时均不匹配，避免错误配置导致泛 RSS 全量下载。
      */
     public static boolean matchesReverse(Ani ani, String title) {
-        List<String> keywords = Optional.ofNullable(ani.getReverseMatchKeywords()).orElseGet(List::of);
-        for (String keyword : keywords) {
-            if (StrUtil.isBlank(keyword)) {
-                continue;
-            }
-            try {
-                if (ReUtil.contains(keyword, title)) {
-                    return true;
-                }
-            } catch (Exception e) {
-                log.warn("反匹配正则无效: {}", keyword);
-            }
-        }
-        return false;
+        return MatchRuleUtil.matchesReverse(ani, title);
     }
 
     /**

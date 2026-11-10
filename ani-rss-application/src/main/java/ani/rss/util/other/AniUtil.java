@@ -215,6 +215,13 @@ public class AniUtil {
         // 全局排除
         List<String> exclude = CONFIG.getExclude();
 
+        Boolean enabledGlobalMatch = CONFIG.getEnabledGlobalMatch();
+        Boolean importGlobalMatch = CONFIG.getImportGlobalMatch();
+        List<String> globalMatch = CONFIG.getGlobalMatch();
+        Boolean enabledGlobalReverseMatch = CONFIG.getEnabledGlobalReverseMatch();
+        Boolean importGlobalReverseMatch = CONFIG.getImportGlobalReverseMatch();
+        List<String> globalReverseMatch = CONFIG.getGlobalReverseMatch();
+
         // 默认导入全局排除
         if (importExclude) {
             exclude = new ArrayList<>(exclude);
@@ -223,11 +230,26 @@ public class AniUtil {
             ani.setExclude(exclude);
         }
 
+        if (importGlobalMatch && globalMatch != null) {
+            List<String> importedMatch = new ArrayList<>(globalMatch);
+            importedMatch.addAll(Optional.ofNullable(ani.getMatch()).orElseGet(List::of));
+            ani.setMatch(importedMatch.stream().distinct().toList());
+        }
+
+        if (importGlobalReverseMatch && globalReverseMatch != null) {
+            List<String> importedReverse = new ArrayList<>(globalReverseMatch);
+            importedReverse.addAll(Optional.ofNullable(ani.getReverseMatchKeywords()).orElseGet(List::of));
+            ani.setReverseMatchKeywords(importedReverse.stream().distinct().toList())
+                    .setReverseMatchEnabled(true);
+        }
+
         ani
                 // 只下载最新集
                 .setDownloadNew(downloadNew)
                 // 是否启用全局排除
                 .setGlobalExclude(enabledExclude)
+                .setGlobalMatch(enabledGlobalMatch)
+                .setGlobalReverseMatch(enabledGlobalReverseMatch)
                 // type mikan or other
                 .setType(type)
                 .setEnable(enable);

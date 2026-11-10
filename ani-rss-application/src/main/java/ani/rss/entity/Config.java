@@ -326,6 +326,9 @@ public class Config implements Serializable {
     /** Global inclusion rules; all configured regex rules must match the title. */
     private List<String> globalMatch;
 
+    /** Shared reverse-match regex rules. Any matching rule accepts an item. */
+    private List<String> globalReverseMatch;
+
     /**
      * 默认导入全局排除
      */
@@ -340,6 +343,9 @@ public class Config implements Serializable {
 
     private Boolean importGlobalMatch;
     private Boolean enabledGlobalMatch;
+
+    private Boolean importGlobalReverseMatch;
+    private Boolean enabledGlobalReverseMatch;
 
     /**
      * BGM日语标题

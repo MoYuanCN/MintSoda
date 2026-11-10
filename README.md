@@ -1,36 +1,55 @@
 # ANI-RSS-Yuri
 
-ANI-RSS-Yuri 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的 Fork，保留 RSS 订阅与自动下载流程，并针对本项目的使用目标调整了匹配、通知和 WebUI 功能。
+ANI-RSS-Yuri 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的 Fork，保留上游 RSS 订阅、番剧管理与自动下载流程，并按本分支的使用目标调整功能。未特别说明时，常规订阅和下载流程沿用 ANI-RSS 的行为。
 
-## 本 Fork 的功能
+## 增加的功能
 
-- 下载器仅支持 qBittorrent。
-- RSS 刷新间隔可精确到秒，旧配置的分钟值会自动迁移。
-- 每个订阅可开启反匹配：用标题关键词或正则表达式筛选泛 RSS 条目，并在订阅编辑页粘贴标题测试规则。
-- 设置页提供反匹配规则集中管理与标题测试，也支持全局匹配和全局排除。
-- WebUI 可自定义登录与应用背景、Logo、卡片透明度、模糊度和圆角。
-- 通知支持可复用的 Telegram 与自定义 HTTP JSON 模板；单条通知可选用不同模板。
-- 开发者选项支持自定义种子获取地址，并按 info_hash 请求种子文件。
-- 通知保留 Telegram、媒体库刷新和自定义 HTTP 请求。自定义请求支持方法、请求头、Content-Type，以及包含占位符的 JSON 请求体。
-- 本地功能不再受爱发电订单或捐赠状态限制。
+- 仅支持 qBittorrent，并支持 API Key 或用户名密码认证，兼容没有 API Key 的 qBittorrent 服务端。
+- RSS 刷新间隔使用秒，可设置短于上游限制的间隔；同一轮刷新会复用相同 RSS 地址的响应。
+- 增加本地反匹配和全局反匹配。可用正则规则从泛 RSS 中挑选条目，并归入指定订阅和字幕组；设置页提供规则测试界面。
+- 匹配优先级为反匹配 > 全局匹配 > 排除。反匹配未命中时默认跳过，可按订阅设置为继续普通规则或放行。
+- 支持全局匹配和全局排除，可设置新订阅默认启用或导入规则。
+- 通知仅保留 Telegram、媒体库刷新和自定义 HTTP 请求。支持多个可复用模板，可分别编辑 Telegram 文本或 JSON 请求体，并在通知配置中选择模板。
+- WebUI 可自定义应用和登录背景、登录及应用 Logo、卡片透明度、模糊度和圆角。
+- 开发者选项需在“关于”页连续点击七次并验证登录凭据后开启；其中可设置按 info_hash 获取种子的自定义地址。
+- 爱发电捐赠功能不再校验订单或捐赠状态。
+- Windows EXE 使用便携配置目录，配置保存在 EXE 同目录的 `config` 文件夹中。
 
-本 Fork 不包含邮件、QQ、Server 酱、Bark 等通知、AnimeGarden 适配、OpenList 上传、Aria2/Transmission 下载器、集成的 qBittorrent 任务进度页面、内置视频播放、刮削或 Bangumi 自动点格子功能。
+## 移除的功能
+
+- 邮件、QQ、Server 酱、Bark 等通知方式。
+- Aria2、Transmission 等下载器，仅保留 qBittorrent。
+- 集成的 qBittorrent 任务和进度查看页面。
+- 内置视频播放、刮削与自动刮削。
+- OpenList 上传、AnimeGarden 适配、Bangumi 点格子、摸鱼检测和 trackers 更新设置。
+- Docker 镜像、容器构建流程与容器部署支持。
+- macOS 应用、DMG 打包和相关更新支持。本项目仅考虑 Linux 与 Windows。
 
 ## 下载与部署
 
 - [ANI-RSS-Yuri Releases](https://github.com/MoYuanCN/ani-rss-Yuri/releases)
-- [Docker 镜像](https://github.com/MoYuanCN/ani-rss-Yuri/pkgs/container/ani-rss-yuri)
-- [上游使用文档](https://docs.wushuo.top/)（ANI-RSS-Yuri 特有功能请以本仓库说明和界面为准）
+- [使用指南](docs/USER_GUIDE.md)
+- [开发指南](docs/DEVELOPMENT.md)
+
+Windows 可使用发布的 EXE，也可使用 JAR。Linux 使用 JAR。运行 JAR 需要 Java 25。
+
+Linux 也可使用仓库中的 systemd 安装脚本：
+
+```bash
+sudo bash linux/install-ani-rss.sh
+```
 
 ## 本地构建
 
-需要 Java 25。Maven 前端插件会在项目目录下安装所需的 Node.js 与 pnpm。
+需要 Java 25。Maven 前端插件会将 Node.js 与 pnpm 下载到项目目录下的 `ani-rss-ui/node/`，并将 pnpm 依赖缓存写入 `ani-rss-ui/.tools/pnpm-store/`；这些目录已加入 `.gitignore`。
+
+构建 JAR：
 
 ```bash
 mvn -B package -DskipTests --file pom.xml
 ```
 
-Windows 与 macOS 发布构建使用：
+构建 JAR 和 Windows EXE：
 
 ```bash
 bash ./package.sh

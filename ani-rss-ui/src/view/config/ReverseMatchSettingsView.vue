@@ -1,7 +1,16 @@
 <template>
   <div class="reverse-match-settings">
     <el-alert :closable="false" show-icon type="info"
-              title="选择订阅后即可集中管理反匹配规则。规则会保存到对应订阅，并在该订阅刷新时使用。"/>
+              title="规则优先级：反匹配 > 全局匹配 > 排除。反匹配未命中默认跳过；可在订阅里改为继续普通规则或放行。保存全局规则请使用设置页右上角的保存按钮。"/>
+    <el-card shadow="never">
+      <div class="section-heading">
+        <div>
+          <strong>全局反匹配规则</strong>
+          <el-text class="section-hint" size="small" type="info">订阅开启“使用全局反匹配”后共享这些规则。任意一条命中即可通过反匹配。</el-text>
+        </div>
+      </div>
+      <GlobalReverseMatchView :config="props.config"/>
+    </el-card>
     <div class="reverse-match-settings-toolbar">
       <el-select v-model="selectedId" filterable placeholder="选择订阅" :loading="loading">
         <el-option v-for="ani in subscriptions" :key="ani.id"
@@ -20,6 +29,9 @@ import {computed, onMounted, ref} from 'vue'
 import {ElMessage} from 'element-plus'
 import * as http from '@/js/http.js'
 import ReverseMatchView from '@/view/config/ReverseMatchView.vue'
+import GlobalReverseMatchView from '@/view/config/GlobalReverseMatchView.vue'
+
+const props = defineProps({config: {type: Object, required: true}})
 
 const subscriptions = ref([])
 const selectedId = ref('')
@@ -58,6 +70,9 @@ onMounted(load)
   display: grid;
   gap: 16px;
 }
+
+.section-heading { display: grid; gap: 4px; margin-bottom: 12px; }
+.section-hint { display: block; margin-top: 4px; }
 
 .reverse-match-settings-toolbar {
   display: flex;

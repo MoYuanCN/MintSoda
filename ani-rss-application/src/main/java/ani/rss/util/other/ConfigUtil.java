@@ -70,8 +70,8 @@ public class ConfigUtil {
                 return resolvedConfigDir;
             }
 
-            // macOS / Windows（非 exe 运行）默认为 用户目录/ani-rss
-            if (osInfo.isWindows() || osInfo.isMac()) {
+            // Windows（非 exe 运行）默认为 用户目录/ani-rss
+            if (osInfo.isWindows()) {
                 file = new File(FileUtil.getUserHomePath(), "ani-rss");
             }
 
@@ -161,6 +161,13 @@ public class ConfigUtil {
     public static void format(Config config) {
         if (config.getExclude() == null) config.setExclude(new java.util.ArrayList<>());
         if (config.getGlobalMatch() == null) config.setGlobalMatch(new java.util.ArrayList<>());
+        if (config.getGlobalReverseMatch() == null) config.setGlobalReverseMatch(new java.util.ArrayList<>());
+        if (config.getImportGlobalReverseMatch() == null) config.setImportGlobalReverseMatch(false);
+        if (config.getEnabledGlobalReverseMatch() == null) config.setEnabledGlobalReverseMatch(false);
+        if (config.getImportGlobalMatch() == null) config.setImportGlobalMatch(false);
+        if (config.getEnabledGlobalMatch() == null) config.setEnabledGlobalMatch(false);
+        if (config.getImportExclude() == null) config.setImportExclude(false);
+        if (config.getEnabledExclude() == null) config.setEnabledExclude(false);
         if (config.getNotificationTemplateList() == null) config.setNotificationTemplateList(new java.util.ArrayList<>());
         if (config.getNotificationConfigList() == null) config.setNotificationConfigList(new java.util.ArrayList<>());
         if (config.getCardOpacity() == null) config.setCardOpacity(92);

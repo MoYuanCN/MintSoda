@@ -1,5 +1,6 @@
 target/
 /.tools/
+/ani-rss-ui/.tools/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -36,7 +37,7 @@ build/
 ### VS Code ###
 .vscode/
 
-### Mac OS ###
+### OS-generated files ###
 .DS_Store
 
 config.json
@@ -52,3 +53,4 @@ logs
 ani-rss-update.exe
 *.versionsBackup
 .pnpm-store
+/ani-rss-ui/node/

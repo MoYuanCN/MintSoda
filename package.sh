@@ -7,7 +7,7 @@ NC='\033[0m'
 
 if ! mvn -B package \
     -DskipTests \
-    -P windows,macos \
+    -P windows \
     --file pom.xml; then
   echo -e "${RED}jar编译失败${NC}"
   exit 1

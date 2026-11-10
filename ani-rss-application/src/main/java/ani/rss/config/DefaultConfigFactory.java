@@ -28,7 +28,7 @@ public class DefaultConfigFactory {
         String rootPath = "/Media";
 
         OsInfo osInfo = SystemUtil.getOsInfo();
-        if (osInfo.isMac() || osInfo.isWindows()) {
+        if (osInfo.isWindows()) {
             rootPath = FileUtil.getUserHomePath() + "/Downloads";
         }
 
@@ -137,10 +137,13 @@ public class DefaultConfigFactory {
                 .setLoginEffectiveHours(3)
                 .setExclude(List.of("720[Pp]", "\\d-\\d", "合集", "特别篇"))
                 .setGlobalMatch(new ArrayList<>())
+                .setGlobalReverseMatch(new ArrayList<>())
                 .setImportExclude(false)
                 .setEnabledExclude(false)
                 .setImportGlobalMatch(false)
                 .setEnabledGlobalMatch(false)
+                .setImportGlobalReverseMatch(false)
+                .setEnabledGlobalReverseMatch(false)
                 .setTmdb(true)
                 .setBgmJpName(false)
                 .setTmdbId(false)

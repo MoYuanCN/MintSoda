@@ -54,9 +54,10 @@
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <arguments>install --frozen-lockfile</arguments>
+                            <arguments>install --frozen-lockfile --store-dir ${project.basedir}/.tools/pnpm-store</arguments>
                             <environmentVariables>
                                 <CI>true</CI>
+                                <npm_config_store_dir>${project.basedir}/.tools/pnpm-store</npm_config_store_dir>
                             </environmentVariables>
                         </configuration>
                     </execution>

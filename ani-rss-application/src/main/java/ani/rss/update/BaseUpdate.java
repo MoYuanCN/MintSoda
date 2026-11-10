@@ -16,9 +16,7 @@ public interface BaseUpdate {
     static BaseUpdate getInstance() {
         OsInfo osInfo = SystemUtil.getOsInfo();
 
-        if (osInfo.isMac()) {
-            return new MacUpdate();
-        } else if (osInfo.isLinux()) {
+        if (osInfo.isLinux()) {
             return new LinuxUpdate();
         } else if (osInfo.isWindows()) {
             return new WindowsUpdate();

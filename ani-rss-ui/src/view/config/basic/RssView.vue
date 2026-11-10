@@ -22,12 +22,12 @@
       <el-switch v-model:model-value="props.config.fileExist" :disabled="!config.rename"/>
       <br>
       <el-text class="mx-1" size="small">
-        文件已下载自动跳过 此选项必须启用 自动重命名。确保 下载工具 与本程序 docker 映射挂载路径一致
+        文件已下载自动跳过，此选项必须启用自动重命名。确保下载器路径与本程序配置的保存路径一致。
         &nbsp;
         <el-link
             class="text-extra-small"
             type="primary"
-            href="https://docs.wushuo.top/config/basic/rss#auto-skip"
+            href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
             target="_blank">
           详细说明
         </el-link>
@@ -88,7 +88,7 @@
       <div class="flex full-width justify-end">
         <el-link
             type="primary"
-            href="https://docs.wushuo.top/config/basic/rss#back-rss"
+            href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
             target="_blank">
           详细说明
         </el-link>

@@ -3,7 +3,7 @@
     <el-input v-model:model-value="props.config['customJs']" :rows="6"
               type="textarea"/>
     <div class="flex justify-end full-width mt-8">
-      <el-link type="primary" href="https://github.com/wushuo894/ani-rss-css"
+      <el-link type="primary" href="https://github.com/MoYuanCN/ani-rss-Yuri/tree/main/ani-rss-ui/public/api"
                target="_blank">更多CSS
       </el-link>
     </div>

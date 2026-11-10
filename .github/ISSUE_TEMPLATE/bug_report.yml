@@ -12,7 +12,7 @@ body:
       label: 请勾选您确认过的前置条件
       options:
         - label: |
-            我已经阅读了 [常见问题](https://docs.wushuo.top/faq.html) [使用文档](https://docs.wushuo.top/add-rss.html)
+            我已经阅读了 [ANI-RSS-Yuri 使用指南](https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md)
         - label: |
             我确定没有重复的issue或discussions
         - label: |
@@ -27,15 +27,9 @@ body:
         请选择你的运行环境
       options:
         - label: |
-            Docker
-        - label: |
             Linux
         - label: |
-            macOS
-        - label: |
             Windows
-        - label: |
-            群晖套件
 
   - type: input
     id: version

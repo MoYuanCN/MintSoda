@@ -202,7 +202,7 @@
                 <el-link
                     style="font-size: var(--el-font-size-extra-small)"
                     type="primary"
-                    href="https://docs.wushuo.top/config/basic/rename#rename-template"
+                    href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
                     target="_blank">
                   详细说明
                 </el-link>

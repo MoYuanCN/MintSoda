@@ -2,7 +2,19 @@
   <div class="reverse-match full-width">
     <div class="reverse-match-toggle">
       <el-switch v-model="props.ani.reverseMatchEnabled"/>
-      <el-text size="small" type="info">从泛 RSS 中按标题关键词筛选条目，并使用当前订阅的字幕组</el-text>
+      <el-text size="small" type="info">使用本订阅维护的反匹配规则</el-text>
+    </div>
+    <div class="reverse-match-toggle">
+      <el-switch v-model="props.ani.globalReverseMatch"/>
+      <el-text size="small" type="info">同时使用设置中的全局反匹配规则</el-text>
+    </div>
+    <div v-if="props.ani.reverseMatchEnabled || props.ani.globalReverseMatch" class="reverse-match-miss">
+      <el-text size="small">反匹配未命中时</el-text>
+      <el-select v-model="props.ani.reverseMatchMissBehavior" size="small" class="miss-select">
+        <el-option value="SKIP" label="跳过，不下载"/>
+        <el-option value="NORMAL" label="继续普通匹配规则"/>
+        <el-option value="ALLOW" label="直接放行"/>
+      </el-select>
     </div>
     <template v-if="props.ani.reverseMatchEnabled">
       <div class="reverse-match-tags">
@@ -16,7 +28,7 @@
         <el-input v-model="newKeyword" placeholder="关键词或正则表达式，如：作品名|别名" @keyup.enter="addKeyword"/>
         <el-button bg text icon="Plus" @click="addKeyword">添加</el-button>
       </div>
-      <el-text size="small" type="info">任意一条规则命中即匹配。命中条目会归入字幕组：{{ props.ani.subgroup || '未知字幕组' }}</el-text>
+      <el-text size="small" type="info">任意一条本地规则命中即匹配。命中条目会归入字幕组：{{ props.ani.subgroup || '未知字幕组' }}</el-text>
       <el-input v-model="testTitles" class="reverse-match-test-input" :autosize="{ minRows: 3, maxRows: 7 }"
                 placeholder="粘贴 RSS 标题，每行一条，用于测试匹配结果" type="textarea"/>
       <div class="reverse-match-test-actions">
@@ -43,6 +55,9 @@ const newKeyword = ref('')
 const testTitles = ref('')
 const testResults = ref([])
 const keywords = computed(() => Array.isArray(props.ani.reverseMatchKeywords) ? props.ani.reverseMatchKeywords : [])
+
+if (!props.ani.reverseMatchMissBehavior) props.ani.reverseMatchMissBehavior = 'SKIP'
+if (typeof props.ani.globalReverseMatch !== 'boolean') props.ani.globalReverseMatch = false
 
 watch(() => props.ani.reverseMatchEnabled, enabled => {
   if (enabled && !Array.isArray(props.ani.reverseMatchKeywords)) props.ani.reverseMatchKeywords = []
@@ -89,6 +104,8 @@ const runTest = () => {
 <style scoped>
 .reverse-match { display: grid; gap: 8px; }
 .reverse-match-toggle { display: flex; align-items: center; gap: 8px; }
+.reverse-match-miss { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.miss-select { width: min(100%, 240px); }
 .reverse-match-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .reverse-match-add { display: flex; gap: 6px; }
 .reverse-match-test-input { margin-top: 4px; }

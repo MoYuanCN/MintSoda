@@ -14,15 +14,11 @@ public interface BaseStart {
         }
 
         OsInfo osInfo = SystemUtil.getOsInfo();
-        return osInfo.isMac() || osInfo.isWindows();
+        return osInfo.isWindows();
     }
 
     static BaseStart getInstance() {
         OsInfo osInfo = SystemUtil.getOsInfo();
-        if (osInfo.isMac()) {
-            return new MacStart();
-        }
-
         if (osInfo.isWindows()) {
             return new WindowsStart();
         }

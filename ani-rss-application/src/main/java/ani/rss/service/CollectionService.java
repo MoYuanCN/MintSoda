@@ -226,25 +226,6 @@ public class CollectionService {
         long[] lengths = torrentFile.getLengths();
         AtomicInteger index = new AtomicInteger(0);
 
-        List<String> match = ani.getMatch();
-        List<String> exclude = ani.getExclude();
-        boolean reverseMatchEnabled = Boolean.TRUE.equals(ani.getReverseMatchEnabled());
-        Boolean globalExclude = ani.getGlobalExclude();
-        List<String> globalExcludeList = CONFIG.getExclude();
-        Boolean globalMatch = ani.getGlobalMatch();
-        List<String> globalMatchList = Optional.ofNullable(CONFIG.getGlobalMatch()).orElseGet(List::of);
-
-        Function<String, String> map = s -> {
-            String subgroup = ReUtil.get(StringEnum.SUBGROUP_REG_STR, s, 1);
-            if (StrUtil.isBlank(subgroup)) {
-                return s;
-            }
-            if (subgroup.equals(ani.getSubgroup())) {
-                return ReUtil.get(StringEnum.SUBGROUP_REG_STR, s, 2);
-            }
-            return "";
-        };
-
         return Arrays.stream(torrentFile.getFilenames())
                 .map(name -> {
                     name = CharsetUtil.convert(name, "ISO-8859-1", CharsetUtil.UTF_8);
@@ -261,35 +242,7 @@ public class CollectionService {
                         return false;
                     }
 
-                    // 排除
-                    if (!exclude.isEmpty()) {
-                        if (exclude.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> ReUtil.contains(s, name))) {
-                            return false;
-                        }
-                    }
-
-                    // 匹配
-                    if (reverseMatchEnabled) {
-                        if (!ItemsUtil.matchesReverse(ani, name)) {
-                            return false;
-                        }
-                    } else if (!match.isEmpty()) {
-                        if (match.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> !ReUtil.contains(s, name))) {
-                            return false;
-                        }
-                    }
-
-                    if (Boolean.TRUE.equals(globalMatch) && !globalMatchList.isEmpty()
-                            && globalMatchList.stream().map(map).filter(StrUtil::isNotBlank)
-                            .anyMatch(s -> !ReUtil.contains(s, name))) {
-                        return false;
-                    }
-
-                    // 全局排除
-                    if (globalExclude) {
-                        return globalExcludeList.stream().map(map).filter(StrUtil::isNotBlank).noneMatch(s -> ReUtil.contains(s, name));
-                    }
-                    return true;
+                    return MatchRuleUtil.accepts(ani, name, ani.getSubgroup());
                 })
                 .map(item -> {
                     long length = item.getLength();

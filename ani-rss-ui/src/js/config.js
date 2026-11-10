@@ -57,10 +57,13 @@ export let configData = {
         "特别篇"
     ],
     "globalMatch": [],
+    "globalReverseMatch": [],
     "importExclude": false,
     "enabledExclude": false,
     "importGlobalMatch": false,
     "enabledGlobalMatch": false,
+    "importGlobalReverseMatch": false,
+    "enabledGlobalReverseMatch": false,
     "bgmJpName": false,
     "tmdb": false,
     "tmdbId": false,

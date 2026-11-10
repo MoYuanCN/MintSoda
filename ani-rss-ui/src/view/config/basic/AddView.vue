@@ -71,6 +71,12 @@
   <SettingsItem label="默认导入全局匹配">
     <el-switch v-model="props.config.importGlobalMatch" :disabled="props.config.enabledGlobalMatch"/>
   </SettingsItem>
+  <SettingsItem label="默认启用全局反匹配">
+    <el-switch v-model="props.config.enabledGlobalReverseMatch" :disabled="props.config.importGlobalReverseMatch"/>
+  </SettingsItem>
+  <SettingsItem label="默认导入全局反匹配">
+    <el-switch v-model="props.config.importGlobalReverseMatch" :disabled="props.config.enabledGlobalReverseMatch"/>
+  </SettingsItem>
   <SettingsItem label="封面质量">
     <el-select v-model="props.config['bgmImageSize']" class="width-150">
       <el-option v-for="item in ['large','medium','common']" :key="item"

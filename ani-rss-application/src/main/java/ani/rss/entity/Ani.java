@@ -143,6 +143,14 @@ public class Ani implements Serializable {
     @Schema(description = "反匹配关键词")
     private List<String> reverseMatchKeywords;
 
+    /** 是否应用配置中维护的全局反匹配规则。 */
+    @Schema(description = "是否应用全局反匹配规则")
+    private Boolean globalReverseMatch;
+
+    /** 反匹配未命中后的处理：SKIP、NORMAL 或 ALLOW。 */
+    @Schema(description = "反匹配未命中行为")
+    private String reverseMatchMissBehavior;
+
     /**
      * 排除
      */

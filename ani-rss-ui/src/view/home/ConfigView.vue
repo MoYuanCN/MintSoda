@@ -31,10 +31,10 @@
                   :show-text="true"/>
               <div v-else-if="tab.name === 'match'" class="global-match-content">
                 <el-alert :closable="false" show-icon type="info"
-                          title="全局匹配规则会作为订阅的额外标题条件。启用后，每条规则都必须命中；不设置规则时不会过滤条目。"/>
+                          title="全局匹配规则要求每条规则都命中；匹配成功时优先于排除规则。反匹配命中优先级最高。"/>
                 <ExcludeView v-model:exclude="config.globalMatch" :show-text="true"/>
               </div>
-              <ReverseMatchSettingsView v-else-if="tab.name === 'reverse-match'"/>
+              <ReverseMatchSettingsView v-else-if="tab.name === 'reverse-match'" :config="config"/>
               <ProxyView v-else-if="tab.name === 'proxy'" v-model:config="config"/>
               <Security v-else-if="tab.name === 'security'" :config="config"/>
               <NotificationView v-else-if="tab.name === 'notification'" v-model:config="config"/>
@@ -77,7 +77,7 @@ const tabs = [
   {name: 'basic', label: '基本设置', description: '订阅、命名与备份'},
   {name: 'exclude', label: '全局排除', description: '统一排除不需要的资源'},
   {name: 'match', label: '全局匹配', description: '统一限定 RSS 标题必须符合的条件'},
-  {name: 'reverse-match', label: '反匹配', description: '集中管理订阅的反匹配规则并测试标题'},
+  {name: 'reverse-match', label: '反匹配', description: '管理全局与订阅反匹配规则并测试标题'},
   {name: 'proxy', label: '代理', description: '网络代理与连接配置'},
   {name: 'security', label: '安全', description: '账号与访问安全'},
   {name: 'notification', label: '通知', description: '消息渠道与事件通知'},
