@@ -255,6 +255,8 @@
                                         <path>%JAVA_HOME%/bin;%PATH%</path>
                                         <minVersion>${java.version}</minVersion>
                                         <opts>
+                                            <opt>-Dlaunch4j.exedir="%EXEDIR%"</opt>
+                                            <opt>-Dlaunch4j.exefile="%EXEFILE%"</opt>
                                             <opt>-Xms64m -Xmx512m -Xss256k -XX:+UseG1GC</opt>
                                             <opt>-XX:+UseStringDeduplication</opt>
                                             <opt>-XX:+UseCompactObjectHeaders</opt>

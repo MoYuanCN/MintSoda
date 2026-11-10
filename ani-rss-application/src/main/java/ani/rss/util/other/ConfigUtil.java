@@ -1,6 +1,7 @@
 package ani.rss.util.other;
 
 import ani.rss.commons.FileUtils;
+import ani.rss.commons.MavenUtils;
 import ani.rss.commons.URLUtils;
 import ani.rss.config.DefaultConfigFactory;
 import ani.rss.entity.Config;
@@ -28,6 +29,7 @@ public class ConfigUtil {
 
     public static final Config CONFIG = DefaultConfigFactory.create();
     public static final String FILE_NAME = "config.v2.json";
+    private static volatile File resolvedConfigDir;
 
     /**
      * 获取设置文件夹
@@ -40,19 +42,59 @@ public class ConfigUtil {
             return new File(configDir);
         }
 
-        // 若当前目录存在 config 则优先使用
-        File file = new File("config").getAbsoluteFile();
-        if (file.exists()) {
-            return file;
+        File cachedConfigDir = resolvedConfigDir;
+        if (cachedConfigDir != null) {
+            return cachedConfigDir;
         }
 
-        // macOS / Windows 默认为 用户目录/ani-rss
-        OsInfo osInfo = SystemUtil.getOsInfo();
-        if (osInfo.isWindows() || osInfo.isMac()) {
-            file = new File(FileUtil.getUserHomePath(), "ani-rss");
+        synchronized (ConfigUtil.class) {
+            if (resolvedConfigDir != null) {
+                return resolvedConfigDir;
+            }
+
+            OsInfo osInfo = SystemUtil.getOsInfo();
+            if (osInfo.isWindows()) {
+                MavenUtils.CurrentFile currentFile = MavenUtils.getCurrentFile();
+                if (currentFile.isExe()) {
+                    File portableConfigDir = new File(currentFile.getFile().getAbsoluteFile().getParentFile(), "config");
+                    migrateLegacyWindowsConfig(portableConfigDir);
+                    resolvedConfigDir = portableConfigDir;
+                    return resolvedConfigDir;
+                }
+            }
+
+            // 若当前目录存在 config 则优先使用
+            File file = new File("config").getAbsoluteFile();
+            if (file.exists()) {
+                resolvedConfigDir = file;
+                return resolvedConfigDir;
+            }
+
+            // macOS / Windows（非 exe 运行）默认为 用户目录/ani-rss
+            if (osInfo.isWindows() || osInfo.isMac()) {
+                file = new File(FileUtil.getUserHomePath(), "ani-rss");
+            }
+
+            resolvedConfigDir = file;
+            return resolvedConfigDir;
+        }
+    }
+
+    private static void migrateLegacyWindowsConfig(File portableConfigDir) {
+        File legacyConfigDir = new File(FileUtil.getUserHomePath(), "ani-rss");
+        File legacyConfigFile = new File(legacyConfigDir, FILE_NAME);
+        File portableConfigFile = new File(portableConfigDir, FILE_NAME);
+        if (!legacyConfigFile.isFile() || portableConfigFile.exists()) {
+            return;
         }
 
-        return file;
+        try {
+            // Keep the old directory as a backup and only fill missing portable files.
+            FileUtil.copy(legacyConfigDir, portableConfigDir, false);
+            log.info("已将旧配置复制到 exe 便携目录 {}，旧目录保留为备份", portableConfigDir);
+        } catch (Exception e) {
+            log.warn("迁移旧配置到 exe 便携目录失败 {}", portableConfigDir, e);
+        }
     }
 
     /**

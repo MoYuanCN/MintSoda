@@ -22,6 +22,16 @@ public class MavenUtils {
     private static String version;
 
     public static CurrentFile getCurrentFile() {
+        // Launch4j exposes the actual wrapper path separately from java.class.path,
+        // which points to the bundled JAR when the application is started as an EXE.
+        String launch4jExe = System.getProperty("launch4j.exefile");
+        if (StrUtil.isNotBlank(launch4jExe)) {
+            File exeFile = new File(launch4jExe);
+            if (exeFile.isFile()) {
+                return new CurrentFile().setFile(exeFile);
+            }
+        }
+
         OsInfo osInfo = SystemUtil.getOsInfo();
         String splitStr = osInfo.isWindows() ? ";" : ":";
         String s = System.getProperty("java.class.path")
