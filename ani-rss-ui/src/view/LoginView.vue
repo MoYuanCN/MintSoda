@@ -1,10 +1,9 @@
 <template>
-  <div
-      class="flex-center content">
+  <div class="flex-center content" :style="loginBackgroundStyle">
     <div id="login-page" class="flex-center">
       <div id="form">
         <div style="text-align: center;">
-          <img src="/public/icon.svg" height="80" width="80" alt="icon.svg"/>
+          <img :src="loginLogo" height="80" width="80" alt="ANI-RSS-Yuri"/>
         </div>
         <h2 class="title-h2">ANI-RSS-Yuri</h2>
         <el-form @submit.prevent
@@ -47,13 +46,20 @@
 </template>
 
 <script setup>
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 import * as http from "@/js/http.js";
 import {Key} from "@element-plus/icons-vue";
 import {ElMessage} from "element-plus";
 import {authorization, rememberThePassword} from "@/js/global.js";
+import {uiCustomization, uiAssetUrl} from "@/js/global.js";
 
 let loading = ref(false)
+const loginLogo = computed(() => uiCustomization.value.loginLogoImage
+    ? uiAssetUrl(uiCustomization.value.loginLogoImage)
+    : '/icon.svg')
+const loginBackgroundStyle = computed(() => uiCustomization.value.loginBackgroundImage
+    ? {backgroundImage: `linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),url("${uiAssetUrl(uiCustomization.value.loginBackgroundImage)}")`}
+    : {})
 
 let user = ref({
   username: '',
@@ -125,6 +131,10 @@ onMounted(() => {
   height: 100%;
   flex-flow: column;
   justify-content: space-between;
+  background-image: var(--login-background-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 #form {

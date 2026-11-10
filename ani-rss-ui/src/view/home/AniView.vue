@@ -2,7 +2,6 @@
   <PreviewView ref="previewRef" :ani="props.ani"/>
   <AniBTView ref="aniBTRef" fill-mode @callback="mikanCallback"/>
   <MikanView ref="mikanRef" fill-mode @callback="mikanCallback"/>
-  <AnimeGardenView ref="animeGardenRef" fill-mode @callback="mikanCallback"/>
   <TmdbGroupView ref="tmdbGroupRef" :ani="props.ani"/>
   <div style="padding: 0 12px;">
     <el-tabs v-model="activeName" class="tabs-center">
@@ -78,12 +77,6 @@
                       <img src="@/icon/icon-AniBT.png" alt="ani-bt" class="icon"/>
                     </template>
                   </el-button>
-                  <el-button bg text
-                             @click="animeGardenShow">
-                    <template #icon>
-                      <img src="@/icon/icon-AnimeGarden.png" alt="anime-garden" class="icon"/>
-                    </template>
-                  </el-button>
                 </div>
               </div>
             </el-form-item>
@@ -118,14 +111,14 @@
             <el-form-item label="匹配">
               <ExcludeView v-model:exclude="props.ani.match" :import-exclude="false"/>
             </el-form-item>
-            <el-form-item label="反匹配">
-              <ReverseMatchView :ani="props.ani"/>
-            </el-form-item>
             <el-form-item label="排除">
               <ExcludeView v-model:exclude="props.ani.exclude" :import-exclude="true"/>
             </el-form-item>
             <el-form-item label="全局排除">
               <el-switch v-model:model-value="props.ani['globalExclude']"/>
+            </el-form-item>
+            <el-form-item label="全局匹配">
+              <el-switch v-model="props.ani.globalMatch"/>
             </el-form-item>
             <el-form-item label="剧场版">
               <el-switch v-model:model-value="props.ani.ova"/>
@@ -134,6 +127,15 @@
               <el-switch v-model:model-value="props.ani.enable"/>
             </el-form-item>
           </el-form>
+        </el-scrollbar>
+      </el-tab-pane>
+      <el-tab-pane label="反匹配" name="reverse-match" :lazy="true">
+        <el-scrollbar height="500">
+          <div class="reverse-match-panel">
+            <el-alert :closable="false" show-icon type="info"
+                      title="从聚合 RSS 中按标题筛选条目。命中条目会归入当前订阅并使用当前字幕组。"/>
+            <ReverseMatchView :ani="props.ani"/>
+          </div>
         </el-scrollbar>
       </el-tab-pane>
       <el-tab-pane label="备用 RSS" name="standby-rss" :lazy="true">
@@ -230,7 +232,6 @@
             <el-form-item label="其它">
               <el-checkbox v-model="props.ani.omit" label="遗漏检测"/>
               <el-checkbox v-model="props.ani.downloadNew" label="只下载最新集"/>
-              <el-checkbox v-model="props.ani['procrastinating']" label="摸鱼检测"/>
               <el-checkbox v-model="props.ani['message']" label="通知"/>
               <el-checkbox v-model="props.ani['completed']" label="完结迁移"/>
             </el-form-item>
@@ -253,22 +254,6 @@
                   <RefreshRight/>
                 </el-icon>
                 刷新
-              </el-text>
-            </el-dropdown-item>
-            <el-dropdown-item @click="scrape(false)">
-              <el-text>
-                <el-icon>
-                  <RefreshRight/>
-                </el-icon>
-                刮削
-              </el-text>
-            </el-dropdown-item>
-            <el-dropdown-item @click="scrape(true)">
-              <el-text type="warning">
-                <el-icon>
-                  <Refresh/>
-                </el-icon>
-                刮削 [F]
               </el-text>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -303,14 +288,12 @@ import {Refresh, RefreshRight} from "@element-plus/icons-vue";
 import * as http from "@/js/http.js";
 import {getBgmTitle} from "@/js/http.js";
 import AniBTView from "@/view/home/AniBTView.vue";
-import AnimeGardenView from "@/view/home/AnimeGardenView.vue";
 import DisableView from "@/view/custom/DisableView.vue";
 
 const activeName = ref('base')
 
 const aniBTRef = ref()
 const mikanRef = ref()
-const animeGardenRef = ref()
 const tmdbGroupRef = ref()
 const standbyRssRef = ref()
 
@@ -417,18 +400,6 @@ let mikanCallback = v => {
   props.ani.match.push(...newMatch)
 }
 
-let scrape = (force) => {
-  http.scrape(force, props.ani)
-      .then(res => {
-        ElMessage.success(res.message)
-      })
-}
-
-let animeGardenShow = () => {
-  let bgmUrl = props.ani.bgmUrl;
-  animeGardenRef.value?.show(bgmUrl)
-}
-
 let aniBTShow = () => {
   let bgmUrl = props.ani.bgmUrl;
   aniBTRef.value?.show(bgmUrl)
@@ -468,5 +439,11 @@ const emit = defineEmits(['callback'])
   width: 24px;
   height: 24px;
   border-radius: 8px;
+}
+
+.reverse-match-panel {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
 }
 </style>

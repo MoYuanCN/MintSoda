@@ -3,6 +3,7 @@ package ani.rss.notification;
 import ani.rss.commons.GsonStatic;
 import ani.rss.entity.Ani;
 import ani.rss.entity.NotificationConfig;
+import ani.rss.entity.NotificationTemplate;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.util.basic.HttpReq;
 import ani.rss.util.other.ConfigUtil;
@@ -23,6 +24,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /** Sends a configurable HTTP request with rendered notification templates. */
 @Slf4j
@@ -53,7 +55,11 @@ public class CustomRequestNotification implements BaseNotification {
             headers.put("Content-Type", contentType);
         }
 
-        String bodyTemplate = config.getWebHookBody();
+        NotificationTemplate selectedTemplate = BaseNotification.getSelectedTemplate(config);
+        String bodyTemplate = Optional.ofNullable(selectedTemplate)
+                .map(NotificationTemplate::getCustomRequestBody)
+                .filter(StrUtil::isNotBlank)
+                .orElse(config.getWebHookBody());
         String body = StrUtil.isBlank(bodyTemplate) ? "" : isJson(contentType)
                 ? renderJsonBody(bodyTemplate, ani, text, status)
                 : render(bodyTemplate, ani, text, status);

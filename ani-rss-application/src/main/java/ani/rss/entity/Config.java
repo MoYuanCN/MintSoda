@@ -68,6 +68,11 @@ public class Config implements Serializable {
     @Schema(description = "下载工具密码")
     private String downloadToolPassword;
 
+    /** qBittorrent Web API authentication mode: API_KEY or USER_PASSWORD. */
+    private String qbAuthType;
+    private String qbUsername;
+    private String qbPassword;
+
     /**
      * qb下载时，使用qb自身的保存路径配置(未下载完成的使用临时目录，复制种子文件)
      */
@@ -259,12 +264,6 @@ public class Config implements Serializable {
     private Boolean debug;
 
     /**
-     * 仅启用主rss摸鱼检测
-     */
-    @Schema(description = "仅启用主RSS摸鱼检测")
-    private Boolean procrastinatingMasterOnly;
-
-    /**
      * 代理是否开启
      */
     @Schema(description = "代理是否开启")
@@ -324,6 +323,9 @@ public class Config implements Serializable {
     @Schema(description = "全局排除")
     private List<String> exclude;
 
+    /** Global inclusion rules; all configured regex rules must match the title. */
+    private List<String> globalMatch;
+
     /**
      * 默认导入全局排除
      */
@@ -335,6 +337,9 @@ public class Config implements Serializable {
      */
     @Schema(description = "默认启用全局排除")
     private Boolean enabledExclude;
+
+    private Boolean importGlobalMatch;
+    private Boolean enabledGlobalMatch;
 
     /**
      * BGM日语标题
@@ -471,18 +476,6 @@ public class Config implements Serializable {
     private Boolean renameDelTmdbId;
 
     /**
-     * 自动更新 trackers
-     */
-    @Schema(description = "自动更新 trackers")
-    private Boolean autoTrackersUpdate;
-
-    /**
-     * Trackers更新地址
-     */
-    @Schema(description = "Trackers 更新地址")
-    private String trackersUpdateUrls;
-
-    /**
      * 消息模版
      */
     @Schema(description = "消息模版")
@@ -519,6 +512,17 @@ public class Config implements Serializable {
     @Schema(description = "自定义 JS")
     private String customJs;
 
+    private String appBackgroundImage;
+    private String loginBackgroundImage;
+    private String loginLogoImage;
+    private String appLogoImage;
+    private Integer cardOpacity;
+    private Integer cardBlur;
+    private Integer appCornerRadius;
+
+    /** Custom torrent file endpoint. Supports <info_hash> and ${info_hash}. */
+    private String customTorrentUrl;
+
     /**
      * 自定义集数获取规则
      */
@@ -553,18 +557,6 @@ public class Config implements Serializable {
     @Deprecated
     @Schema(hidden = true)
     private String outTradeNo;
-
-    /**
-     * 摸鱼
-     */
-    @Schema(description = "摸鱼")
-    private Boolean procrastinating;
-
-    /**
-     * 摸鱼天数
-     */
-    @Schema(description = "摸鱼天数")
-    private Integer procrastinatingDay;
 
     /**
      * GithubToken
@@ -614,6 +606,8 @@ public class Config implements Serializable {
     @Schema(description = "通知配置列表")
     private List<NotificationConfig> notificationConfigList;
 
+    private List<NotificationTemplate> notificationTemplateList;
+
     /**
      * 排序方式
      */
@@ -625,12 +619,6 @@ public class Config implements Serializable {
      */
     @Schema(description = "代理列表")
     private String proxyList;
-
-    /**
-     * 刮削开关
-     */
-    @Schema(description = "刮削开关")
-    private Boolean scrape;
 
     @Schema(description = "追更天数")
     private Integer followDay;

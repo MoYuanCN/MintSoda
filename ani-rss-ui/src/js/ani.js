@@ -21,6 +21,7 @@ export let aniData = {
         "特别篇"
     ],
     "globalExclude": true,
+    "globalMatch": false,
     "ova": false,
     "pinyin": "",
     "enable": true,
@@ -43,7 +44,6 @@ export let aniData = {
         "name": "",
         "date": "2025-01-01 00:00:00"
     },
-    "procrastinating": true,
     "customRenameTemplateEnable": false,
     "customRenameTemplate": "[${subgroup}] ${title} S${seasonFormat}E${episodeFormat}",
     "lastDownloadTime": 0,

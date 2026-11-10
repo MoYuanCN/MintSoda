@@ -14,10 +14,16 @@
             placeholder="http://192.168.1.x:8080"
             autocomplete="new-password"/>
       </SettingsItem>
-      <SettingsItem v-if="props.config.downloadToolType === 'qBittorrent'" label="ApiKey">
+      <SettingsItem label="qBittorrent 认证方式">
+        <el-select v-model="props.config.qbAuthType" class="width-200">
+          <el-option label="ApiKey" value="API_KEY"/>
+          <el-option label="用户名和密码" value="USER_PASSWORD"/>
+        </el-select>
+      </SettingsItem>
+      <SettingsItem v-if="props.config.qbAuthType !== 'USER_PASSWORD'" label="ApiKey">
         <el-input
             v-model.trim="props.config.downloadToolPassword"
-            placeholder="qbt_xxxx"
+            placeholder="已保存；留空保持不变"
             show-password
             autocomplete="new-password">
           <template #prefix>
@@ -26,7 +32,7 @@
             </el-icon>
           </template>
         </el-input>
-        <div v-if="!props.config.downloadToolPassword.startsWith('qbt_')" class="full-width margin-top-4">
+        <div v-if="props.config.downloadToolPassword && !props.config.downloadToolPassword.startsWith('qbt_')" class="full-width margin-top-4">
           <el-alert show-icon type="warning" :closable="false">
             <template #title>
               ApiKey 未正确配置
@@ -34,6 +40,15 @@
           </el-alert>
         </div>
       </SettingsItem>
+      <template v-else>
+        <SettingsItem label="用户名">
+          <el-input v-model.trim="props.config.qbUsername" autocomplete="username"/>
+        </SettingsItem>
+        <SettingsItem label="密码">
+          <el-input v-model="props.config.qbPassword" type="password" show-password
+                    placeholder="已保存；留空保持不变" autocomplete="new-password"/>
+        </SettingsItem>
+      </template>
       <SettingsItem>
         <div class="download-test-button">
           <el-button @click="downloadLoginTest" bg text :loading="downloadLoginTestLoading" icon="Odometer">测试

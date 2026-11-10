@@ -31,7 +31,7 @@
                              bg
                              icon="DocumentAdd"
                              text
-                             @click="data.ani.title = data.ani.themoviedbName">
+                             @click="useTmdbTitle">
                     使用TMDB
                   </el-button>
                 </div>
@@ -88,6 +88,9 @@
               </el-form-item>
               <el-form-item label="全局排除">
                 <el-switch v-model:model-value="data.ani['globalExclude']"/>
+              </el-form-item>
+              <el-form-item label="全局匹配">
+                <el-switch v-model="data.ani.globalMatch"/>
               </el-form-item>
               <el-form-item label="剧场版">
                 <el-switch v-model:model-value="data.ani.ova"/>
@@ -206,7 +209,7 @@ let start = () => {
 }
 
 let downloadPathLoading = ref(false)
-let downloadPath = () => {
+const refreshCollectionPath = () => {
   downloadPathLoading.value = true
   let newAni = JSON.parse(JSON.stringify(data.value.ani))
   newAni.customDownloadPath = false
@@ -218,6 +221,8 @@ let downloadPath = () => {
         downloadPathLoading.value = false
       })
 }
+
+let downloadPath = refreshCollectionPath
 
 let collectionPreviewRef = ref()
 
@@ -247,6 +252,7 @@ let bgmAdd = (bgm) => {
         data.value.show = true
         data.value.ani.match = []
         data.value.ani.exclude = ['^(SPs?|CDs|Scans|PV|menu)/', 'Fonts|NCED|NCOP|迷你动画']
+        refreshCollectionPath()
       })
       .finally(() => {
         loading.value = false
@@ -290,6 +296,7 @@ let getBgmName = () => {
   getBgmTitle(data.value.ani)
       .then(res => {
         data.value.ani.title = res.data
+        refreshCollectionPath()
       })
       .finally(() => {
         getBgmNameLoading.value = false
@@ -309,10 +316,16 @@ let getThemoviedbName = () => {
         ElMessage.success(res.message)
         data.value.ani['themoviedbName'] = res.data['themoviedbName']
         data.value.ani['tmdb'] = res.data['tmdb']
+        refreshCollectionPath()
       })
       .finally(() => {
         getThemoviedbNameLoading.value = false
       })
+}
+
+const useTmdbTitle = () => {
+  data.value.ani.title = data.value.ani.themoviedbName
+  refreshCollectionPath()
 }
 
 

@@ -2,7 +2,7 @@
   <div class="app-shell">
     <aside class="app-nav">
       <div class="app-brand">
-        <img class="app-logo" src="/icon.svg" alt="ANI-RSS">
+        <img class="app-logo" :src="appLogo" alt="ANI-RSS-Yuri">
         <span>ANI-RSS-Yuri</span>
       </div>
       <el-menu
@@ -50,9 +50,13 @@
 import {onMounted} from "vue";
 import {RouterView, useRoute} from "vue-router";
 import {Collection, House, Setting, Tickets} from "@element-plus/icons-vue";
-import {initLayout} from "@/js/global.js";
+import {initLayout, uiCustomization, uiAssetUrl} from "@/js/global.js";
+import {computed} from "vue";
 
 const route = useRoute()
+const appLogo = computed(() => uiCustomization.value.appLogoImage
+    ? uiAssetUrl(uiCustomization.value.appLogoImage)
+    : '/icon.svg')
 
 onMounted(() => {
   initLayout()

@@ -9,16 +9,10 @@
     <el-collapse-item name="rename" title="重命名设置">
       <RenameView :config="props.config"/>
     </el-collapse-item>
-    <el-collapse-item name="scrape" title="刮削设置">
-      <ScrapeView :config="props.config"/>
-    </el-collapse-item>
     <el-collapse-item name="rss" title="RSS设置">
       <RssView :config="props.config"/>
     </el-collapse-item>
-    <el-collapse-item name="trackers" title="Trackers">
-      <TrackersView :config="props.config"/>
-    </el-collapse-item>
-    <el-collapse-item name="bangumi" title="Bangumi">
+    <el-collapse-item name="bangumi" title="Bangumi Token">
       <BangumiView :config="props.config"/>
     </el-collapse-item>
     <el-collapse-item name="other" title="其他">
@@ -36,11 +30,9 @@ import PageView from "@/view/config/basic/PageView.vue";
 import AddView from "@/view/config/basic/AddView.vue";
 import RenameView from "@/view/config/basic/RenameView.vue";
 import RssView from "@/view/config/basic/RssView.vue";
-import TrackersView from "@/view/config/basic/TrackersView.vue";
 import OtherView from "@/view/config/basic/OtherView.vue";
 import BangumiView from "@/view/config/basic/BangumiView.vue";
 import BackupView from "./basic/BackupView.vue";
-import ScrapeView from "./basic/ScrapeView.vue";
 
 let activeName = ref('page')
 

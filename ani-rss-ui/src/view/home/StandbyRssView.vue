@@ -1,7 +1,6 @@
 <template>
   <AniBTView ref="aniBTRef" fill-mode @callback="mikanCallback"/>
   <MikanView ref="mikanRef" fill-mode @callback="mikanCallback"/>
-  <AnimeGardenView ref="animeGardenRef" fill-mode @callback="mikanCallback"/>
   <div class="standby-rss-view">
     <el-alert v-if="!config.standbyRss" :closable="false"
               show-icon
@@ -24,12 +23,6 @@
           text bg>
         <template #icon>
           <img src="@/icon/icon-AniBT.png" alt="ani-bt" class="icon"/>
-        </template>
-      </el-button>
-      <el-button bg text
-                 @click="animeGardenShow">
-        <template #icon>
-          <img src="@/icon/icon-AnimeGarden.png" alt="anime-garden" class="icon"/>
         </template>
       </el-button>
     </div>
@@ -89,14 +82,12 @@
 import {computed, onMounted, ref} from "vue";
 import MikanView from "./MikanView.vue";
 import AniBTView from "@/view/home/AniBTView.vue";
-import AnimeGardenView from "@/view/home/AnimeGardenView.vue";
 import * as http from "@/js/http.js";
 
 const props = defineProps(['ani'])
 const editIndex = ref(-1)
 const aniBTRef = ref()
 const mikanRef = ref()
-const animeGardenRef = ref()
 const config = ref({
   standbyRss: true
 })
@@ -165,11 +156,6 @@ let mikanCallback = v => {
   props.ani.match.push(...newMatch)
 
   editIndex.value = -1
-}
-
-let animeGardenShow = () => {
-  let bgmUrl = props.ani.bgmUrl;
-  animeGardenRef.value?.show(bgmUrl)
 }
 
 let aniBTShow = () => {

@@ -4,6 +4,7 @@ import ani.rss.commons.NumberFormatUtils;
 import ani.rss.entity.Ani;
 import ani.rss.entity.Config;
 import ani.rss.entity.NotificationConfig;
+import ani.rss.entity.NotificationTemplate;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.enums.StringEnum;
 import ani.rss.service.DownloadService;
@@ -56,7 +57,10 @@ public interface BaseNotification {
      * @return 替换后的通知模版
      */
     default String replaceNotificationTemplate(Ani ani, NotificationConfig notificationConfig, String text, NotificationStatusEnum notificationStatusEnum) {
-        String notificationTemplate = notificationConfig.getNotificationTemplate();
+        String notificationTemplate = Optional.ofNullable(getSelectedTemplate(notificationConfig))
+                .map(NotificationTemplate::getTelegramTemplate)
+                .filter(StrUtil::isNotBlank)
+                .orElse(notificationConfig.getNotificationTemplate());
 
         String comment = Opt.ofNullable(notificationConfig)
                 .map(NotificationConfig::getComment)
@@ -66,6 +70,16 @@ public interface BaseNotification {
         notificationTemplate = notificationTemplate.replace("${comment}", comment);
 
         return replaceNotificationTemplate(ani, notificationTemplate, text, notificationStatusEnum);
+    }
+
+    static NotificationTemplate getSelectedTemplate(NotificationConfig notificationConfig) {
+        String selectedId = notificationConfig == null ? null : notificationConfig.getNotificationTemplateId();
+        if (StrUtil.isBlank(selectedId)) return null;
+        return Optional.ofNullable(ConfigUtil.CONFIG.getNotificationTemplateList()).orElseGet(List::of)
+                .stream()
+                .filter(template -> selectedId.equals(template.getId()))
+                .findFirst()
+                .orElse(null);
     }
 
     /**

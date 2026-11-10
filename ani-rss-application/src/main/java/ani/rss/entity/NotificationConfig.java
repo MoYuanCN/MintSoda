@@ -38,6 +38,9 @@ public class NotificationConfig implements Serializable {
     @Schema(description = "通知模版")
     private String notificationTemplate;
 
+    /** Selected shared notification template ID. Empty means use the per-channel template fields. */
+    private String notificationTemplateId;
+
     /**
      * 通知类型
      */

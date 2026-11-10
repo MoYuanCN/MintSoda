@@ -11,7 +11,6 @@ import ani.rss.util.basic.HttpReq;
 import ani.rss.util.other.AniUtil;
 import ani.rss.util.other.BgmUtil;
 import ani.rss.util.other.ConfigUtil;
-import cn.hutool.core.lang.Opt;
 import com.google.gson.JsonObject;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,28 +52,6 @@ public class BgmController extends BaseController {
         BgmInfo bgmInfo = BgmUtil.getBgmInfo(ani);
         String finalName = BgmUtil.getFinalName(bgmInfo, tmdb);
         return Result.success(r -> r.setData(finalName));
-    }
-
-    @Auth
-    @Operation(summary = "获取评分")
-    @PostMapping("/rate")
-    public Result<Integer> rate(@RequestBody Ani ani) {
-        String subjectId = BgmUtil.getSubjectId(ani);
-        Integer rate = BgmUtil.rate(subjectId, null);
-        return Result.success(rate);
-    }
-
-    @Auth
-    @Operation(summary = "进行评分")
-    @PostMapping("/setRate")
-    public Result<Integer> setRate(@RequestBody Ani ani) {
-        String subjectId = BgmUtil.getSubjectId(ani);
-        Integer score = Opt.ofNullable(ani.getScore())
-                .map(Double::intValue)
-                .orElse(null);
-
-        Integer rate = BgmUtil.rate(subjectId, score);
-        return Result.success(rate).setMessage("保存评分成功");
     }
 
     @Auth

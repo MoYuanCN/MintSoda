@@ -277,119 +277,6 @@ public class BgmUtil {
     }
 
     /**
-     * 对番剧进行评分
-     */
-    public static Integer rate(String subjectId, Integer rate) {
-        if (Objects.isNull(rate)) {
-            // 获取评分
-            String username = username();
-            String bgmApi = CONFIG.getBgmApi();
-            return setToken(HttpReq.get(bgmApi + "/v0/users/" + username + "/collections/" + subjectId))
-                    .thenFunction(res -> {
-                        if (res.getStatus() == 404) {
-                            return 0;
-                        }
-                        HttpReq.assertStatus(res);
-                        JsonObject jsonObject = GsonStatic.fromJson(res.body(), JsonObject.class);
-                        return jsonObject.get("rate").getAsInt();
-                    });
-        }
-
-        String bgmApi = CONFIG.getBgmApi();
-
-        Map<String, Integer> bodyMap = Map.of(
-                "type", 3,
-                "rate", rate
-        );
-
-        setToken(HttpReq.post(bgmApi + "/v0/users/-/collections/" + subjectId, bodyMap))
-                .contentType(ContentType.JSON)
-                .then(HttpReq::assertStatus);
-        return rate;
-    }
-
-    /**
-     * 收藏番剧
-     *
-     * @param subjectId 番剧id
-     */
-    public static void collections(String subjectId) {
-        Assert.notBlank(subjectId, "subjectId 不能为空");
-
-        String username = username();
-
-        // 如果已经订阅，则不再订阅
-        String bgmApi = CONFIG.getBgmApi();
-        Boolean ok = setToken(HttpReq.get(bgmApi + "/v0/users/" + username + "/collections/" + subjectId))
-                .thenFunction(HttpResponse::isOk);
-
-        if (ok) {
-            // 已经收藏
-            return;
-        }
-
-        Map<String, Integer> bodyMap = Map.of("type", 3);
-
-        setToken(HttpReq.post(bgmApi + "/v0/users/-/collections/" + subjectId, bodyMap))
-                .contentType(ContentType.JSON)
-                .thenFunction(HttpResponse::isOk);
-    }
-
-    /**
-     * 获取 EpisodeId
-     *
-     * @param subjectId 番剧id
-     * @param e         集数
-     * @return 集id
-     */
-    public static String getEpisodeId(String subjectId, Double e) {
-        List<BgmEpisodes.BgmEpisode> episodes = getEpisodes(subjectId, 0);
-
-        OffsetTypeEnum offsetType = CONFIG.getOffsetType();
-
-        for (BgmEpisodes.BgmEpisode bgmEpisode : episodes) {
-            int ep = offsetType == OffsetTypeEnum.BGM_OFFSET ?
-                    bgmEpisode.getSort() :
-                    bgmEpisode.getEp();
-            if (ep == e) {
-                return bgmEpisode.getId();
-            }
-        }
-
-        return "";
-    }
-
-    /**
-     * 标记
-     *
-     * @param episodeId 集id
-     * @param type      0 未看过, 1 想看, 2 看过
-     */
-    public static void collectionsEpisodes(String episodeId, Integer type) {
-        ThreadUtil.sleep(500);
-        Objects.requireNonNull(episodeId);
-
-        // bgm点格子前先判断状态，防止刷屏 #142
-        String bgmApi = CONFIG.getBgmApi();
-        JsonObject jsonObject = setToken(HttpReq.get(bgmApi + "/v0/users/-/collections/-/episodes/" + episodeId))
-                .contentType(ContentType.JSON)
-                .thenFunction(res -> GsonStatic.fromJson(res.body(), JsonObject.class));
-
-        int typeNow = jsonObject.get("type").getAsInt();
-        if (type == typeNow) {
-            return;
-        }
-
-        // 间隔 500 毫秒, 防止流控
-        ThreadUtil.sleep(500);
-
-        setToken(HttpReq.put(bgmApi + "/v0/users/-/collections/-/episodes/" + episodeId))
-                .contentType(ContentType.JSON)
-                .body(GsonStatic.toJson(Map.of("type", type)))
-                .thenFunction(HttpResponse::isOk);
-    }
-
-    /**
      * 获取对应的bgm信息
      *
      * @param ani     订阅
@@ -846,11 +733,6 @@ public class BgmUtil {
         String downloadPath = downloadService.getDownloadPath(ani);
 
         String completedPathTemplate = CONFIG.getCompletedPathTemplate();
-
-        if (ova) {
-            // 剧场版默认不开启摸鱼检测
-            ani.setProcrastinating(false);
-        }
 
         return ani
                 // tmdb 标题

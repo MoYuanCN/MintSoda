@@ -1,4 +1,5 @@
 import {useColorMode, useDark, useDebounceFn, useEventListener, useLocalStorage} from "@vueuse/core";
+import {ref} from "vue";
 
 /**
  * 保存登录信息
@@ -13,6 +14,19 @@ let rememberThePassword = useLocalStorage('rememberThePassword', {
  * 令牌
  */
 const authorization = useLocalStorage('authorization', '')
+
+const uiCustomization = ref({})
+const uiAssetUrl = path => path ? toApiUrl('api/uiAsset', {filename: path}) : ''
+
+const applyUiCustomization = config => {
+    uiCustomization.value = {...config}
+    const root = document.documentElement
+    root.style.setProperty('--app-card-opacity', `${Math.max(0, Math.min(100, Number(config.cardOpacity ?? 92)))}%`)
+    root.style.setProperty('--app-card-blur', `${Math.max(0, Math.min(40, Number(config.cardBlur ?? 8)))}px`)
+    root.style.setProperty('--app-corner-radius', `${Math.max(0, Math.min(40, Number(config.appCornerRadius ?? 12)))}px`)
+    root.style.setProperty('--app-background-image', config.appBackgroundImage ? `url("${uiAssetUrl(config.appBackgroundImage)}")` : 'none')
+    root.style.setProperty('--login-background-image', config.loginBackgroundImage ? `url("${uiAssetUrl(config.loginBackgroundImage)}")` : 'none')
+}
 
 /**
  * 主题管理
@@ -163,5 +177,8 @@ export {
     toApiUrl,
     proxyImage,
     toApiFile,
-    getBaseUrl
+    getBaseUrl,
+    uiCustomization,
+    uiAssetUrl,
+    applyUiCustomization
 };

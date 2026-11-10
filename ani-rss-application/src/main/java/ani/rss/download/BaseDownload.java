@@ -14,7 +14,6 @@ import cn.hutool.core.util.StrUtil;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public interface BaseDownload {
     /**
@@ -78,13 +77,6 @@ public interface BaseDownload {
      * @return 状态
      */
     Boolean addTags(TorrentsInfo torrentsInfo, String tags);
-
-    /**
-     * 自动更新 Trackers
-     *
-     * @param trackers trackers 列表
-     */
-    void updateTrackers(Set<String> trackers);
 
     /**
      * 修改保存位置

@@ -1,10 +1,8 @@
 <template>
   <div class="dashboard-page app-page-layout">
     <EditAniView ref="editAniRef"/>
-    <PlayListView ref="playListRef"/>
     <CoverView ref="coverRef"/>
     <DelAniView ref="delAniRef" @callback="reloadAfterDelete"/>
-    <BgmRateView ref="bgmRateRef"/>
     <PageHeaderView title="首页" :subtitle="`${todayLabel} · ${todayText}`">
       <template #actions>
         <el-button :loading="refreshLoading" icon="Refresh" @click="loadAll" class="auto-button">
@@ -69,40 +67,14 @@
                   <AniCoverView
                       :item="ani"
                       @edit="editAniRef?.show"
-                      @playlist="playListRef?.show"
                       @cover="coverRef?.show"
                       @del="delAniRef?.show"
-                      @rate="bgmRateRef?.show"/>
+                  />
                 </div>
               </div>
             </div>
           </section>
 
-          <section class="dashboard-section">
-            <div class="section-title">
-              <h3>疑似停更列表</h3>
-              <el-tag type="warning">{{ procrastinatingList.length }}</el-tag>
-            </div>
-            <el-empty v-if="!procrastinatingList.length" description="暂无疑似停更订阅"/>
-            <el-table v-else :data="procrastinatingList" class="dashboard-table" size="small">
-              <el-table-column label="订阅" min-width="220" prop="title" show-overflow-tooltip/>
-              <el-table-column label="进度" width="100">
-                <template #default="{ row }">
-                  {{ row.currentEpisodeNumber }} / {{ row.totalEpisodeNumber || '*' }}
-                </template>
-              </el-table-column>
-              <el-table-column label="最后下载" width="150">
-                <template #default="{ row }">
-                  {{ row.lastDownloadTime > 0 ? fromNow(row.lastDownloadTime) : formatDate(row.releaseDate) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="间隔" width="90">
-                <template #default="{ row }">
-                  {{ row.procrastinatingDays }} 天
-                </template>
-              </el-table-column>
-            </el-table>
-          </section>
         </div>
       </el-scrollbar>
     </div>
@@ -112,18 +84,14 @@
 <script setup>
 import {computed, onActivated, ref} from "vue";
 import {ArrowLeft, ArrowRight, CircleCheck, List} from "@element-plus/icons-vue";
-import {formatDate, fromNow} from "@/js/format.js";
 import * as http from "@/js/http.js";
 import AniCoverView from "@/view/home/AniCoverView.vue";
 import EditAniView from "@/view/home/EditAniView.vue";
-import PlayListView from "@/view/play/PlayListView.vue";
 import CoverView from "@/view/home/CoverView.vue";
 import DelAniView from "@/view/home/DelAniView.vue";
-import BgmRateView from "@/view/home/BgmRateView.vue";
 import PageHeaderView from "@/view/custom/PageHeaderView.vue";
 
 const weekLabels = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
-const dayMs = 24 * 60 * 60 * 1000
 
 const refreshLoading = ref(false)
 const weekList = ref([])
@@ -132,11 +100,6 @@ const todayTrack = ref()
 const editAniRef = ref()
 const delAniRef = ref()
 const coverRef = ref()
-const playListRef = ref()
-const bgmRateRef = ref()
-const config = ref({
-  procrastinatingDay: 14
-})
 
 const todayLabel = computed(() => weekLabels[new Date().getDay()])
 const flatAnis = computed(() => weekList.value.flatMap(week => week.items || []))
@@ -148,31 +111,6 @@ const todayAnis = computed(() => {
   return today ? (today.items || []).filter(item => item.enable) : []
 })
 const todayText = computed(() => todayAnis.value.length ? `${todayAnis.value.length} 个订阅` : '没有订阅')
-const procrastinatingList = computed(() => {
-  const threshold = Number(config.value.procrastinatingDay || 14)
-  return enabledAnis.value
-      .filter(item => item.procrastinating !== false)
-      .filter(item => !item.totalEpisodeNumber || item.currentEpisodeNumber < item.totalEpisodeNumber)
-      .map(item => {
-        const time = getCompareTime(item)
-        const procrastinatingDays = time ? Math.floor((Date.now() - time) / dayMs) : 0
-        return {
-          ...item,
-          procrastinatingDays
-        }
-      })
-      .filter(item => item.procrastinatingDays >= threshold)
-      .sort((a, b) => b.procrastinatingDays - a.procrastinatingDays)
-})
-
-const getCompareTime = item => {
-  if (item.lastDownloadTime > 0) {
-    return item.lastDownloadTime
-  }
-  const releaseTime = new Date(item.releaseDate).getTime()
-  return Number.isNaN(releaseTime) ? 0 : releaseTime
-}
-
 const scrollToday = direction => {
   const track = todayTrack.value
   if (!track) {
@@ -190,18 +128,10 @@ const loadAni = async () => {
   subscriptionTotalValue.value = res.data.total || 0
 }
 
-const loadConfig = async () => {
-  const res = await http.config()
-  config.value = res.data || config.value
-}
-
 const loadAll = async () => {
   refreshLoading.value = true
   try {
-    await Promise.all([
-      loadAni(),
-      loadConfig()
-    ])
+    await loadAni()
   } finally {
     refreshLoading.value = false
   }

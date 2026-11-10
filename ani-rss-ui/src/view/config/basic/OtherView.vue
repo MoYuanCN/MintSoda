@@ -1,6 +1,5 @@
 <template>
   <SettingsItem label="Api">
-    <el-button icon="DocumentCopy" @click="copyEmbyApi">复制 emby 自动点格子 api</el-button>
     <el-button icon="DocumentCopy" @click="copyIcs">复制 ics</el-button>
   </SettingsItem>
   <SettingsItem label="Mikan">
@@ -78,11 +77,6 @@ let clearCache = () => {
       .finally(() => {
         clearCacheLoading.value = false
       })
-}
-
-let copyEmbyApi = () => {
-  let url = `${getBaseUrl()}api/embyWebHook?api-key=${props.config.apiKey}`;
-  copy(url)
 }
 
 let copyIcs = () => {

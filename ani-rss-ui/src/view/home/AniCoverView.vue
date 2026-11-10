@@ -12,9 +12,9 @@
           <Picture/>
         </el-icon>
       </div>
-      <button v-if="scoreText" class="cover-score" type="button" @click.stop="emit('rate', item)">
+      <div v-if="scoreText" class="cover-score">
         <span>{{ scoreText }}</span>
-      </button>
+      </div>
       <div v-if="!item.enable" class="cover-disabled-label">
         未启用
       </div>
@@ -40,14 +40,6 @@
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item @click="emit('playlist', item)">
-                <el-text>
-                  <el-icon>
-                    <Files/>
-                  </el-icon>
-                  列表
-                </el-text>
-              </el-dropdown-item>
               <el-dropdown-item @click="emit('cover', item)">
                 <el-text>
                   <el-icon>
@@ -56,36 +48,12 @@
                   封面
                 </el-text>
               </el-dropdown-item>
-              <el-dropdown-item v-if="showScore" @click="emit('rate', item)">
-                <el-text>
-                  <el-icon>
-                    <Star/>
-                  </el-icon>
-                  评分
-                </el-text>
-              </el-dropdown-item>
               <el-dropdown-item @click="refreshAni" divided>
                 <el-text>
                   <el-icon>
                     <RefreshRight/>
                   </el-icon>
                   刷新
-                </el-text>
-              </el-dropdown-item>
-              <el-dropdown-item @click="scrape(false)">
-                <el-text>
-                  <el-icon>
-                    <RefreshRight/>
-                  </el-icon>
-                  刮削
-                </el-text>
-              </el-dropdown-item>
-              <el-dropdown-item @click="scrape(true)">
-                <el-text type="warning">
-                  <el-icon>
-                    <Refresh/>
-                  </el-icon>
-                  刮削 [F]
                 </el-text>
               </el-dropdown-item>
               <el-dropdown-item @click="emit('edit', item)" divided>
@@ -130,7 +98,7 @@
 
 <script setup>
 import {computed, ref} from "vue";
-import {Delete, Edit as EditIcon, Files, Fold, Picture, Refresh, RefreshRight, Star} from "@element-plus/icons-vue";
+import {Delete, Edit as EditIcon, Fold, Picture, RefreshRight} from "@element-plus/icons-vue";
 import {ElMessage, ElText} from "element-plus";
 import {coverClickAction, showLastDownloadTime, showScore, toApiFile} from "@/js/global.js";
 import {fromNow} from "@/js/format.js";
@@ -173,14 +141,8 @@ const refreshAni = () => {
       .then(res => ElMessage.success(res.message))
 }
 
-// 从封面菜单发起普通或强制刮削。
-const scrape = force => {
-  http.scrape(force, props.item)
-      .then(res => ElMessage.success(res.message))
-}
-
 const handleCoverClick = () => {
-  const action = ['edit', 'playlist', 'cover'].includes(coverClickAction.value)
+  const action = ['edit', 'cover'].includes(coverClickAction.value)
       ? coverClickAction.value
       : 'cover'
   emit(action, props.item)
@@ -198,7 +160,7 @@ const openBgmUrl = it => {
   }
 }
 
-const emit = defineEmits(['edit', 'playlist', 'cover', 'del', 'rate'])
+const emit = defineEmits(['edit', 'cover', 'del'])
 </script>
 
 <style scoped>

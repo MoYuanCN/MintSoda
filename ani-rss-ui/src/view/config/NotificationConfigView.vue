@@ -13,6 +13,15 @@
       <SettingsItem label="备注">
         <el-input v-model="notificationConfig['comment']" placeholder="无备注"/>
       </SettingsItem>
+      <SettingsItem label="消息模板">
+        <div class="notification-template-select">
+          <el-select v-model="notificationConfig.notificationTemplateId" clearable placeholder="使用单条通知模板">
+            <el-option v-for="template in props.config.notificationTemplateList || []"
+                       :key="template.id" :label="template.name || '未命名模板'" :value="template.id"/>
+          </el-select>
+          <el-text size="small" type="info">未选择时，使用下方对应渠道的模板</el-text>
+        </div>
+      </SettingsItem>
       <SettingsItem label="通知状态">
         <el-checkbox-group v-model:model-value="notificationConfig['statusList']">
           <el-checkbox label="开始下载" value="DOWNLOAD_START"/>
@@ -20,7 +29,6 @@
           <el-checkbox label="缺集" value="OMIT"/>
           <el-checkbox label="错误" value="ERROR"/>
           <el-checkbox label="订阅完结" value="COMPLETED"/>
-          <el-checkbox label="摸鱼检测" value="PROCRASTINATING"/>
         </el-checkbox-group>
       </SettingsItem>
       <EmbyRefreshNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
@@ -99,6 +107,12 @@ const messageTest = () => {
 
   let config = JSON.parse(JSON.stringify(notificationConfig.value))
   config.embyDelayed = 0
+  const selectedTemplate = (props.config.notificationTemplateList || [])
+      .find(template => template.id === config.notificationTemplateId)
+  if (selectedTemplate) {
+    config.notificationTemplate = selectedTemplate.telegramTemplate || config.notificationTemplate
+    config.webHookBody = selectedTemplate.customRequestBody || config.webHookBody
+  }
 
   testNotification(config)
       .then(res => {
@@ -134,5 +148,10 @@ defineExpose({
   justify-content: space-between;
   width: 100%;
   margin-top: 8px;
+}
+
+.notification-template-select {
+  display: grid;
+  gap: 4px;
 }
 </style>

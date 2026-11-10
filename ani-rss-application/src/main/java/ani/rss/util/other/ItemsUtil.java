@@ -11,12 +11,10 @@ import ani.rss.enums.StringEnum;
 import ani.rss.util.basic.HttpReq;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.text.StrFormatter;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.*;
@@ -61,7 +59,6 @@ public class ItemsUtil {
 
         List<StandbyRss> standbyRssList = ani.getStandbyRssList();
         for (StandbyRss rss : standbyRssList) {
-            ThreadUtil.sleep(1000);
             subgroup = StrUtil.blankToDefault(rss.getLabel(), "未知字幕组");
             Ani clone = ObjUtil.clone(ani);
             clone.setOffset(rss.getOffset());
@@ -103,6 +100,8 @@ public class ItemsUtil {
         NodeList childNodes = channel.getChildNodes();
         List<String> globalExcludeList = CONFIG.getExclude();
         Boolean globalExclude = ani.getGlobalExclude();
+        List<String> globalMatchList = Optional.ofNullable(CONFIG.getGlobalMatch()).orElseGet(List::of);
+        Boolean globalMatch = ani.getGlobalMatch();
 
         for (int i = childNodes.getLength() - 1; i >= 0; i--) {
             Node item = childNodes.item(i);
@@ -256,6 +255,14 @@ public class ItemsUtil {
                 }
             } else if (!match.isEmpty()) {
                 if (match.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> !ReUtil.contains(s, addNewItem.getTitle()))) {
+                    continue;
+                }
+            }
+
+            // 全局匹配作为额外条件；兼容旧订阅中缺失的开关字段。
+            if (Boolean.TRUE.equals(globalMatch) && !globalMatchList.isEmpty()) {
+                if (globalMatchList.stream().map(map).filter(StrUtil::isNotBlank)
+                        .anyMatch(s -> !ReUtil.contains(s, addNewItem.getTitle()))) {
                     continue;
                 }
             }
@@ -446,79 +453,6 @@ public class ItemsUtil {
                     .orElse(0);
         }
         return items.size();
-    }
-
-    /**
-     * 摸鱼检测
-     *
-     * @param ani   订阅
-     * @param items 资源列表
-     */
-    public static void procrastinating(Ani ani, List<Item> items) {
-        Boolean procrastinating = CONFIG.getProcrastinating();
-        Integer procrastinatingDay = CONFIG.getProcrastinatingDay();
-        if (!procrastinating) {
-            return;
-        }
-
-        procrastinating = ani.getProcrastinating();
-
-        if (!procrastinating) {
-            // 未开启摸鱼检测
-            return;
-        }
-
-        Boolean procrastinatingMasterOnly = CONFIG.getProcrastinatingMasterOnly();
-        if (procrastinatingMasterOnly) {
-            // 仅启用主rss摸鱼检测
-            items = items.stream()
-                    .filter(Item::getMaster)
-                    .toList();
-        }
-
-        int totalEpisodeNumber = ani.getTotalEpisodeNumber();
-        int currentEpisodeNumber = currentEpisodeNumber(ani, items);
-        if (totalEpisodeNumber > 0) {
-            if (currentEpisodeNumber >= totalEpisodeNumber) {
-                // 已完结 不再检测摸鱼
-                return;
-            }
-        }
-
-        items.stream()
-                .map(Item::getPubDate)
-                .filter(Objects::nonNull)
-                .mapToLong(Date::getTime)
-                .max()
-                .ifPresent(t -> {
-                    DateTime date = DateUtil.date(t);
-                    DateTime now = DateTime.now();
-
-                    // 时间不对
-                    if (now.getTime() <= t) {
-                        return;
-                    }
-                    long day = DateUtil.between(date, now, DateUnit.DAY);
-                    if (procrastinatingDay > day) {
-                        // 未达到指定摸鱼时间
-                        return;
-                    }
-
-                    String id = ani.getId();
-                    String title = ani.getTitle();
-
-                    String text = StrFormatter.format("检测到{}, 已摸鱼{}天", title, day);
-
-                    String key = StrFormatter.format("procrastinating:{}", id);
-
-                    if (CacheUtils.containsKey(key)) {
-                        // 一天内已经提醒过了
-                        return;
-                    }
-
-                    CacheUtils.put(key, text, TimeUnit.DAYS.toMillis(1));
-                    NotificationUtil.send(CONFIG, ani, text, NotificationStatusEnum.PROCRASTINATING);
-                });
     }
 
     public static String getSubgroup(List<Item> items) {

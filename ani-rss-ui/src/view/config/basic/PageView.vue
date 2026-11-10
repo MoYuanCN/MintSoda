@@ -45,6 +45,27 @@
                      @change="colorChange(color)"
                      @active-change="colorChange"/>
   </SettingsItem>
+  <SettingsItem label="应用背景图">
+    <UiAssetPicker :config="props.config" field="appBackgroundImage"/>
+  </SettingsItem>
+  <SettingsItem label="登录背景图">
+    <UiAssetPicker :config="props.config" field="loginBackgroundImage"/>
+  </SettingsItem>
+  <SettingsItem label="登录 Logo">
+    <UiAssetPicker :config="props.config" field="loginLogoImage"/>
+  </SettingsItem>
+  <SettingsItem label="应用 Logo">
+    <UiAssetPicker :config="props.config" field="appLogoImage"/>
+  </SettingsItem>
+  <SettingsItem label="卡片透明度">
+    <el-slider v-model="props.config.cardOpacity" :min="0" :max="100" show-input/>
+  </SettingsItem>
+  <SettingsItem label="背景模糊度">
+    <el-slider v-model="props.config.cardBlur" :min="0" :max="40" show-input/>
+  </SettingsItem>
+  <SettingsItem label="圆角大小">
+    <el-slider v-model="props.config.appCornerRadius" :min="0" :max="40" show-input/>
+  </SettingsItem>
   <SettingsItem label="排序">
     <el-select v-model="props.config['sortType']" class="width-150">
       <el-option value="SCORE" label="评分"/>
@@ -55,7 +76,6 @@
   <SettingsItem label="点击封面">
     <el-select v-model="coverClickAction" class="width-150">
       <el-option label="编辑订阅" value="edit"/>
-      <el-option label="视频列表" value="playlist"/>
       <el-option label="编辑封面" value="cover"/>
     </el-select>
   </SettingsItem>
@@ -116,6 +136,9 @@ import {
 import {ElMessage} from "element-plus";
 import UploadView from "@/view/custom/UploadView.vue";
 import SettingsItem from "@/view/custom/SettingsItem.vue";
+import UiAssetPicker from "@/view/config/UiAssetPicker.vue";
+import {watch} from "vue";
+import {applyUiCustomization} from "@/js/global.js";
 
 let predefineColors = ref([
   '#409eff', '#109D58', '#BF3545', '#CB7574',
@@ -139,6 +162,14 @@ let callback = res => {
 }
 
 let props = defineProps(['config'])
+
+watch(() => [
+  props.config.appBackgroundImage,
+  props.config.loginBackgroundImage,
+  props.config.cardOpacity,
+  props.config.cardBlur,
+  props.config.appCornerRadius
+], () => applyUiCustomization(props.config), {immediate: true})
 </script>
 
 <style scoped>

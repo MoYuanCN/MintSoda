@@ -14,7 +14,6 @@ import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.URLUtil;
 import io.swagger.v3.oas.annotations.Operation;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Slf4j
@@ -45,6 +41,34 @@ public class FileController extends BaseController {
         doFile(filename);
     }
 
+    /** Serve only images uploaded through the dedicated branding asset endpoint. */
+    @Operation(summary = "获取 WebUI 自定义图片")
+    @GetMapping("/uiAsset")
+    public void uiAsset(@RequestParam("filename") String filename) {
+        HttpServletResponse response = Global.RESPONSE.get();
+        try {
+            Path relative = Path.of(filename).normalize();
+            Assert.isTrue(!relative.isAbsolute() && !relative.startsWith(".."), "不允许访问");
+            String extension = FileUtil.extName(relative.getFileName().toString()).toLowerCase();
+            String contentType = switch (extension) {
+                case "png" -> "image/png";
+                case "jpg", "jpeg" -> "image/jpeg";
+                case "webp" -> "image/webp";
+                case "gif" -> "image/gif";
+                default -> throw new IllegalArgumentException("不允许访问");
+            };
+            Path filesRoot = Path.of(ConfigUtil.getConfigDir().getAbsolutePath(), "ui-assets").normalize();
+            Path image = filesRoot.resolve(relative).normalize();
+            Assert.isTrue(image.startsWith(filesRoot) && Files.isRegularFile(image), "文件不存在");
+            response.setContentType(contentType);
+            response.setHeader("X-Content-Type-Options", "nosniff");
+            response.setHeader("Cache-Control", "public, max-age=86400");
+            Files.copy(image, response.getOutputStream());
+        } catch (Exception e) {
+            response.setStatus(404);
+        }
+    }
+
     /**
      * 校验文件格式
      */
@@ -55,11 +79,7 @@ public class FileController extends BaseController {
 
         Assert.notBlank(extName, "不允许访问");
 
-        boolean b = FileUtils.isImageFormat(filename) ||
-                FileUtils.isSubtitleFormat(filename) ||
-                FileUtils.isVideoFormat(filename);
-
-        Assert.isTrue(b, "不允许访问");
+        Assert.isTrue(FileUtils.isImageFormat(filename), "不允许访问");
     }
 
     /**
@@ -68,7 +88,6 @@ public class FileController extends BaseController {
      * @param filename 文件名
      */
     private void doFile(String filename) {
-        HttpServletRequest request = Global.REQUEST.get();
         HttpServletResponse response = Global.RESPONSE.get();
 
         File file = new File(filename);
@@ -81,67 +100,27 @@ public class FileController extends BaseController {
             }
         }
 
-        boolean hasRange = false;
         long fileLength = file.length();
-        long start = 0;
-        long end = fileLength - 1;
-
         String contentType = getContentType(file.getName());
 
         response.setHeader(Header.CONTENT_DISPOSITION, StrFormatter.format("inline; filename=\"{}\"", URLUtil.encode(file.getName())));
-        if (contentType.startsWith("video/")) {
-            response.setContentType(contentType);
-            String rangeHeader = request.getHeader("Range");
-            if (StrUtil.isNotBlank(rangeHeader) && rangeHeader.startsWith("bytes=")) {
-                String[] range = rangeHeader.substring(6).split("-");
-                if (range.length > 0 && StrUtil.isNotBlank(range[0])) {
-                    start = Long.parseLong(range[0]);
-                }
-                if (range.length > 1 && StrUtil.isNotBlank(range[1])) {
-                    end = Long.parseLong(range[1]);
-                }
+        long maxAge = 0;
 
-                response.setHeader(Header.ACCEPT_RANGES, "bytes");
-                response.setHeader(Header.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLength);
-                hasRange = true;
-            }
-        } else {
-            long maxAge = 0;
-
-            // 小于或者等于 3M 缓存
-            if (fileLength <= 1024 * 1024 * 3) {
-                // 30 天
-                maxAge = 86400 * 30;
-            }
-
-            setCacheControl(response, maxAge);
-            response.setContentType(contentType);
+        // 小于或者等于 3M 缓存
+        if (fileLength <= 1024 * 1024 * 3) {
+            // 30 天
+            maxAge = 86400 * 30;
         }
+        setCacheControl(response, maxAge);
+        response.setContentType(contentType);
 
         try {
-            if (hasRange) {
-                long length = end - start + 1;
-                response.setStatus(206);
-                response.setContentLengthLong(length);
-                @Cleanup
-                OutputStream out = response.getOutputStream();
-                @Cleanup
-                RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
-                randomAccessFile.seek(start);
-                @Cleanup
-                FileChannel channel = randomAccessFile.getChannel();
-                @Cleanup
-                InputStream inputStream = Channels.newInputStream(channel);
-                IoUtil.copy(inputStream, out, 40960, length, null);
-            } else {
-                response.setContentLengthLong(fileLength);
-
-                @Cleanup
-                InputStream inputStream = FileUtil.getInputStream(file);
-                @Cleanup
-                OutputStream outputStream = response.getOutputStream();
-                IoUtil.copy(inputStream, outputStream);
-            }
+            response.setContentLengthLong(fileLength);
+            @Cleanup
+            InputStream inputStream = FileUtil.getInputStream(file);
+            @Cleanup
+            var outputStream = response.getOutputStream();
+            IoUtil.copy(inputStream, outputStream);
         } catch (Exception e) {
             String message = ExceptionUtils.getMessage(e);
             log.debug(message, e);

@@ -92,8 +92,6 @@ public class RssTask implements BaseTask {
                     log.error("{} {}", title, message);
                     log.error(message, e);
                 }
-                // 避免短时间频繁请求导致流控
-                ThreadUtil.sleep(500);
             }
         } finally {
             ItemsUtil.endRssBatch();

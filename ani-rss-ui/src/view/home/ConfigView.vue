@@ -29,6 +29,12 @@
                   v-else-if="tab.name === 'exclude'"
                   v-model:exclude="config.exclude"
                   :show-text="true"/>
+              <div v-else-if="tab.name === 'match'" class="global-match-content">
+                <el-alert :closable="false" show-icon type="info"
+                          title="全局匹配规则会作为订阅的额外标题条件。启用后，每条规则都必须命中；不设置规则时不会过滤条目。"/>
+                <ExcludeView v-model:exclude="config.globalMatch" :show-text="true"/>
+              </div>
+              <ReverseMatchSettingsView v-else-if="tab.name === 'reverse-match'"/>
               <ProxyView v-else-if="tab.name === 'proxy'" v-model:config="config"/>
               <Security v-else-if="tab.name === 'security'" :config="config"/>
               <NotificationView v-else-if="tab.name === 'notification'" v-model:config="config"/>
@@ -47,6 +53,7 @@ import {computed, onMounted, ref} from "vue";
 import {ElMessage} from "element-plus";
 import {md5} from "js-md5";
 import ExcludeView from "@/view/config/ExcludeView.vue";
+import ReverseMatchSettingsView from "@/view/config/ReverseMatchSettingsView.vue";
 import NotificationView from "@/view/config/NotificationView.vue";
 import ProxyView from "@/view/config/ProxyView.vue";
 import DownloadView from "@/view/config/DownloadView.vue";
@@ -56,6 +63,7 @@ import Security from "@/view/config/SecurityView.vue";
 import AfdianView from "@/view/config/AfdianView.vue";
 import PageHeaderView from "@/view/custom/PageHeaderView.vue";
 import {configData} from "@/js/config.js";
+import {applyUiCustomization} from "@/js/global.js";
 import * as http from "@/js/http.js";
 
 const configButtonLoading = ref(false)
@@ -66,8 +74,10 @@ const config = ref(configData)
 const activeName = ref('download')
 const tabs = [
   {name: 'download', label: '下载设置', description: '下载器、目录与任务行为'},
-  {name: 'basic', label: '基本设置', description: '订阅、命名、刮削与备份'},
+  {name: 'basic', label: '基本设置', description: '订阅、命名与备份'},
   {name: 'exclude', label: '全局排除', description: '统一排除不需要的资源'},
+  {name: 'match', label: '全局匹配', description: '统一限定 RSS 标题必须符合的条件'},
+  {name: 'reverse-match', label: '反匹配', description: '集中管理订阅的反匹配规则并测试标题'},
   {name: 'proxy', label: '代理', description: '网络代理与连接配置'},
   {name: 'security', label: '安全', description: '账号与访问安全'},
   {name: 'notification', label: '通知', description: '消息渠道与事件通知'},
@@ -81,6 +91,7 @@ const loadConfig = () => {
   http.config()
       .then(res => {
         config.value = res.data
+        applyUiCustomization(res.data)
       })
       .finally(() => {
         loading.value = false
@@ -101,6 +112,7 @@ const saveConfig = () => {
 
   http.setConfig(my_config)
       .then(res => {
+        applyUiCustomization(my_config)
         ElMessage.success(res.message)
         window.$reLoadList?.()
       })
@@ -154,6 +166,11 @@ onMounted(() => {
 
 .config-tabs :deep(.el-alert) {
   border-radius: 6px;
+}
+
+.global-match-content {
+  display: grid;
+  gap: 16px;
 }
 
 @media (max-width: 700px) {

@@ -159,6 +159,24 @@ public class ConfigUtil {
      * @param config 设置
      */
     public static void format(Config config) {
+        if (config.getExclude() == null) config.setExclude(new java.util.ArrayList<>());
+        if (config.getGlobalMatch() == null) config.setGlobalMatch(new java.util.ArrayList<>());
+        if (config.getNotificationTemplateList() == null) config.setNotificationTemplateList(new java.util.ArrayList<>());
+        if (config.getNotificationConfigList() == null) config.setNotificationConfigList(new java.util.ArrayList<>());
+        if (config.getCardOpacity() == null) config.setCardOpacity(92);
+        if (config.getCardBlur() == null) config.setCardBlur(8);
+        if (config.getAppCornerRadius() == null) config.setAppCornerRadius(12);
+        if (config.getQbAuthType() == null) {
+            config.setQbAuthType(StrUtil.startWith(config.getDownloadToolPassword(), "qbt_") ? "API_KEY" : "USER_PASSWORD");
+        }
+        if (config.getQbUsername() == null) config.setQbUsername("");
+        if (config.getQbPassword() == null) config.setQbPassword("");
+        if (config.getCustomTorrentUrl() == null) config.setCustomTorrentUrl("");
+        if (config.getAppBackgroundImage() == null) config.setAppBackgroundImage("");
+        if (config.getLoginBackgroundImage() == null) config.setLoginBackgroundImage("");
+        if (config.getLoginLogoImage() == null) config.setLoginLogoImage("");
+        if (config.getAppLogoImage() == null) config.setAppLogoImage("");
+
         // Migrate existing settings to the only supported download client.
         config.setDownloadToolType("qBittorrent");
         Integer intervalSeconds = config.getRssSleepSeconds();
@@ -204,6 +222,9 @@ public class ConfigUtil {
                 .setOverride(false);
 
         for (NotificationConfig notificationConfig : notificationConfigList) {
+            if (StrUtil.isBlank(notificationConfig.getNotificationTemplateId())) {
+                notificationConfig.setNotificationTemplateId(null);
+            }
             BeanUtil.copyProperties(newNotificationConfig, notificationConfig, copyOptions);
         }
     }

@@ -1,7 +1,7 @@
 <template>
   <div class="flex-center about-container">
     <div class="flex about-header">
-      <img alt="icon.svg" height="80" src="/public/icon.svg" width="80"/>
+      <img alt="ANI-RSS-Yuri" height="80" :src="appLogo" width="80" @click="developerTap"/>
       <div>
         <h1>ANI-RSS-Yuri</h1>
         <el-tooltip
@@ -43,6 +43,31 @@
       </el-badge>
     </div>
   </div>
+  <el-dialog v-model="developerDialogVisible" center title="开发者选项" width="520">
+    <el-form v-if="!developerUnlocked" label-position="top" @submit.prevent>
+      <el-form-item label="登录账号">
+        <el-input v-model="developerCredentials.username" autocomplete="username"/>
+      </el-form-item>
+      <el-form-item label="登录密码">
+        <el-input v-model="developerCredentials.password" type="password" show-password
+                  autocomplete="current-password" @keyup.enter="unlockDeveloperMode"/>
+      </el-form-item>
+      <div class="developer-dialog-actions">
+        <el-button type="primary" :loading="developerLoading" @click="unlockDeveloperMode">开启开发者模式</el-button>
+      </div>
+    </el-form>
+    <div v-else>
+      <SettingsItem label="自定义种子地址">
+        <el-input v-model="props.config.customTorrentUrl" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }"
+                  placeholder="https://torrent.example.com/api/public/<info_hash>"/>
+      </SettingsItem>
+      <el-alert :closable="false" show-icon type="info"
+                title="读取到 info_hash 后会请求此地址并下载种子。支持 <info_hash> 或 ${info_hash}；未写占位符时会自动追加哈希。"/>
+      <div class="developer-dialog-actions">
+        <el-button type="primary" :loading="developerLoading" @click="saveDeveloperSettings">保存开发者设置</el-button>
+      </div>
+    </div>
+  </el-dialog>
   <el-dialog v-if="dialogVisible" v-model="dialogVisible" align-center center title="版本更新"
              class="about-dialog">
     <div v-if="about.update">
@@ -95,7 +120,7 @@
 
 <script setup>
 import SettingsItem from "@/view/custom/SettingsItem.vue";
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 import {ElMessage, ElText} from "element-plus";
 import PopconfirmView from "@/view/custom/PopconfirmView.vue";
 import {Github} from "@vicons/fa";
@@ -108,6 +133,7 @@ import 'markdown-it-github-alerts/styles/github-base.css'
 
 import {authorization} from "@/js/global.js";
 import * as http from "@/js/http.js";
+import {uiCustomization, uiAssetUrl} from "@/js/global.js";
 
 let md = markdownit({
   html: true,
@@ -123,6 +149,43 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 md.use(MarkdownItGitHubAlerts)
 
 const actionLoading = ref(false)
+const appLogo = computed(() => uiCustomization.value.appLogoImage
+    ? uiAssetUrl(uiCustomization.value.appLogoImage)
+    : '/icon.svg')
+const developerDialogVisible = ref(false)
+const developerUnlocked = ref(false)
+const developerLoading = ref(false)
+const developerCredentials = ref({username: '', password: ''})
+let developerTapCount = 0
+let developerTapTimer
+
+const developerTap = () => {
+  developerTapCount++
+  clearTimeout(developerTapTimer)
+  if (developerTapCount >= 7) {
+    developerTapCount = 0
+    developerDialogVisible.value = true
+    return
+  }
+  developerTapTimer = setTimeout(() => developerTapCount = 0, 1800)
+}
+
+const unlockDeveloperMode = () => {
+  developerLoading.value = true
+  http.verifyDeveloperCredentials(developerCredentials.value)
+      .then(() => { developerUnlocked.value = true })
+      .finally(() => { developerLoading.value = false })
+}
+
+const saveDeveloperSettings = () => {
+  developerLoading.value = true
+  http.setDeveloperSettings({
+    ...developerCredentials.value,
+    customTorrentUrl: props.config.customTorrentUrl
+  })
+      .then(res => ElMessage.success(res.message))
+      .finally(() => { developerLoading.value = false })
+}
 
 const stop = (status) => {
   actionLoading.value = true

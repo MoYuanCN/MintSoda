@@ -4,6 +4,7 @@ import ani.rss.annotation.Auth;
 import ani.rss.entity.Ani;
 import ani.rss.entity.BgmInfo;
 import ani.rss.entity.NotificationConfig;
+import ani.rss.entity.NotificationTemplate;
 import ani.rss.entity.web.Result;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.enums.NotificationTypeEnum;
@@ -13,6 +14,7 @@ import ani.rss.util.other.AniUtil;
 import ani.rss.util.other.BgmUtil;
 import ani.rss.util.other.NotificationUtil;
 import ani.rss.util.other.TmdbUtils;
+import ani.rss.util.other.ConfigUtil;
 import cn.hutool.core.util.ReflectUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +64,11 @@ public class NotificationController extends BaseController {
     @PostMapping("/newNotification")
     public Result<NotificationConfig> newNotification() {
         NotificationConfig notificationConfig = NotificationConfig.createNotificationConfig();
+        ConfigUtil.CONFIG.getNotificationTemplateList().stream()
+                .filter(template -> "default".equals(template.getId()))
+                .map(NotificationTemplate::getId)
+                .findFirst()
+                .ifPresent(notificationConfig::setNotificationTemplateId);
         return Result.success(notificationConfig);
     }
 

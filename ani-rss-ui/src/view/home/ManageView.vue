@@ -52,22 +52,6 @@
                     更新总集数 [F]
                   </el-text>
                 </el-dropdown-item>
-                <el-dropdown-item :disabled="!hasSelection" divided @click="batchScrape(false)">
-                  <el-text>
-                    <el-icon>
-                      <RefreshRight/>
-                    </el-icon>
-                    刮削
-                  </el-text>
-                </el-dropdown-item>
-                <el-dropdown-item :disabled="!hasSelection" @click="batchScrape(true)">
-                  <el-text type="warning">
-                    <el-icon>
-                      <Refresh/>
-                    </el-icon>
-                    刮削 [F]
-                  </el-text>
-                </el-dropdown-item>
                 <el-dropdown-item :disabled="!hasSelection" divided @click="batchEnable(true)">
                   <el-text type="primary">
                     <el-icon>
@@ -335,10 +319,6 @@ const batchEnable = value => {
 
 const updateTotalEpisodeNumber = force => {
   return runSelectedAction(ids => http.updateTotalEpisodeNumber(force, ids), {reload: true})
-}
-
-const batchScrape = force => {
-  return runSelectedAction(ids => http.batchScrape(force, ids))
 }
 
 defineExpose({show})

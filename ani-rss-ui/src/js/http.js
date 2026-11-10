@@ -7,6 +7,20 @@ import {md5} from "js-md5";
  */
 export let config = () => api.post('api/config')
 
+export let publicSettings = () => api.post('api/publicSettings')
+
+export let verifyDeveloperCredentials = user => {
+    const credentials = JSON.parse(JSON.stringify(user))
+    credentials.password = md5(credentials.password)
+    return api.post('api/verifyDeveloperCredentials', credentials)
+}
+
+export let setDeveloperSettings = settings => {
+    const payload = JSON.parse(JSON.stringify(settings))
+    payload.password = md5(payload.password)
+    return api.post('api/setDeveloperSettings', payload)
+}
+
 /**
  * 修改设置
  * @param config 设置
@@ -76,19 +90,6 @@ export let mikanGroup = (url) => api.post(`api/mikanGroup?url=${url}`)
  * @returns {Promise<unknown>}
  */
 export let aniBTGroup = (url) => api.post(`api/aniBTGroup?bgmId=${url}`)
-
-/**
- * 获取AnimeGarden番剧列表
- * @returns {Promise<unknown>}
- */
-export let animeGardenList = (bgmUrl) => api.post(`api/animeGardenList?bgmUrl=${bgmUrl}`)
-
-/**
- * 获取AnimeGarden番剧的字幕组列表
- * @param bgmId 番剧ID
- * @returns {Promise<unknown>}
- */
-export let animeGardenGroup = (bgmId) => api.post(`api/animeGardenGroup?bgmId=${bgmId}`)
 
 /**
  * 刷新全部订阅
@@ -188,14 +189,6 @@ export let testProxy = (url, config) => api.post(`api/testProxy?url=${url}`, con
 export let updateTotalEpisodeNumber = (force, ids) => api.post(`api/updateTotalEpisodeNumber?force=${force}`, ids)
 
 /**
- * 批量刮削
- * @param force 强制
- * @param ids ids
- * @returns {Promise<unknown>}
- */
-export let batchScrape = (force, ids) => api.post(`api/batchScrape?force=${force}`, ids)
-
-/**
  * 批量 启用/禁用 订阅
  * @param value true/false
  * @param ids ids
@@ -225,20 +218,6 @@ export let stop = (status) => api.post(`api/stop?status=${status}`)
 export let refreshCover = (ani) => api.post('api/refreshCover', ani)
 
 /**
- * 获取评分
- * @param ani 订阅
- * @returns {Promise<unknown>}
- */
-export let rate = (ani) => api.post('api/rate', ani)
-
-/**
- * 进行评分
- * @param ani 订阅
- * @returns {Promise<unknown>}
- */
-export let setRate = (ani) => api.post('api/setRate', ani)
-
-/**
  * 获取下载位置
  * @param ani 订阅
  * @returns {Promise<unknown>}
@@ -246,26 +225,11 @@ export let setRate = (ani) => api.post('api/setRate', ani)
 export let downloadPath = (ani) => api.post('api/downloadPath', ani)
 
 /**
- * 刮削
- * @param force 强制 true/false
- * @param ani 订阅
- * @returns {Promise<unknown>}
- */
-export let scrape = (force, ani) => api.post(`api/scrape?force=${force}`, ani)
-
-/**
  * 获取当前BGM账号信息
  * @param ani 订阅
  * @returns {Promise<unknown>}
  */
 export let meBgm = (ani) => api.post('api/meBgm', ani)
-
-/**
- * 更新trackers
- * @param config 设置
- * @returns {Promise<unknown>}
- */
-export let trackersUpdate = (config) => api.post('api/trackersUpdate', config)
 
 /**
  * 获取Emby媒体库
@@ -310,13 +274,6 @@ export let login = (user) => {
  * @returns {Promise<Response>}
  */
 export let testIpWhitelist = () => fetch('api/testIpWhitelist', {method: 'post'}).then(res => res.json())
-
-/**
- * 获取视频列表
- * @param ani 订阅
- * @returns {Promise<unknown>}
- */
-export let playList = (ani) => api.post('api/playList', ani)
 
 /**
  * 开始下载合集

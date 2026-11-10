@@ -49,6 +49,7 @@ public class ConfigService {
         String version = MavenUtils.getVersion();
         Config config = ObjectUtil.clone(ConfigUtil.CONFIG);
         config.getLogin().setPassword("");
+        config.setDownloadToolPassword("").setQbPassword("");
         config.setVersion(version)
                 .setGitInfo(getGitInfo()).setOutTradeNo("").setJwtKey("");
         return config;
@@ -69,6 +70,13 @@ public class ConfigService {
         Integer renameSleepSeconds = config.getRenameSleepSeconds();
         Integer sleep = config.getRssSleepSeconds();
         Boolean autoStart = config.getAutoStart();
+
+        if (StrUtil.isBlank(newConfig.getDownloadToolPassword())) {
+            newConfig.setDownloadToolPassword(config.getDownloadToolPassword());
+        }
+        if (StrUtil.isBlank(newConfig.getQbPassword())) {
+            newConfig.setQbPassword(config.getQbPassword());
+        }
 
         newConfig.setOutTradeNo(null).setJwtKey(null);
         if (newConfig.getRssSleepSeconds() == null && newConfig.getRssSleepMinutes() != null) {

@@ -11,7 +11,6 @@ import ani.rss.mcp.dto.ListSubscriptionDTO;
 import ani.rss.mcp.dto.SearchMikanDTO;
 import ani.rss.mcp.vo.SubscriptionItemsPreviewVO;
 import ani.rss.service.AniBTService;
-import ani.rss.service.AnimeGardenService;
 import ani.rss.service.MikanService;
 import ani.rss.util.other.AniUtil;
 import ani.rss.util.other.ItemsUtil;
@@ -38,9 +37,6 @@ public class AniMcpTools {
 
     @Resource
     private AniBTService aniBTService;
-
-    @Resource
-    private AnimeGardenService animeGardenService;
 
     @McpTool(
             name = "list_subscriptions",
@@ -93,20 +89,6 @@ public class AniMcpTools {
     }
 
     @McpTool(
-            name = "search_anime_garden",
-            description = "搜索 AnimeGarden 番剧列表",
-            annotations = @McpTool.McpAnnotations(
-                    title = "搜索 AnimeGarden",
-                    readOnlyHint = true,
-                    destructiveHint = false,
-                    idempotentHint = true
-            )
-    )
-    public List<AnimeGarden.Week> searchAnimeGarden() {
-        return animeGardenService.list("");
-    }
-
-    @McpTool(
             name = "get_mikan_groups",
             description = "根据 Mikan 番剧页面 URL 获取字幕组 RSS",
             annotations = @McpTool.McpAnnotations(
@@ -138,23 +120,6 @@ public class AniMcpTools {
             String bgmId
     ) {
         return aniBTService.getGroups(bgmId);
-    }
-
-    @McpTool(
-            name = "get_anime_garden_groups",
-            description = "根据 AnimeGarden BGM ID 获取字幕组 RSS",
-            annotations = @McpTool.McpAnnotations(
-                    title = "获取 AnimeGarden 字幕组",
-                    readOnlyHint = true,
-                    destructiveHint = false,
-                    idempotentHint = true
-            )
-    )
-    public List<AnimeGarden.Group> getAnimeGardenGroups(
-            @McpToolParam(description = "BGM 番剧 ID")
-            String bgmId
-    ) {
-        return animeGardenService.group(bgmId);
     }
 
     /**

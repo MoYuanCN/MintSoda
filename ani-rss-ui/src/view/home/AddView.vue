@@ -1,7 +1,6 @@
 <template>
   <BatchAdditionView ref="batchAdditionRef" v-model="batchAdditionDialogVisible" :items="[]" type="other"
                      @done="batchDone"/>
-  <AnimeGardenView ref="animeGardenRef"/>
   <AniBTView ref="aniBTRef"/>
   <MikanView ref="mikanRef"/>
   <BgmView ref="bgmRef" @callback="bgmCallback"/>
@@ -123,14 +122,11 @@ import BatchAdditionView from './BatchAdditionView.vue'
 import {aniData} from "@/js/ani.js";
 import AniBTView from "@/view/home/AniBTView.vue";
 import {useLocalStorage} from "@vueuse/core";
-import AnimeGardenView from "@/view/home/AnimeGardenView.vue";
 import mikanIcon from "@/icon/icon-Mikan.png";
 import aniBTIcon from "@/icon/icon-AniBT.png";
-import animeGardenIcon from "@/icon/icon-AnimeGarden.png";
 
 const aniBTRef = ref()
 const mikanRef = ref()
-const animeGardenRef = ref()
 const bgmRef = ref()
 const batchAdditionRef = ref()
 const batchAdditionDialogVisible = ref(false)
@@ -150,13 +146,6 @@ const rssSources = [
     placeholder: 'https://anibt.net/rss/anime.xml?bgmId=xxx&groupSlug=xxx',
     open: () => aniBTRef.value?.show()
   },
-  {
-    name: 'anime-garden',
-    label: 'AnimeGarden',
-    icon: animeGardenIcon,
-    placeholder: 'https://api.animes.garden/feed.xml?subject=xxx&fansub=xxx',
-    open: () => animeGardenRef.value?.show()
-  }
 ]
 
 const dialogVisible = ref(false)
@@ -182,6 +171,7 @@ const activeName = useLocalStorage('add-active-name', 'mikan')
 
 const show = () => {
   ani.value = JSON.parse(JSON.stringify(aniData))
+  if (!['mikan', 'ani-bt', 'other'].includes(activeName.value)) activeName.value = 'mikan'
   dialogVisible.value = true
   rssButtonLoading.value = false
 }

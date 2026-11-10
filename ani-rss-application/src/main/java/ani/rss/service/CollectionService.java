@@ -231,6 +231,8 @@ public class CollectionService {
         boolean reverseMatchEnabled = Boolean.TRUE.equals(ani.getReverseMatchEnabled());
         Boolean globalExclude = ani.getGlobalExclude();
         List<String> globalExcludeList = CONFIG.getExclude();
+        Boolean globalMatch = ani.getGlobalMatch();
+        List<String> globalMatchList = Optional.ofNullable(CONFIG.getGlobalMatch()).orElseGet(List::of);
 
         Function<String, String> map = s -> {
             String subgroup = ReUtil.get(StringEnum.SUBGROUP_REG_STR, s, 1);
@@ -275,6 +277,12 @@ public class CollectionService {
                         if (match.stream().map(map).filter(StrUtil::isNotBlank).anyMatch(s -> !ReUtil.contains(s, name))) {
                             return false;
                         }
+                    }
+
+                    if (Boolean.TRUE.equals(globalMatch) && !globalMatchList.isEmpty()
+                            && globalMatchList.stream().map(map).filter(StrUtil::isNotBlank)
+                            .anyMatch(s -> !ReUtil.contains(s, name))) {
+                        return false;
                     }
 
                     // 全局排除

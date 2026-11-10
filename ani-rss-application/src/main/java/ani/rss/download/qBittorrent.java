@@ -39,6 +39,7 @@ import java.util.*;
 public class qBittorrent implements BaseDownload {
 
     private static final Config CONFIG = ConfigUtil.CONFIG;
+    private static volatile String sessionCookie = "";
 
     private final DownloadService downloadService;
 
@@ -83,22 +84,45 @@ public class qBittorrent implements BaseDownload {
     @Override
     public Boolean login(Boolean test, Config config) {
         String host = config.getDownloadToolHost();
-        String password = config.getDownloadToolPassword();
+        String authType = StrUtil.blankToDefault(config.getQbAuthType(), "API_KEY");
 
-        if (StrUtil.isBlank(host) || StrUtil.isBlank(password)) {
+        if (StrUtil.isBlank(host)) {
             log.warn("qBittorrent 未配置完成");
             return false;
         }
 
-        if (!password.startsWith("qbt_")) {
-            log.warn("qBittorrent 未正确配置 ApiKey");
-            return false;
-        }
-
         try {
-            // 校验当前登录状态
+            if ("USER_PASSWORD".equalsIgnoreCase(authType)) {
+                String username = config.getQbUsername();
+                String password = config.getQbPassword();
+                if (StrUtil.isBlank(username) || StrUtil.isBlank(password)) {
+                    log.warn("qBittorrent 用户名或密码未配置");
+                    return false;
+                }
+                return HttpReq.post(host + "/api/v2/auth/login")
+                        .form("username", username)
+                        .form("password", password)
+                        .thenFunction(response -> {
+                            if (!response.isOk() || !"Ok.".equalsIgnoreCase(response.body().trim())) {
+                                return false;
+                            }
+                            String cookie = response.header(Header.SET_COOKIE);
+                            if (StrUtil.isBlank(cookie)) {
+                                return false;
+                            }
+                            sessionCookie = cookie.split(";", 2)[0];
+                            return true;
+                        });
+            }
+
+            String apiKey = config.getDownloadToolPassword();
+            if (StrUtil.isBlank(apiKey) || !apiKey.startsWith("qbt_")) {
+                log.warn("qBittorrent ApiKey 未正确配置");
+                return false;
+            }
+            sessionCookie = "";
             return HttpReq.post(host + "/api/v2/app/version")
-                    .header(Header.AUTHORIZATION, "Bearer " + password)
+                    .header(Header.AUTHORIZATION, "Bearer " + apiKey)
                     .thenFunction(HttpResponse::isOk);
         } catch (Exception e) {
             String message = ExceptionUtils.getMessage(e);
@@ -428,32 +452,6 @@ public class qBittorrent implements BaseDownload {
     }
 
     @Override
-    public void updateTrackers(Set<String> trackers) {
-        JsonObject preferences = getApi("/api/v2/app/preferences")
-                .thenFunction(res -> {
-                    int status = res.getStatus();
-                    boolean ok = res.isOk();
-                    Assert.isTrue(ok, "更新trackers失败 {}", status);
-                    String body = res.body();
-                    return GsonStatic.fromJson(body, JsonObject.class);
-                });
-
-        preferences.addProperty("add_trackers", CollUtil.join(trackers, "\n"));
-        preferences.addProperty("add_trackers_enabled", true);
-
-        postApi("/api/v2/app/setPreferences")
-                .form("json", GsonStatic.toJson(preferences))
-                .then(res -> {
-                    if (res.isOk()) {
-                        log.info("qBittorrent 更新Trackers完成 共{}条", trackers.size());
-                        return;
-                    }
-                    log.error("qBittorrent 更新Trackers失败 {}", res.getStatus());
-                });
-
-    }
-
-    @Override
     public void setSavePath(TorrentsInfo torrentsInfo, String path) {
         postApi("/api/v2/torrents/setAutoManagement")
                 .form("hashes", torrentsInfo.getHash())
@@ -486,16 +484,25 @@ public class qBittorrent implements BaseDownload {
 
     public static HttpRequest postApi(String path) {
         String downloadToolHost = CONFIG.getDownloadToolHost();
-        String downloadToolPassword = CONFIG.getDownloadToolPassword();
-        return HttpReq.post(downloadToolHost + path)
-                .header(Header.AUTHORIZATION, "Bearer " + downloadToolPassword);
+        HttpRequest request = HttpReq.post(downloadToolHost + path);
+        return applyAuthentication(request);
     }
 
     public static HttpRequest getApi(String path) {
         String downloadToolHost = CONFIG.getDownloadToolHost();
-        String downloadToolPassword = CONFIG.getDownloadToolPassword();
-        return HttpReq.get(downloadToolHost + path)
-                .header(Header.AUTHORIZATION, "Bearer " + downloadToolPassword);
+        HttpRequest request = HttpReq.get(downloadToolHost + path);
+        return applyAuthentication(request);
+    }
+
+    private static HttpRequest applyAuthentication(HttpRequest request) {
+        if ("USER_PASSWORD".equalsIgnoreCase(CONFIG.getQbAuthType())) {
+            if (StrUtil.isNotBlank(sessionCookie)) {
+                request.header(Header.COOKIE, sessionCookie);
+            }
+            return request;
+        }
+        String apiKey = CONFIG.getDownloadToolPassword();
+        return request.header(Header.AUTHORIZATION, "Bearer " + apiKey);
     }
 
 }

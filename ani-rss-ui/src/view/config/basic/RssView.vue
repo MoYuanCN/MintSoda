@@ -76,31 +76,6 @@
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="摸鱼检测">
-    <div>
-      <div>
-        <el-switch v-model="props.config['procrastinating']"/>
-      </div>
-      <div>
-        <el-input-number v-model="props.config['procrastinatingDay']"
-                         :disabled="!props.config['procrastinating']" :max="365"
-                         :min="7">
-          <template #suffix>
-            <span>天</span>
-          </template>
-        </el-input-number>
-      </div>
-      <el-checkbox
-          :disabled="!props.config['procrastinating']"
-          v-model="props.config.procrastinatingMasterOnly"
-          label="仅启用主RSS摸鱼检测"/>
-      <br>
-      <el-text class="mx-1" size="small">
-        检测到主RSS更新摸鱼会发送通知<br>
-        建议配合 <strong>自动禁用订阅</strong> 食用
-      </el-text>
-    </div>
-  </SettingsItem>
   <SettingsItem label="备用RSS">
     <div class="full-width">
       <div>

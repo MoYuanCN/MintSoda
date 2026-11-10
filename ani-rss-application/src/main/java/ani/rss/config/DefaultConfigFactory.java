@@ -3,6 +3,7 @@ package ani.rss.config;
 import ani.rss.commons.FileUtils;
 import ani.rss.entity.Config;
 import ani.rss.entity.Login;
+import ani.rss.entity.NotificationTemplate;
 import ani.rss.enums.AniSortTypeEnum;
 import ani.rss.enums.BgmTokenTypeEnum;
 import ani.rss.enums.OffsetTypeEnum;
@@ -69,7 +70,6 @@ public class DefaultConfigFactory {
                 mikanani.me
                 mikanime.tv
                 anibt.net
-                animes.garden
                 nyaa.si
                 acg.rip
                 google.com
@@ -110,6 +110,9 @@ public class DefaultConfigFactory {
                 .setDownloadToolType("qBittorrent")
                 .setDownloadRetry(3)
                 .setDownloadToolPassword(downloadToolPassword)
+                .setQbAuthType("API_KEY")
+                .setQbUsername("")
+                .setQbPassword("")
                 .setQbUseDownloadPath(false)
                 .setQbContentLayout("Original")
                 .setRatioLimit(-2)
@@ -120,7 +123,6 @@ public class DefaultConfigFactory {
                 .setCoexist(false)
                 .setLogsMax(128)
                 .setDebug(false)
-                .setProcrastinatingMasterOnly(true)
                 .setProxy(false)
                 .setProxyHost("")
                 .setProxyPort(8080)
@@ -134,8 +136,11 @@ public class DefaultConfigFactory {
                 .setMultiLoginForbidden(true)
                 .setLoginEffectiveHours(3)
                 .setExclude(List.of("720[Pp]", "\\d-\\d", "合集", "特别篇"))
+                .setGlobalMatch(new ArrayList<>())
                 .setImportExclude(false)
                 .setEnabledExclude(false)
+                .setImportGlobalMatch(false)
+                .setEnabledGlobalMatch(false)
                 .setTmdb(true)
                 .setBgmJpName(false)
                 .setTmdbId(false)
@@ -160,20 +165,24 @@ public class DefaultConfigFactory {
                 .setPriorityKeywordsEnable(false)
                 .setPriorityKeywords(new ArrayList<>())
                 .setVerifyLoginIp(false)
-                .setAutoTrackersUpdate(false)
-                .setTrackersUpdateUrls("https://cf.trackerslist.com/best.txt")
                 .setAutoUpdate(false)
                 .setVersion("")
                 .setBgmImageSize("medium")
                 .setCustomCss("")
                 .setCustomJs("")
+                .setAppBackgroundImage("")
+                .setLoginBackgroundImage("")
+                .setLoginLogoImage("")
+                .setAppLogoImage("")
+                .setCardOpacity(92)
+                .setCardBlur(8)
+                .setAppCornerRadius(12)
+                .setCustomTorrentUrl("")
                 .setCustomEpisode(false)
                 .setCustomEpisodeStr(RenameUtil.REG_STR)
                 .setCustomEpisodeGroupIndex(2)
                 .setUpLimit(0L)
                 .setDlLimit(0L)
-                .setProcrastinating(false)
-                .setProcrastinatingDay(14)
                 .setGithubToken("")
                 .setUpdateTotalEpisodeNumber(false)
                 .setForceUpdateTotalEpisodeNumber(false)
@@ -183,11 +192,15 @@ public class DefaultConfigFactory {
                 .setCompletedPathTemplate(completedPathTemplate)
                 .setNotificationTemplate(notificationTemplate)
                 .setNotificationConfigList(new ArrayList<>())
+                .setNotificationTemplateList(new ArrayList<>(List.of(new NotificationTemplate()
+                        .setId("default")
+                        .setName("默认")
+                        .setTelegramTemplate("${notification}")
+                        .setCustomRequestBody("{\"text\":\"${notification}\"}"))))
                 .setApiKey(apiKey)
                 .setSortType(AniSortTypeEnum.SCORE)
                 .setTmdbIdPlexMode(false)
                 .setProxyList(proxyList)
-                .setScrape(false)
                 .setFollowDay(14)
                 .setBangumiIniEnabled(false)
                 .setMaxFileNameLength(0)

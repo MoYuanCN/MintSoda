@@ -1,5 +1,37 @@
 <template>
   <el-collapse>
+    <el-collapse-item title="可复用通知模板">
+      <div class="notification-template-list">
+        <el-card v-for="(template, index) in templateList" :key="template.id" shadow="never">
+          <div class="notification-template-heading">
+            <el-input v-model="template.name" placeholder="模板名称"/>
+            <el-button circle text type="danger" icon="Delete" aria-label="删除模板"
+                       @click="removeTemplate(index)"/>
+          </div>
+          <el-form label-position="top">
+            <el-form-item label="Telegram 消息模板">
+              <el-input v-model="template.telegramTemplate" type="textarea"
+                        :autosize="{ minRows: 2, maxRows: 6 }" placeholder="${notification}"/>
+            </el-form-item>
+            <el-form-item label="自定义请求 JSON 模板">
+              <el-input v-model="template.customRequestBody" type="textarea"
+                        :autosize="{ minRows: 2, maxRows: 6 }"
+                        placeholder='{"text":"${notification}"}'/>
+              <el-alert v-if="invalidJson(template.customRequestBody)" class="template-json-error"
+                        :closable="false" show-icon type="error"
+                        title="请求体模板不是有效 JSON；请将变量写在 JSON 字符串值内。"/>
+            </el-form-item>
+          </el-form>
+        </el-card>
+        <el-button class="notification-template-add" icon="Plus" bg text type="primary" @click="addTemplate">
+          添加模板
+        </el-button>
+      </div>
+      <el-alert class="notification-template-help" :closable="false" show-icon type="info"
+                title="创建多个模板后，可在每条通知配置中选择。JSON 中的变量会自动转义。"/>
+    </el-collapse-item>
+  </el-collapse>
+  <el-collapse>
     <el-collapse-item title="通知模板">
       <el-input v-model="props.config['notificationTemplate']" :autosize="{ minRows: 4, maxRows: 10}"
                 placeholder="${emoji} ${action}\n${title} S${seasonFormat}E${episodeFormat}\n${text}" type="textarea"/>
@@ -72,13 +104,46 @@
 
 <script setup>
 import NotificationConfigView from "./NotificationConfigView.vue";
-import {ref} from "vue";
+import {computed, ref} from "vue";
+import {ElMessage} from "element-plus";
 
 import {getLabel} from "@/js/notification-type.js";
 import {Delete, Edit} from "@element-plus/icons-vue";
 import {newNotification} from "@/js/http.js";
 
 let addLoading = ref(false)
+const templateList = computed(() => {
+  if (!Array.isArray(props.config.notificationTemplateList)) props.config.notificationTemplateList = []
+  return props.config.notificationTemplateList
+})
+
+const addTemplate = () => {
+  templateList.value.push({
+    id: globalThis.crypto?.randomUUID?.() || `template-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: `模板 ${templateList.value.length + 1}`,
+    telegramTemplate: '${notification}',
+    customRequestBody: '{"text":"${notification}"}'
+  })
+}
+
+const invalidJson = body => {
+  if (!body?.trim()) return false
+  try {
+    JSON.parse(body)
+    return false
+  } catch {
+    return true
+  }
+}
+
+const removeTemplate = index => {
+  const id = templateList.value[index]?.id
+  templateList.value.splice(index, 1)
+  for (const notification of props.config.notificationConfigList || []) {
+    if (notification.notificationTemplateId === id) notification.notificationTemplateId = ''
+  }
+  ElMessage.info('已删除模板；使用该模板的通知将改用各自的备用模板')
+}
 
 let add = () => {
   addLoading.value = true
@@ -102,6 +167,26 @@ let props = defineProps(['config'])
 </script>
 
 <style scoped>
+.notification-template-list {
+  display: grid;
+  gap: 10px;
+}
+
+.notification-template-heading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notification-template-add {
+  justify-self: start;
+}
+
+.template-json-error {
+  margin-top: 6px;
+}
+
 .notification-template-link {
   width: 100%;
   justify-content: end;

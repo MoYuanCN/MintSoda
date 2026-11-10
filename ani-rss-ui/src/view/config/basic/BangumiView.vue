@@ -85,13 +85,6 @@
       </div>
     </div>
   </template>
-  <div class="flex justify-start">
-    <el-link type="primary"
-             class="text-extra-small"
-             href="https://docs.wushuo.top/config/basic/other#emby-webhook"
-             target="_blank">支持自动点格子
-    </el-link>
-  </div>
 </template>
 
 <script setup>

@@ -60,7 +60,7 @@
   <SettingsItem label="qb保存路径">
     <div>
       <el-switch v-model:model-value="props.config.qbUseDownloadPath"
-                 :disabled="config.downloadToolType !== 'qBittorrent'"/>
+                 :disabled="props.config.downloadToolType !== 'qBittorrent'"/>
       <br>
       <el-text class="mx-1" size="small">
         开启后将使用qBittorrent的临时下载位置 (最终下载位置不受影响)

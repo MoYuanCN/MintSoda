@@ -12,8 +12,9 @@
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import LoginView from "@/view/LoginView.vue";
 import MainLayoutView from "@/view/home/MainLayoutView.vue";
-import {authorization, init} from "@/js/global.js";
-import {reactive} from "vue";
+import {authorization, init, applyUiCustomization} from "@/js/global.js";
+import {reactive, onMounted} from "vue";
+import * as http from "@/js/http.js";
 
 /**
  * 链接配置
@@ -28,5 +29,11 @@ let dialogConfig = reactive({
 })
 
 init()
+
+onMounted(() => {
+  http.publicSettings()
+      .then(res => applyUiCustomization(res.data))
+      .catch(() => {})
+})
 
 </script>

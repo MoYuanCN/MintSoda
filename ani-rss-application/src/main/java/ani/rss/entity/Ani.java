@@ -155,6 +155,10 @@ public class Ani implements Serializable {
     @Schema(description = "是否启用全局排除")
     private Boolean globalExclude;
 
+    /** 是否应用全局匹配规则。 */
+    @Schema(description = "是否应用全局匹配规则")
+    private Boolean globalMatch;
+
     /**
      * 剧场版 or OVA
      */
@@ -261,12 +265,6 @@ public class Ani implements Serializable {
     @Nullable
     @Schema(description = "TMDB 相关信息")
     private Tmdb tmdb;
-
-    /**
-     * 摸鱼
-     */
-    @Schema(description = "摸鱼")
-    private Boolean procrastinating;
 
     /**
      * 自定义重命名模版

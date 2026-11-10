@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 管理下载器的调用与种子存取
@@ -40,7 +41,6 @@ public class TorrentUtil {
      * @return 种子列表
      */
     public static List<TorrentsInfo> getTorrentsInfos() {
-        ThreadUtil.sleep(1000);
         return new ArrayList<>(DOWNLOAD.getTorrentsInfos());
     }
 
@@ -113,6 +113,22 @@ public class TorrentUtil {
     public static File saveTorrent(Ani ani, Item item) {
         String torrent = item.getTorrent();
         String reName = item.getReName();
+
+        if (!ReUtil.contains(StringEnum.MAGNET_REG, torrent)
+                && !ReUtil.contains(StringEnum.ED2K_REG, torrent)) {
+            String customUrl = StrUtil.trimToEmpty(CONFIG.getCustomTorrentUrl());
+            String infoHash = StrUtil.trimToEmpty(item.getInfoHash());
+            if (StrUtil.isNotBlank(customUrl) && StrUtil.isNotBlank(infoHash)) {
+                String normalizedHash = infoHash.toLowerCase(Locale.ROOT);
+                if (customUrl.contains("<info_hash>") || customUrl.contains("${info_hash}")) {
+                    torrent = customUrl.replace("<info_hash>", normalizedHash)
+                            .replace("${info_hash}", normalizedHash);
+                } else {
+                    torrent = StrUtil.removeSuffix(customUrl, "/") + "/" + normalizedHash;
+                }
+                log.debug("使用自定义种子获取地址 {}", torrent);
+            }
+        }
 
         log.info("下载种子 {}", reName);
         File saveTorrentFile = getTorrent(ani, item);

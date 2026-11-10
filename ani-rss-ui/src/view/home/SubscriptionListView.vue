@@ -1,9 +1,7 @@
 <template>
   <EditAniView ref="editAniRef"/>
-  <PlayListView ref="playListRef"/>
   <CoverView ref="coverRef"/>
   <DelAniView ref="delAniRef"/>
-  <BgmRateView ref="bgmRateRef"/>
   <div class="list-container" v-loading="loading">
     <el-scrollbar class="hide-scrollbar">
       <div class="list-content">
@@ -17,10 +15,8 @@
                 <AniCoverView
                     :item="item"
                     @edit="editAniRef?.show"
-                    @playlist="playListRef?.show"
                     @cover="coverRef?.show"
                     @del="delAniRef?.show"
-                    @rate="bgmRateRef?.show"
                 />
               </div>
             </div>
@@ -32,10 +28,8 @@
               <AniCoverView
                   :item="item"
                   @edit="editAniRef?.show"
-                  @playlist="playListRef?.show"
                   @cover="coverRef?.show"
                   @del="delAniRef?.show"
-                  @rate="bgmRateRef?.show"
               />
             </div>
           </div>
@@ -49,10 +43,8 @@
 <script setup>
 import {onMounted, ref} from "vue";
 import EditAniView from "./EditAniView.vue";
-import PlayListView from "@/view/play/PlayListView.vue";
 import CoverView from "./CoverView.vue";
 import DelAniView from "./DelAniView.vue";
-import BgmRateView from "./BgmRateView.vue";
 import {fromNow} from "@/js/format.js";
 import {listAni} from "@/js/http.js";
 import AniCoverView from "@/view/home/AniCoverView.vue";
@@ -67,8 +59,6 @@ const emit = defineEmits(['loaded'])
 const editAniRef = ref()
 const delAniRef = ref()
 const coverRef = ref()
-const playListRef = ref()
-const bgmRateRef = ref()
 
 const weekList = ref([])
 const filterList = ref([])

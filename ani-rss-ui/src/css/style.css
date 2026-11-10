@@ -15,11 +15,16 @@ html.dark {
 
 :root {
     --body-background-color: #f7f5fa;
+    --app-card-opacity: 92%;
+    --app-card-blur: 8px;
+    --app-corner-radius: 12px;
+    --app-background-image: none;
+    --login-background-image: none;
 
     /* 全局圆角优化：更圆润 */
-    --el-border-radius-small: 8px;
-    --el-border-radius-base: 12px;
-    --el-border-radius-round: 24px;
+    --el-border-radius-small: calc(var(--app-corner-radius) * .67);
+    --el-border-radius-base: var(--app-corner-radius);
+    --el-border-radius-round: calc(var(--app-corner-radius) * 2);
     --app-dialog-border-radius: 16px;
 
     /* 全局边框淡化：使用更浅的颜色 */
@@ -32,6 +37,20 @@ html.dark {
 
 body {
     background-color: var(--body-background-color);
+    background-image: var(--app-background-image);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+.app-nav,
+.el-card,
+.el-dialog,
+.el-message-box,
+.config-tabs .el-tabs__content {
+    background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+    backdrop-filter: blur(var(--app-card-blur));
 }
 
 /* 折叠面板 */

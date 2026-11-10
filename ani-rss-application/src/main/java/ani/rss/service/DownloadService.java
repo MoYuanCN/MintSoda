@@ -43,9 +43,6 @@ public class DownloadService {
     private static final Config CONFIG = ConfigUtil.CONFIG;
     private static final Object LOCK = new Object();
 
-    @Resource
-    private ScrapeService scrapeService;
-
     /**
      * 下载动漫
      *
@@ -248,8 +245,6 @@ public class DownloadService {
             ani.setLastDownloadTime(System.currentTimeMillis());
             AniUtil.sync();
         }
-
-        ItemsUtil.procrastinating(ani, items);
 
         if (!autoDisabled) {
             return;
@@ -459,16 +454,6 @@ public class DownloadService {
         subgroup = StrUtil.blankToDefault(subgroup, "未知字幕组");
         ani.setSubgroup(subgroup);
 
-        Boolean scrape = CONFIG.getScrape();
-        if (scrape) {
-            try {
-                // 刮削
-                scrapeService.scrape(ani, false);
-            } catch (Exception e) {
-                log.error("刮削失败: {}", ani.getTitle());
-                log.error(e.getMessage(), e);
-            }
-        }
         String text = StrFormatter.format("{} 下载完成", name);
         if (tags.contains(TorrentsTagEnum.STANDBY_RSS.getValue())) {
             text = StrFormatter.format("(备用RSS) {}", text);
