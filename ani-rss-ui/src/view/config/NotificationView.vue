@@ -9,17 +9,19 @@
                        @click="removeTemplate(index)"/>
           </div>
           <el-form label-position="top">
-            <el-form-item label="Telegram 消息模板">
-              <el-input v-model="template.telegramTemplate" type="textarea"
-                        :autosize="{ minRows: 2, maxRows: 6 }" placeholder="${notification}"/>
+            <el-form-item label="模板类型">
+              <el-select v-model="template.type" class="template-type-select">
+                <el-option label="普通文本" value="TEXT"/>
+                <el-option label="JSON" value="JSON"/>
+              </el-select>
             </el-form-item>
-            <el-form-item label="自定义请求 JSON 模板">
-              <el-input v-model="template.customRequestBody" type="textarea"
+            <el-form-item :label="template.type === 'JSON' ? 'JSON 内容' : '文本内容'">
+              <el-input v-model="template.content" type="textarea"
                         :autosize="{ minRows: 2, maxRows: 6 }"
-                        placeholder='{"text":"${notification}"}'/>
-              <el-alert v-if="invalidJson(template.customRequestBody)" class="template-json-error"
+                        :placeholder="templatePlaceholder(template)"/>
+              <el-alert v-if="template.type === 'JSON' && invalidJson(template.content)" class="template-json-error"
                         :closable="false" show-icon type="error"
-                        title="请求体模板不是有效 JSON；请将变量写在 JSON 字符串值内。"/>
+                        title="模板内容不是有效 JSON；请将变量写在 JSON 字符串值内。"/>
             </el-form-item>
           </el-form>
         </el-card>
@@ -28,7 +30,7 @@
         </el-button>
       </div>
       <el-alert class="notification-template-help" :closable="false" show-icon type="info"
-                title="创建多个模板后，可在每条通知配置中选择。JSON 中的变量会自动转义。"/>
+                title="可创建多个命名模板；Telegram 使用普通文本，自定义请求可使用普通文本或 JSON。JSON 中的变量会自动转义。"/>
     </el-collapse-item>
   </el-collapse>
   <el-collapse>
@@ -121,10 +123,14 @@ const addTemplate = () => {
   templateList.value.push({
     id: globalThis.crypto?.randomUUID?.() || `template-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: `模板 ${templateList.value.length + 1}`,
-    telegramTemplate: '${notification}',
-    customRequestBody: '{"text":"${notification}"}'
+    type: 'TEXT',
+    content: '${notification}'
   })
 }
+
+const templatePlaceholder = template => template.type === 'JSON'
+    ? '{"text":"${notification}"}'
+    : '${notification}'
 
 const invalidJson = body => {
   if (!body?.trim()) return false
@@ -181,6 +187,10 @@ let props = defineProps(['config'])
 
 .notification-template-add {
   justify-self: start;
+}
+
+.template-type-select {
+  width: 180px;
 }
 
 .template-json-error {

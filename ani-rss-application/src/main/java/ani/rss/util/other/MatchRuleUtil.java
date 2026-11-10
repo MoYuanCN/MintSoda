@@ -2,12 +2,12 @@ package ani.rss.util.other;
 
 import ani.rss.entity.Ani;
 import ani.rss.entity.Config;
+import ani.rss.entity.ReverseMatchRule;
 import ani.rss.enums.StringEnum;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,62 +23,71 @@ public final class MatchRuleUtil {
      * Applies the configured rule priority: reverse match, global match, then exclusions.
      * Local inclusion rules remain a required condition for the normal matching path.
      */
-    public static boolean accepts(Ani ani, String title, String subgroupName) {
-        List<String> reverseRules = new ArrayList<>();
+    public static Evaluation evaluate(Ani ani, String title, String subgroupName) {
         boolean reverseEnabled = Boolean.TRUE.equals(ani.getReverseMatchEnabled());
+        List<ReverseMatchRule> localReverseRules = Optional.ofNullable(ani.getReverseMatchRules()).orElseGet(List::of);
         if (reverseEnabled) {
-            reverseRules.addAll(Optional.ofNullable(ani.getReverseMatchKeywords()).orElseGet(List::of));
+            ReverseMatchRule matched = firstReverseMatch(localReverseRules, title);
+            if (matched != null) return Evaluation.accept(targetSubgroup(matched, subgroupName), true);
         }
         if (Boolean.TRUE.equals(ani.getGlobalReverseMatch())) {
             reverseEnabled = true;
-            reverseRules.addAll(Optional.ofNullable(CONFIG.getGlobalReverseMatch()).orElseGet(List::of));
+            ReverseMatchRule matched = firstReverseMatch(
+                    Optional.ofNullable(CONFIG.getGlobalReverseMatchRules()).orElseGet(List::of), title);
+            if (matched != null) return Evaluation.accept(targetSubgroup(matched, subgroupName), true);
         }
 
         if (reverseEnabled) {
-            if (matchesAny(reverseRules, title, subgroupName)) {
-                return true;
-            }
             String missBehavior = StrUtil.blankToDefault(ani.getReverseMatchMissBehavior(), "SKIP");
             if ("ALLOW".equalsIgnoreCase(missBehavior)) {
-                return true;
+                return Evaluation.accept(subgroupName, false);
             }
             if (!"NORMAL".equalsIgnoreCase(missBehavior)) {
-                return false;
+                return Evaluation.reject(subgroupName);
             }
         }
 
         List<String> localMatch = applicableRules(ani.getMatch(), subgroupName);
         if (!localMatch.isEmpty() && !matchesAll(localMatch, title)) {
-            return false;
+            return Evaluation.reject(subgroupName);
         }
 
         if (Boolean.TRUE.equals(ani.getGlobalMatch())) {
             List<String> globalMatch = applicableRules(CONFIG.getGlobalMatch(), subgroupName);
             if (!globalMatch.isEmpty()) {
                 // A positive global match has higher priority than exclusion rules.
-                return matchesAll(globalMatch, title);
+                return matchesAll(globalMatch, title)
+                        ? Evaluation.accept(subgroupName, false)
+                        : Evaluation.reject(subgroupName);
             }
         }
 
         if (matchesAny(ani.getExclude(), title, subgroupName)) {
-            return false;
+            return Evaluation.reject(subgroupName);
         }
         if (Boolean.TRUE.equals(ani.getGlobalExclude())
                 && matchesAny(CONFIG.getExclude(), title, subgroupName)) {
-            return false;
+            return Evaluation.reject(subgroupName);
         }
-        return true;
+        return Evaluation.accept(subgroupName, false);
     }
 
-    public static boolean matchesReverse(Ani ani, String title) {
-        List<String> rules = new ArrayList<>();
-        if (Boolean.TRUE.equals(ani.getReverseMatchEnabled())) {
-            rules.addAll(Optional.ofNullable(ani.getReverseMatchKeywords()).orElseGet(List::of));
+    public static boolean accepts(Ani ani, String title, String subgroupName) {
+        return evaluate(ani, title, subgroupName).accepted();
+    }
+
+    public static ReverseMatchRule firstReverseMatch(List<ReverseMatchRule> rules, String title) {
+        if (rules == null) return null;
+        for (ReverseMatchRule rule : rules) {
+            if (rule != null && StrUtil.isNotBlank(rule.getPattern()) && contains(rule.getPattern(), title)) {
+                return rule;
+            }
         }
-        if (Boolean.TRUE.equals(ani.getGlobalReverseMatch())) {
-            rules.addAll(Optional.ofNullable(CONFIG.getGlobalReverseMatch()).orElseGet(List::of));
-        }
-        return matchesAny(rules, title, ani.getSubgroup());
+        return null;
+    }
+
+    private static String targetSubgroup(ReverseMatchRule rule, String fallbackSubgroup) {
+        return StrUtil.blankToDefault(rule.getSubgroup(), StrUtil.blankToDefault(fallbackSubgroup, "未知字幕组"));
     }
 
     private static List<String> applicableRules(List<String> rules, String subgroupName) {
@@ -129,6 +138,16 @@ public final class MatchRuleUtil {
         } catch (Exception e) {
             log.warn("匹配规则正则无效: {}", regex);
             return false;
+        }
+    }
+
+    public record Evaluation(boolean accepted, String subgroup, boolean reverseMatched) {
+        private static Evaluation accept(String subgroup, boolean reverseMatched) {
+            return new Evaluation(true, subgroup, reverseMatched);
+        }
+
+        private static Evaluation reject(String subgroup) {
+            return new Evaluation(false, subgroup, false);
         }
     }
 }

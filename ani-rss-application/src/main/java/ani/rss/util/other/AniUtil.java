@@ -97,9 +97,34 @@ public class AniUtil {
 
             Ani newAni = AniUtil.createAni();
             BeanUtil.copyProperties(newAni, ani, copyOptions);
+            migrateLegacyReverseRules(ani);
             ANI_LIST.add(ani);
         }
         log.debug("加载订阅 共{}项", ANI_LIST.size());
+    }
+
+    private static void migrateLegacyReverseRules(Ani ani) {
+        if (ani.getReverseMatchRules() == null) ani.setReverseMatchRules(new ArrayList<>());
+        List<String> legacyRules = Optional.ofNullable(ani.getReverseMatchKeywords()).orElseGet(List::of);
+        if (ani.getReverseMatchRules().isEmpty()) {
+            String fallbackSubgroup = StrUtil.blankToDefault(ani.getSubgroup(), "未知字幕组");
+            for (String legacyRule : legacyRules) {
+                if (StrUtil.isBlank(legacyRule)) continue;
+                String subgroup = fallbackSubgroup;
+                String pattern = legacyRule;
+                java.util.regex.Matcher matcher = java.util.regex.Pattern
+                        .compile("^\\{\\{(.+)}}:(.+)$")
+                        .matcher(legacyRule);
+                if (matcher.matches()) {
+                    subgroup = matcher.group(1);
+                    pattern = matcher.group(2);
+                }
+                ani.getReverseMatchRules().add(new ReverseMatchRule().setPattern(pattern).setSubgroup(subgroup));
+            }
+        }
+        ani.setReverseMatchKeywords(new ArrayList<>());
+        if (ani.getReverseMatchMissBehavior() == null) ani.setReverseMatchMissBehavior("SKIP");
+        if (ani.getGlobalReverseMatch() == null) ani.setGlobalReverseMatch(false);
     }
 
     /**
@@ -220,7 +245,7 @@ public class AniUtil {
         List<String> globalMatch = CONFIG.getGlobalMatch();
         Boolean enabledGlobalReverseMatch = CONFIG.getEnabledGlobalReverseMatch();
         Boolean importGlobalReverseMatch = CONFIG.getImportGlobalReverseMatch();
-        List<String> globalReverseMatch = CONFIG.getGlobalReverseMatch();
+        List<ReverseMatchRule> globalReverseMatchRules = CONFIG.getGlobalReverseMatchRules();
 
         // 默认导入全局排除
         if (importExclude) {
@@ -236,10 +261,13 @@ public class AniUtil {
             ani.setMatch(importedMatch.stream().distinct().toList());
         }
 
-        if (importGlobalReverseMatch && globalReverseMatch != null) {
-            List<String> importedReverse = new ArrayList<>(globalReverseMatch);
-            importedReverse.addAll(Optional.ofNullable(ani.getReverseMatchKeywords()).orElseGet(List::of));
-            ani.setReverseMatchKeywords(importedReverse.stream().distinct().toList())
+        if (importGlobalReverseMatch && globalReverseMatchRules != null) {
+            List<ReverseMatchRule> importedReverse = new ArrayList<>();
+            for (ReverseMatchRule rule : globalReverseMatchRules) {
+                importedReverse.add(new ReverseMatchRule().setPattern(rule.getPattern()).setSubgroup(rule.getSubgroup()));
+            }
+            importedReverse.addAll(Optional.ofNullable(ani.getReverseMatchRules()).orElseGet(List::of));
+            ani.setReverseMatchRules(importedReverse)
                     .setReverseMatchEnabled(true);
         }
 

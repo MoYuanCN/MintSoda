@@ -58,7 +58,8 @@ public interface BaseNotification {
      */
     default String replaceNotificationTemplate(Ani ani, NotificationConfig notificationConfig, String text, NotificationStatusEnum notificationStatusEnum) {
         String notificationTemplate = Optional.ofNullable(getSelectedTemplate(notificationConfig))
-                .map(NotificationTemplate::getTelegramTemplate)
+                .filter(template -> !"JSON".equalsIgnoreCase(template.getType()))
+                .map(template -> StrUtil.blankToDefault(template.getContent(), template.getTelegramTemplate()))
                 .filter(StrUtil::isNotBlank)
                 .orElse(notificationConfig.getNotificationTemplate());
 

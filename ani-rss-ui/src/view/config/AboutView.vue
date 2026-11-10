@@ -7,7 +7,9 @@
         <el-tooltip
             :content="`${props.config.gitInfo.branch} ${props.config.gitInfo.shortCommitId}`"
             placement="right">
-          <el-text class="mx-1 cursor-pointer" size="small">
+          <el-text class="mx-1 cursor-pointer" size="small" role="button" tabindex="0"
+                    title="连续点击七次打开开发者选项" @click.stop="developerTap"
+                    @keydown.enter.stop="developerTap" @keydown.space.prevent.stop="developerTap">
             &nbsp;v{{ props.config.version }}
           </el-text>
         </el-tooltip>
@@ -167,7 +169,7 @@ const developerTap = () => {
     developerDialogVisible.value = true
     return
   }
-  developerTapTimer = setTimeout(() => developerTapCount = 0, 1800)
+  developerTapTimer = setTimeout(() => developerTapCount = 0, 3000)
 }
 
 const unlockDeveloperMode = () => {

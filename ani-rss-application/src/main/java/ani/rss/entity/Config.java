@@ -329,6 +329,9 @@ public class Config implements Serializable {
     /** Shared reverse-match regex rules. Any matching rule accepts an item. */
     private List<String> globalReverseMatch;
 
+    /** Shared reverse-match routing rules. */
+    private List<ReverseMatchRule> globalReverseMatchRules;
+
     /**
      * 默认导入全局排除
      */

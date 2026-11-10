@@ -6,6 +6,8 @@ import ani.rss.commons.URLUtils;
 import ani.rss.config.DefaultConfigFactory;
 import ani.rss.entity.Config;
 import ani.rss.entity.NotificationConfig;
+import ani.rss.entity.NotificationTemplate;
+import ani.rss.entity.ReverseMatchRule;
 import ani.rss.handle.JsonReader;
 import ani.rss.handle.JsonWriter;
 import ani.rss.util.basic.LogUtil;
@@ -22,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -162,6 +165,7 @@ public class ConfigUtil {
         if (config.getExclude() == null) config.setExclude(new java.util.ArrayList<>());
         if (config.getGlobalMatch() == null) config.setGlobalMatch(new java.util.ArrayList<>());
         if (config.getGlobalReverseMatch() == null) config.setGlobalReverseMatch(new java.util.ArrayList<>());
+        if (config.getGlobalReverseMatchRules() == null) config.setGlobalReverseMatchRules(new java.util.ArrayList<>());
         if (config.getImportGlobalReverseMatch() == null) config.setImportGlobalReverseMatch(false);
         if (config.getEnabledGlobalReverseMatch() == null) config.setEnabledGlobalReverseMatch(false);
         if (config.getImportGlobalMatch() == null) config.setImportGlobalMatch(false);
@@ -170,6 +174,7 @@ public class ConfigUtil {
         if (config.getEnabledExclude() == null) config.setEnabledExclude(false);
         if (config.getNotificationTemplateList() == null) config.setNotificationTemplateList(new java.util.ArrayList<>());
         if (config.getNotificationConfigList() == null) config.setNotificationConfigList(new java.util.ArrayList<>());
+        migrateLegacyGlobalReverseRules(config);
         if (config.getCardOpacity() == null) config.setCardOpacity(92);
         if (config.getCardBlur() == null) config.setCardBlur(8);
         if (config.getAppCornerRadius() == null) config.setAppCornerRadius(12);
@@ -234,6 +239,92 @@ public class ConfigUtil {
             }
             BeanUtil.copyProperties(newNotificationConfig, notificationConfig, copyOptions);
         }
+
+        Map<String, String> migratedJsonTemplateIds = migrateNotificationTemplates(config);
+        for (NotificationConfig notificationConfig : notificationConfigList) {
+            if (notificationConfig.getNotificationType() == ani.rss.enums.NotificationTypeEnum.CUSTOM_REQUEST) {
+                String jsonTemplateId = migratedJsonTemplateIds.get(notificationConfig.getNotificationTemplateId());
+                if (jsonTemplateId != null) notificationConfig.setNotificationTemplateId(jsonTemplateId);
+            }
+        }
+    }
+
+    private static void migrateLegacyGlobalReverseRules(Config config) {
+        List<ReverseMatchRule> rules = config.getGlobalReverseMatchRules();
+        List<String> legacyRules = config.getGlobalReverseMatch();
+        if (rules.isEmpty() && legacyRules != null) {
+            for (String legacyRule : legacyRules) {
+                if (StrUtil.isBlank(legacyRule)) continue;
+                String subgroup = "";
+                String pattern = legacyRule;
+                java.util.regex.Matcher matcher = java.util.regex.Pattern
+                        .compile("^\\{\\{(.+)}}:(.+)$")
+                        .matcher(legacyRule);
+                if (matcher.matches()) {
+                    subgroup = matcher.group(1);
+                    pattern = matcher.group(2);
+                }
+                rules.add(new ReverseMatchRule().setPattern(pattern).setSubgroup(subgroup));
+            }
+        }
+        config.setGlobalReverseMatch(new java.util.ArrayList<>());
+    }
+
+    /** Split old dual-purpose templates into text and JSON templates without losing selections. */
+    private static Map<String, String> migrateNotificationTemplates(Config config) {
+        List<NotificationTemplate> templates = config.getNotificationTemplateList();
+        Map<String, String> jsonTemplateIds = new java.util.HashMap<>();
+        java.util.Set<String> usedIds = templates.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(NotificationTemplate::getId)
+                .filter(StrUtil::isNotBlank)
+                .collect(java.util.stream.Collectors.toSet());
+        List<NotificationTemplate> normalized = new java.util.ArrayList<>();
+
+        for (NotificationTemplate template : templates) {
+            if (template == null) continue;
+            if (StrUtil.isNotBlank(template.getType()) && template.getContent() != null) {
+                boolean json = "JSON".equalsIgnoreCase(template.getType());
+                template.setType(json ? "JSON" : "TEXT");
+                if (json) {
+                    template.setCustomRequestBody(template.getContent()).setTelegramTemplate(null);
+                } else {
+                    template.setTelegramTemplate(template.getContent()).setCustomRequestBody(null);
+                }
+                normalized.add(template);
+                continue;
+            }
+
+            String textContent = template.getTelegramTemplate();
+            String jsonContent = template.getCustomRequestBody();
+            if (StrUtil.isNotBlank(textContent) && StrUtil.isNotBlank(jsonContent)) {
+                String legacyId = template.getId();
+                template.setType("TEXT").setContent(textContent).setCustomRequestBody(null);
+                normalized.add(template);
+
+                String jsonId = legacyId + "-json";
+                while (usedIds.contains(jsonId)) jsonId = java.util.UUID.randomUUID().toString();
+                usedIds.add(jsonId);
+                NotificationTemplate jsonTemplate = new NotificationTemplate()
+                        .setId(jsonId)
+                        .setName(StrUtil.blankToDefault(template.getName(), "通知模板") + " JSON")
+                        .setType("JSON")
+                        .setContent(jsonContent)
+                        .setCustomRequestBody(jsonContent);
+                normalized.add(jsonTemplate);
+                if (StrUtil.isNotBlank(legacyId)) jsonTemplateIds.put(legacyId, jsonId);
+            } else if (StrUtil.isNotBlank(jsonContent)) {
+                template.setType("JSON").setContent(jsonContent).setTelegramTemplate(null);
+                normalized.add(template);
+            } else {
+                template.setType("TEXT").setContent(StrUtil.nullToEmpty(textContent))
+                        .setTelegramTemplate(StrUtil.nullToEmpty(textContent)).setCustomRequestBody(null);
+                normalized.add(template);
+            }
+        }
+
+        config.setNotificationTemplateList(normalized);
+        return jsonTemplateIds;
     }
 
     private static String replaceLegacyMessageVariable(String template) {

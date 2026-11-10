@@ -58,6 +58,7 @@ export let configData = {
     ],
     "globalMatch": [],
     "globalReverseMatch": [],
+    "globalReverseMatchRules": [],
     "importExclude": false,
     "enabledExclude": false,
     "importGlobalMatch": false,

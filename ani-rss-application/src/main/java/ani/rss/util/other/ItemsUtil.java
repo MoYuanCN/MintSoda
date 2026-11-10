@@ -222,9 +222,11 @@ public class ItemsUtil {
                     .setFormatSize(formatSize)
                     .setPubDate(pubDate);
 
-            if (!MatchRuleUtil.accepts(ani, addNewItem.getTitle(), subgroupName)) {
+            MatchRuleUtil.Evaluation match = MatchRuleUtil.evaluate(ani, addNewItem.getTitle(), subgroupName);
+            if (!match.accepted()) {
                 continue;
             }
+            addNewItem.setSubgroup(match.subgroup());
             items.add(addNewItem);
         }
 
@@ -239,14 +241,6 @@ public class ItemsUtil {
                     return false;
                 }).toList();
         return CollUtil.distinct(items, item -> item.getEpisode().toString(), true);
-    }
-
-    /**
-     * 判断 RSS 条目是否匹配订阅配置的反向关键词。每条规则均为正则表达式，任意一条命中即可。
-     * 无有效规则或规则表达式错误时均不匹配，避免错误配置导致泛 RSS 全量下载。
-     */
-    public static boolean matchesReverse(Ani ani, String title) {
-        return MatchRuleUtil.matchesReverse(ani, title);
     }
 
     /**

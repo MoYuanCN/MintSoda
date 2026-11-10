@@ -15,11 +15,13 @@
       </SettingsItem>
       <SettingsItem label="消息模板">
         <div class="notification-template-select">
-          <el-select v-model="notificationConfig.notificationTemplateId" clearable placeholder="使用单条通知模板">
-            <el-option v-for="template in props.config.notificationTemplateList || []"
-                       :key="template.id" :label="template.name || '未命名模板'" :value="template.id"/>
+          <el-select v-model="notificationConfig.notificationTemplateId" clearable placeholder="使用单条通知模板"
+                     @change="templateSelectionChanged">
+            <el-option v-for="template in availableTemplates"
+                       :key="template.id" :label="`${template.name || '未命名模板'} · ${template.type === 'JSON' ? 'JSON' : '文本'}`"
+                       :value="template.id"/>
           </el-select>
-          <el-text size="small" type="info">未选择时，使用下方对应渠道的模板</el-text>
+          <el-text size="small" type="info">Telegram 使用文本模板；自定义请求可选文本或 JSON。未选择时使用渠道模板。</el-text>
         </div>
       </SettingsItem>
       <SettingsItem label="通知状态">
@@ -65,7 +67,7 @@
 
 <script setup>
 import SettingsItem from "@/view/custom/SettingsItem.vue";
-import {ref} from "vue";
+import {computed, ref, watch} from "vue";
 import EmbyRefreshNotificationView from "./notification/EmbyRefreshNotificationView.vue";
 import TelegramNotificationView from "./notification/TelegramNotificationView.vue";
 import WebhookNotificationView from "./notification/WebhookNotificationView.vue";
@@ -101,6 +103,31 @@ let notificationConfig = ref({
 })
 
 const messageTestLoading = ref(false)
+const availableTemplates = computed(() => {
+  const type = notificationConfig.value.notificationType
+  const templates = props.config.notificationTemplateList || []
+  if (type === 'TELEGRAM') return templates.filter(template => template.type !== 'JSON')
+  if (type === 'CUSTOM_REQUEST') return templates
+  return []
+})
+
+watch(() => notificationConfig.value.notificationType, () => {
+  const selectedId = notificationConfig.value.notificationTemplateId
+  const selectedTemplate = availableTemplates.value.find(template => template.id === selectedId)
+  if (selectedId && !selectedTemplate) {
+    notificationConfig.value.notificationTemplateId = ''
+    return
+  }
+  if (selectedTemplate && notificationConfig.value.notificationType === 'CUSTOM_REQUEST') {
+    notificationConfig.value.webHookContentType = selectedTemplate.type === 'JSON' ? 'application/json' : 'text/plain'
+  }
+})
+
+const templateSelectionChanged = id => {
+  const template = availableTemplates.value.find(item => item.id === id)
+  if (!template || notificationConfig.value.notificationType !== 'CUSTOM_REQUEST') return
+  notificationConfig.value.webHookContentType = template.type === 'JSON' ? 'application/json' : 'text/plain'
+}
 
 const messageTest = () => {
   messageTestLoading.value = true
@@ -110,8 +137,26 @@ const messageTest = () => {
   const selectedTemplate = (props.config.notificationTemplateList || [])
       .find(template => template.id === config.notificationTemplateId)
   if (selectedTemplate) {
-    config.notificationTemplate = selectedTemplate.telegramTemplate || config.notificationTemplate
-    config.webHookBody = selectedTemplate.customRequestBody || config.webHookBody
+    const templateType = selectedTemplate.type === 'JSON' ? 'JSON' : 'TEXT'
+    const content = selectedTemplate.content ?? (templateType === 'JSON'
+        ? selectedTemplate.customRequestBody
+        : selectedTemplate.telegramTemplate) ?? ''
+    config.notificationTemplateId = ''
+    if (templateType === 'JSON') {
+      try {
+        JSON.parse(content)
+      } catch {
+        ElMessage.error('当前 JSON 模板格式无效，请先修正模板内容')
+        messageTestLoading.value = false
+        return
+      }
+      config.webHookBody = content
+      config.webHookContentType = 'application/json'
+    } else {
+      config.notificationTemplate = content
+      config.webHookBody = content
+      if (config.notificationType === 'CUSTOM_REQUEST') config.webHookContentType = 'text/plain'
+    }
   }
 
   testNotification(config)
@@ -129,6 +174,10 @@ let props = defineProps(['config'])
 
 let show = (newNotificationConfig) => {
   notificationConfig.value = newNotificationConfig
+  const selectedId = notificationConfig.value.notificationTemplateId
+  if (selectedId && !availableTemplates.value.some(template => template.id === selectedId)) {
+    notificationConfig.value.notificationTemplateId = ''
+  }
   dialogVisible.value = true
 }
 

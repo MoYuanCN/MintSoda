@@ -49,18 +49,29 @@ public class CustomRequestNotification implements BaseNotification {
             throw new IllegalArgumentException("不支持的请求方法: " + methodName, e);
         }
 
+        NotificationTemplate selectedTemplate = BaseNotification.getSelectedTemplate(config);
         String contentType = StrUtil.blankToDefault(config.getWebHookContentType(), "application/json").trim();
+        boolean jsonTemplate = selectedTemplate == null
+                ? isJson(contentType)
+                : "JSON".equalsIgnoreCase(selectedTemplate.getType());
+        if (jsonTemplate && !isJson(contentType)) {
+            contentType = "application/json";
+        } else if (selectedTemplate != null && !jsonTemplate && isJson(contentType)) {
+            contentType = "text/plain";
+        }
         Map<String, String> headers = renderHeaders(config.getWebHookHeader(), ani, text, status);
         if (headers.keySet().stream().noneMatch(key -> key.equalsIgnoreCase("Content-Type"))) {
             headers.put("Content-Type", contentType);
         }
 
-        NotificationTemplate selectedTemplate = BaseNotification.getSelectedTemplate(config);
         String bodyTemplate = Optional.ofNullable(selectedTemplate)
-                .map(NotificationTemplate::getCustomRequestBody)
+                .map(template -> StrUtil.blankToDefault(template.getContent(),
+                        "JSON".equalsIgnoreCase(template.getType())
+                                ? template.getCustomRequestBody()
+                                : template.getTelegramTemplate()))
                 .filter(StrUtil::isNotBlank)
                 .orElse(config.getWebHookBody());
-        String body = StrUtil.isBlank(bodyTemplate) ? "" : isJson(contentType)
+        String body = StrUtil.isBlank(bodyTemplate) ? "" : jsonTemplate
                 ? renderJsonBody(bodyTemplate, ani, text, status)
                 : render(bodyTemplate, ani, text, status);
 

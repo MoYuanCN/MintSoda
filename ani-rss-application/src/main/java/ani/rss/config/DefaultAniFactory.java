@@ -38,6 +38,7 @@ public class DefaultAniFactory {
                 .setMatch(List.of())
                 .setReverseMatchEnabled(false)
                 .setReverseMatchKeywords(List.of())
+                .setReverseMatchRules(new ArrayList<>())
                 .setReverseMatchMissBehavior("SKIP")
                 .setExclude(List.of("720[Pp]", "\\d-\\d", "合集", "特别篇"))
                 .setBgmUrl("")

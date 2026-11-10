@@ -130,18 +130,17 @@ public class Ani implements Serializable {
     @Schema(description = "匹配")
     private List<String> match;
 
-    /**
-     * 是否按 RSS 条目标题进行反向匹配。
-     * 开启后，reverseMatchKeywords 中任一正则命中标题时，该条目归入当前订阅及其字幕组。
-     */
+    /** Whether the subscription's reverse-match routing rules are enabled. */
     @Schema(description = "反匹配开关")
     private Boolean reverseMatchEnabled;
 
-    /**
-     * 反匹配关键词（正则表达式）；多条规则采用任一命中。
-     */
+    /** Legacy reverse-match rules, migrated to reverseMatchRules during load. */
     @Schema(description = "反匹配关键词")
     private List<String> reverseMatchKeywords;
+
+    /** Title regex rules and their destination subtitle groups. */
+    @Schema(description = "反匹配规则")
+    private List<ReverseMatchRule> reverseMatchRules;
 
     /** 是否应用配置中维护的全局反匹配规则。 */
     @Schema(description = "是否应用全局反匹配规则")

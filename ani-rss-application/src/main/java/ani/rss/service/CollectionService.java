@@ -242,7 +242,9 @@ public class CollectionService {
                         return false;
                     }
 
-                    return MatchRuleUtil.accepts(ani, name, ani.getSubgroup());
+                    MatchRuleUtil.Evaluation match = MatchRuleUtil.evaluate(ani, name, ani.getSubgroup());
+                    if (match.accepted()) item.setSubgroup(match.subgroup());
+                    return match.accepted();
                 })
                 .map(item -> {
                     long length = item.getLength();
@@ -251,7 +253,7 @@ public class CollectionService {
 
                     item
                             .setFormatSize(formatSize)
-                            .setSubgroup(ani.getSubgroup());
+                            .setSubgroup(StrUtil.blankToDefault(item.getSubgroup(), ani.getSubgroup()));
 
                     RenameUtil.rename(ani, item);
 
