@@ -24,7 +24,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           name: ${{ env.version }}
-          body_path: UPDATE.md
+          generate_release_notes: true
           tag_name: ${{ env.version }}
           append_body: false
           token: ${{ secrets.GITHUB_TOKEN }}
