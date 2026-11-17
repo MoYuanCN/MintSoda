@@ -16,6 +16,8 @@
 
 本项目只支持 Linux 与 Windows，不维护 Docker 或 macOS 构建。
 
+协作与安全要求见 [贡献指南](CONTRIBUTING.md) 与 [安全说明](SECURITY.md)；面向 AI 编码代理的完整仓库约定见根目录 `AGENTS.md`。
+
 ## 环境与构建
 
 需要 Java 25。Maven 前端插件会把 Node.js 和 pnpm 下载到 `ani-rss-ui/node/`，pnpm 依赖缓存写入 `ani-rss-ui/.tools/pnpm-store/`；两处都由 `.gitignore` 排除，不需要安装到系统目录。前端依赖使用 `pnpm-lock.yaml` 锁定。

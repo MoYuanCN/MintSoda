@@ -30,6 +30,9 @@ ANI-RSS-Yuri 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的 Fork，保�
 - [ANI-RSS-Yuri Releases](https://github.com/MoYuanCN/ani-rss-Yuri/releases)
 - [使用指南](docs/USER_GUIDE.md)
 - [开发指南](docs/DEVELOPMENT.md)
+- [贡献指南](docs/CONTRIBUTING.md)
+- [安全说明](docs/SECURITY.md)
+- [AGENTS.md](AGENTS.md)（面向 AI 编码代理与协作者的仓库约定）
 
 Windows 可使用发布的 EXE，也可使用 JAR。Linux 使用 JAR。运行 JAR 需要 Java 25。
 
