@@ -1,6 +1,7 @@
 package ani.rss.controller;
 
 import ani.rss.annotation.Auth;
+import ani.rss.entity.Ani;
 import ani.rss.entity.CollectionInfo;
 import ani.rss.entity.Item;
 import ani.rss.entity.web.Result;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -35,6 +37,13 @@ public class CollectionController extends BaseController {
     public Result<List<Item>> previewCollection(@RequestBody CollectionInfo collectionInfo) {
         List<Item> items = collectionService.previewCollection(collectionInfo);
         return Result.success(items);
+    }
+
+    @Auth
+    @Operation(summary = "获取合集的下载位置")
+    @PostMapping("/collectionDownloadPath")
+    public Result<Map<String, Object>> collectionDownloadPath(@RequestBody Ani ani) {
+        return Result.success(collectionService.downloadPath(ani));
     }
 
     @Auth

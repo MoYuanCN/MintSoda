@@ -158,7 +158,8 @@ const tabKeyMap = {
   download: new Set([
     'downloadToolType', 'downloadToolHost', 'downloadToolPassword', 'downloadRetry', 'qbAuthType',
     'qbUsername', 'qbPassword', 'qbUseDownloadPath', 'qbContentLayout', 'ratioLimit', 'seedingTimeLimit',
-    'inactiveSeedingTimeLimit', 'downloadPathTemplate', 'ovaDownloadPathTemplate', 'customTags',
+    'inactiveSeedingTimeLimit', 'downloadPathTemplate', 'ovaDownloadPathTemplate',
+    'collectionDownloadPathTemplate', 'customTags',
     'priorityKeywordsEnable', 'priorityKeywords', 'delayedDownload', 'delete', 'awaitStalledUP',
     'deleteStandbyRSSOnly', 'downloadCount', 'upLimit', 'dlLimit', 'customTorrentUrl',
     'developerOptionsEnabled'

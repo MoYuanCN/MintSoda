@@ -17,6 +17,7 @@ export let configData = {
     "inactiveSeedingTimeLimit": -2,
     "downloadPathTemplate": "",
     "ovaDownloadPathTemplate": "",
+    "collectionDownloadPathTemplate": "",
     "customTags": [],
     "priorityKeywordsEnable": false,
     "priorityKeywords": [],

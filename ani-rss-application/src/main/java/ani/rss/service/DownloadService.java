@@ -676,8 +676,11 @@ public class DownloadService {
         downloadPathTemplate = downloadPathTemplate.replace("${season}", String.valueOf(season));
         downloadPathTemplate = downloadPathTemplate.replace("${seasonFormat}", seasonFormat);
 
-        String bgmId = BgmUtil.getSubjectId(ani);
-        downloadPathTemplate = downloadPathTemplate.replace("${bgmId}", bgmId);
+        // 只有模板真正使用 ${bgmId} 时才解析，避免无 BGM 的合集因取不到 id 而失败。
+        if (downloadPathTemplate.contains("${bgmId}")) {
+            String bgmId = BgmUtil.getSubjectId(ani);
+            downloadPathTemplate = downloadPathTemplate.replace("${bgmId}", bgmId);
+        }
 
         List<Func1<Ani, Object>> list = List.of(
                 Ani::getTitle,

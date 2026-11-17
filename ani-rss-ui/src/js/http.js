@@ -297,6 +297,13 @@ export let previewCollection = (info) => api.post('api/previewCollection', info)
 export let getCollectionSubgroup = (info) => api.post('api/getCollectionSubgroup', info)
 
 /**
+ * 获取合集实际使用的保存位置
+ * @param ani 合集关联的订阅信息
+ * @returns {Promise<unknown>}
+ */
+export let collectionDownloadPath = (ani) => api.post('api/collectionDownloadPath', ani)
+
+/**
  * 将指定id的BGM番剧转换为订阅
  * @param id BGM的ID
  * @returns {Promise<unknown>}

@@ -89,6 +89,30 @@
           </el-alert>
         </div>
       </SettingsItem>
+      <SettingsItem label="合集保存位置">
+        <el-input
+            v-model.trim="props.config['collectionDownloadPathTemplate']"
+            placeholder="留空则使用普通保存位置"/>
+        <div class="full-width margin-top-4">
+          <el-text class="mx-1" size="small">
+            仅用于合集下载。例如普通保存位置是 <code>/番剧/更新中</code> 时可设为 <code>/番剧/合集</code>。
+            <br>
+            支持与普通保存位置相同的变量；留空表示不启用，合集仍使用添加合集时显示的路径。
+          </el-text>
+        </div>
+        <div class="full-width margin-top-4"
+             v-if="props.config['collectionDownloadPathTemplate'] && !testPathTemplate(props.config['collectionDownloadPathTemplate'])">
+          <el-alert
+              type="warning"
+              show-icon
+              :closable="false"
+          >
+            <template #title>
+              合集保存位置 没有包含任何变量，所有合集都会保存到同一目录
+            </template>
+          </el-alert>
+        </div>
+      </SettingsItem>
       <SettingsItem label="自动删除">
         <div>
           <el-switch v-model:model-value="props.config.delete"/>

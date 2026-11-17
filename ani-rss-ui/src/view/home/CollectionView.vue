@@ -115,13 +115,24 @@
               </el-form-item>
               <el-form-item label="下载位置">
                 <div class="full-width">
-                  <el-input v-model:model-value="data.ani.customDownloadPathTemplate" :autosize="{ minRows: 2}"
+                  <el-input v-model:model-value="data.ani.customDownloadPathTemplate"
+                            :autosize="{ minRows: 2}"
+                            :disabled="useCollectionPath"
                             class="full-width"
-                            type="textarea"/>
+                            type="textarea"
+                            @input="pathEdited = true"/>
+                  <div class="path-hint">
+                    <el-text v-if="useCollectionPath" size="small" type="success">
+                      正在使用设置中的“合集保存位置”，上方内容仅作参考
+                    </el-text>
+                    <el-text v-else size="small" type="info">
+                      未设置“合集保存位置”时使用此路径；修改名称、TMDB 或季会自动更新。
+                      可直接填写含变量的模板，固定路径会在开始下载时按当前信息重新计算
+                    </el-text>
+                  </div>
                 </div>
                 <div style="margin-top: 6px;">
-                  <el-button :disabled="!data.ani.customDownloadPath"
-                             :loading="downloadPathLoading" bg icon="Refresh"
+                  <el-button :loading="downloadPathLoading" bg icon="Refresh"
                              text
                              @click="downloadPath"/>
                 </div>
@@ -186,7 +197,7 @@
 </template>
 
 <script setup>
-import {ref} from "vue";
+import {ref, watch} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import BgmView from "./BgmView.vue";
 import ExcludeView from "@/view/config/ExcludeView.vue";
@@ -219,20 +230,39 @@ let start = () => {
 }
 
 let downloadPathLoading = ref(false)
-const refreshCollectionPath = () => {
+const useCollectionPath = ref(false)
+const pathEdited = ref(false)
+let refreshTimer
+
+/**
+ * 重新计算合集保存位置。服务端会优先使用设置中的合集保存位置，
+ * 因此标题、TMDB、季或剧场版标记变化后都应调用，避免保存到过期路径。
+ */
+const refreshCollectionPath = (notify = false) => {
+  // 立即刷新时取消已排队的自动刷新，避免重复请求。
+  clearTimeout(refreshTimer)
+  if (!data.value.show) {
+    return Promise.resolve()
+  }
   downloadPathLoading.value = true
-  let newAni = JSON.parse(JSON.stringify(data.value.ani))
-  newAni.customDownloadPath = false
-  http.downloadPath(newAni)
+  return http.collectionDownloadPath(data.value.ani)
       .then(res => {
+        useCollectionPath.value = Boolean(res.data.useCollectionPath)
+        // 始终展示实际会使用的路径；使用合集位置时输入框只读。
         data.value.ani.customDownloadPathTemplate = res.data.downloadPath
+        // 自动填入的路径只是展示值，交给服务端按当前信息重新计算。
+        data.value.ani.customDownloadPath = pathEdited.value
+        pathEdited.value = false
+        if (notify) {
+          ElMessage.success('保存位置已更新')
+        }
       })
       .finally(() => {
         downloadPathLoading.value = false
       })
 }
 
-let downloadPath = refreshCollectionPath
+let downloadPath = () => refreshCollectionPath(true)
 
 let collectionPreviewRef = ref()
 
@@ -293,6 +323,8 @@ let dialogVisible = ref(false)
 
 let show = () => {
   data.value.show = false
+  useCollectionPath.value = false
+  pathEdited.value = false
   data.value.ani.title = ''
   data.value.torrent = ''
   data.value.filename = ''
@@ -306,7 +338,6 @@ let getBgmName = () => {
   getBgmTitle(data.value.ani)
       .then(res => {
         data.value.ani.title = res.data
-        refreshCollectionPath()
       })
       .finally(() => {
         getBgmNameLoading.value = false
@@ -326,7 +357,6 @@ let getThemoviedbName = () => {
         ElMessage.success(res.message)
         data.value.ani['themoviedbName'] = res.data['themoviedbName']
         data.value.ani['tmdb'] = res.data['tmdb']
-        refreshCollectionPath()
       })
       .finally(() => {
         getThemoviedbNameLoading.value = false
@@ -335,8 +365,32 @@ let getThemoviedbName = () => {
 
 const useTmdbTitle = () => {
   data.value.ani.title = data.value.ani.themoviedbName
-  refreshCollectionPath()
 }
+
+// 标题、TMDB、季或剧场版标记变化都会影响保存路径，自动重新计算，避免忘记手动刷新。
+const scheduleRefreshPath = () => {
+  clearTimeout(refreshTimer)
+  refreshTimer = setTimeout(() => refreshCollectionPath(), 400)
+}
+
+watch(
+    () => [
+      data.value.ani.title,
+      data.value.ani.themoviedbName,
+      data.value.ani.tmdb?.id,
+      data.value.ani.subgroup,
+      data.value.ani.season,
+      data.value.ani.ova,
+      data.value.ani.releaseDate
+    ],
+    () => {
+      // 自动刷新会覆盖输入框内容，用户刚改过路径时不再自动重算。
+      if (!data.value.show || pathEdited.value) {
+        return
+      }
+      scheduleRefreshPath()
+    }
+)
 
 
 defineExpose({show})
@@ -360,6 +414,10 @@ defineExpose({show})
 .filename {
   max-width: 300px;
   color: var(--el-color-info);
+}
+
+.path-hint {
+  margin-top: 4px;
 }
 
 .action {

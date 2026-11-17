@@ -121,6 +121,12 @@ public class Config implements Serializable {
     private String ovaDownloadPathTemplate;
 
     /**
+     * 合集下载路径，留空时使用普通保存位置
+     */
+    @Schema(description = "合集下载路径模版")
+    private String collectionDownloadPathTemplate;
+
+    /**
      * 自定义标签
      */
     @Schema(description = "自定义标签")

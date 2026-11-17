@@ -187,6 +187,7 @@ public class ConfigUtil {
         if (config.getQbUsername() == null) config.setQbUsername("");
         if (config.getQbPassword() == null) config.setQbPassword("");
         if (config.getCustomTorrentUrl() == null) config.setCustomTorrentUrl("");
+        if (config.getCollectionDownloadPathTemplate() == null) config.setCollectionDownloadPathTemplate("");
         if (config.getRssConcurrency() == null) config.setRssConcurrency(4);
         config.setRssConcurrency(Math.max(1, Math.min(16, config.getRssConcurrency())));
         if (config.getRssTimeout() == null) config.setRssTimeout(20);
@@ -405,6 +406,11 @@ public class ConfigUtil {
             v = FileUtils.getAbsolutePath(v);
             dynaBean.set(fieldName, v);
         }
+
+        // 合集保存位置留空表示不启用，不能归一化为当前工作目录。
+        String collectionPath = config.getCollectionDownloadPathTemplate();
+        config.setCollectionDownloadPathTemplate(
+                StrUtil.isBlank(collectionPath) ? "" : FileUtils.getAbsolutePath(collectionPath));
     }
 
 }

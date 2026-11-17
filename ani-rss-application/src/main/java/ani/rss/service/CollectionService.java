@@ -22,6 +22,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpResponse;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +37,9 @@ import java.util.stream.Collectors;
 public class CollectionService {
 
     private static final Config CONFIG = ConfigUtil.CONFIG;
+
+    @Resource
+    private DownloadService downloadService;
 
     /**
      * 开始下载合集
@@ -55,7 +59,8 @@ public class CollectionService {
         Ani ani = collectionInfo.getAni();
         String title = ani.getTitle();
         String subgroup = ani.getSubgroup();
-        String downloadPath = ani.getCustomDownloadPathTemplate();
+        // 保存位置始终按当前标题/TMDB/季重新计算，避免界面未手动刷新时使用过期或空路径。
+        String downloadPath = resolveDownloadPath(ani);
 
         String name = StrFormatter.format("[{}] {} 第{}季", subgroup, title, ani.getSeason());
         download(name, tempFile, downloadPath, List.of("ANI-RSS合集下载", subgroup));
@@ -132,6 +137,46 @@ public class CollectionService {
         }
 
         qBittorrent.start(torrentsInfo);
+    }
+
+    /**
+     * 获取合集实际使用的保存位置。
+     * 优先使用设置中的合集保存位置；未设置时沿用界面里的自定义位置，最后回落到普通保存位置。
+     *
+     * @param ani 合集关联的订阅信息
+     * @return 保存位置
+     */
+    public String resolveDownloadPath(Ani ani) {
+        // 名称为空会让 ${title} 变成空串，产生 /番剧/Season 1 这类缺少番剧名的路径。
+        Ani source = ani;
+        if (StrUtil.isBlank(ani.getTitle()) && StrUtil.isNotBlank(ani.getThemoviedbName())) {
+            source = ObjectUtil.clone(ani).setTitle(ani.getThemoviedbName());
+        }
+        String collectionTemplate = CONFIG.getCollectionDownloadPathTemplate();
+        if (StrUtil.isNotBlank(collectionTemplate)) {
+            return downloadService.getDownloadPath(source, collectionTemplate);
+        }
+        // 弹窗里自动填入的是已解析的字面路径，换条目后可能过期，因此只有用户手动修改
+        // （customDownloadPath 为 true）或仍是模板时才直接使用。
+        String customTemplate = ani.getCustomDownloadPathTemplate();
+        boolean manual = Boolean.TRUE.equals(ani.getCustomDownloadPath());
+        if (StrUtil.isNotBlank(customTemplate) && (manual || customTemplate.contains("${"))) {
+            return downloadService.getDownloadPath(source, customTemplate);
+        }
+        return downloadService.getDownloadPath(source);
+    }
+
+    /**
+     * 合集保存位置与是否使用设置中的合集位置
+     *
+     * @param ani 合集关联的订阅信息
+     * @return 保存位置信息
+     */
+    public Map<String, Object> downloadPath(Ani ani) {
+        return Map.of(
+                "downloadPath", resolveDownloadPath(ani),
+                "useCollectionPath", StrUtil.isNotBlank(CONFIG.getCollectionDownloadPathTemplate())
+        );
     }
 
     /**

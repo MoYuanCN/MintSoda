@@ -88,6 +88,7 @@ public class DefaultConfigFactory {
                 .setAutoDisabled(false)
                 .setDownloadPathTemplate(downloadPathTemplate)
                 .setOvaDownloadPathTemplate(ovaDownloadPathTemplate)
+                .setCollectionDownloadPathTemplate("")
                 .setDownloadToolHost(downloadToolHost)
                 .setDownloadToolType("qBittorrent")
                 .setDownloadRetry(3)
