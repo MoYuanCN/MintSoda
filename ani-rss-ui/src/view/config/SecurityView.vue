@@ -9,13 +9,19 @@
     </el-input>
   </SettingsItem>
   <SettingsItem label="密码">
-    <el-input v-model:model-value="props.config.login.password" autocomplete="new-password">
-      <template #prefix>
-        <el-icon class="el-input__icon">
-          <Key/>
-        </el-icon>
-      </template>
-    </el-input>
+    <div class="full-width">
+      <el-input v-model:model-value="props.config.login.password" type="password" show-password
+                placeholder="留空表示不修改当前密码" autocomplete="new-password">
+        <template #prefix>
+          <el-icon class="el-input__icon">
+            <Key/>
+          </el-icon>
+        </template>
+      </el-input>
+      <el-text class="mx-1" size="small">
+        修改用户名或密码后，所有已登录会话都会失效，需要重新登录
+      </el-text>
+    </div>
   </SettingsItem>
   <SettingsItem label="登录有效">
     <el-input-number v-model:model-value="props.config.loginEffectiveHours" :min="0">

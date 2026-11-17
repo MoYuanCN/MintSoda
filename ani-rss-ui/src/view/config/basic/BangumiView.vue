@@ -45,9 +45,9 @@
           placeholder="abcdefghijklm"
       />
     </SettingsItem>
-    <SettingsItem label="回调地址">
+        <SettingsItem label="回调地址">
       <div class="full-width">
-        <el-input v-model="props.config['bgmRedirectUri']"/>
+        <el-input v-model="props.config['bgmRedirectUri']" :placeholder="defaultRedirectUri"/>
         <el-button bg icon="Refresh"
                    class="mt-6"
                    @click="setRedirectUri"/>
@@ -89,9 +89,9 @@
 
 <script setup>
 import SettingsItem from "@/view/custom/SettingsItem.vue";
-import {ElText} from "element-plus";
+import {ElMessageBox, ElText} from "element-plus";
 import BangumiMeView from "./BangumiMeView.vue";
-import {onMounted, ref} from "vue";
+import {computed, ref} from "vue";
 import {setConfig} from "@/js/http.js";
 import {getBaseUrl} from "@/js/global.js";
 
@@ -99,21 +99,28 @@ let bangumiMeRef = ref()
 
 let props = defineProps(['config'])
 
-let setRedirectUri = () => {
-  props.config['bgmRedirectUri'] = `${getBaseUrl()}bgm-oauth-callback`
-}
+const defaultRedirectUri = computed(() => `${getBaseUrl()}bgm-oauth-callback`)
 
-onMounted(() => {
-  if (props.config['bgmRedirectUri']) {
-    return
-  }
-  setRedirectUri()
-})
+let setRedirectUri = () => {
+  props.config['bgmRedirectUri'] = defaultRedirectUri.value
+}
 
 let loading = ref(false);
 
-let start = () => {
+let start = async () => {
+  try {
+    await ElMessageBox.confirm(
+        'Bangumi 授权回调需要读取本页应用信息，继续会先保存当前页面的设置。',
+        '获取授权',
+        {confirmButtonText: '保存并继续', cancelButtonText: '取消', type: 'info'}
+    )
+  } catch {
+    return
+  }
   loading.value = true;
+  if (!props.config['bgmRedirectUri']) {
+    setRedirectUri()
+  }
   setConfig(props.config)
       .then(async res => {
         let redirect = window.encodeURI(props.config['bgmRedirectUri'])

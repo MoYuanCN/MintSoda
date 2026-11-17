@@ -1,7 +1,9 @@
 <template>
   <div class="reverse-match-settings">
     <el-alert :closable="false" show-icon type="info"
-              title="规则优先级：反匹配 > 全局匹配 > 排除。反匹配未命中默认跳过；可在订阅里改为继续普通规则或放行。保存全局规则请使用设置页右上角的保存按钮。"/>
+              title="规则优先级：反匹配 > 全局匹配 > 排除。反匹配未命中默认跳过；可在订阅里改为继续普通规则或放行。"/>
+    <el-alert :closable="false" show-icon type="warning"
+              title="本页有两套保存：上方全局规则属于设置，需点击底部“保存设置”；下方订阅规则点击“保存该订阅规则”后立即生效。"/>
     <el-card shadow="never">
       <div class="section-heading">
         <div>
@@ -17,7 +19,7 @@
                    :label="`${ani.title} · ${ani.subgroup || '未知字幕组'}`" :value="ani.id"/>
       </el-select>
       <el-button type="primary" icon="Check" :disabled="!selectedAni || loading" :loading="saving"
-                 @click="save">保存反匹配</el-button>
+                 @click="save">保存该订阅规则</el-button>
     </div>
     <el-empty v-if="!selectedAni && !loading" description="没有订阅"/>
     <ReverseMatchView v-else-if="selectedAni" :ani="selectedAni"/>

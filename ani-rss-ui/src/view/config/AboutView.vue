@@ -124,7 +124,6 @@ import 'markdown-it-github-alerts/styles/github-base.css'
 
 import {authorization} from "@/js/global.js";
 import * as http from "@/js/http.js";
-import {md5} from "js-md5";
 import {uiCustomization, uiAssetUrl} from "@/js/global.js";
 
 let md = markdownit({
@@ -162,24 +161,31 @@ const developerTap = () => {
 }
 
 const unlockDeveloperMode = () => {
+  const credentials = {
+    username: (developerCredentials.value.username || '').trim(),
+    password: developerCredentials.value.password || ''
+  }
+  if (!credentials.username || !credentials.password) {
+    ElMessage.error('请输入当前登录账号和密码')
+    return
+  }
   developerLoading.value = true
-  http.verifyDeveloperCredentials(developerCredentials.value)
+  http.verifyDeveloperCredentials(credentials)
       .then(() => ElMessageBox.confirm(
-          '账号密码验证通过。继续后会立即保存当前已修改的全部设置到配置文件，启用开发者选项，并刷新页面。',
+          '账号密码验证通过。启用开发者选项后页面会刷新，本页其它未保存的修改将丢失。',
           '确认开启开发者选项',
-          {confirmButtonText: '保存并开启', cancelButtonText: '取消', type: 'warning'}
+          {confirmButtonText: '开启并刷新', cancelButtonText: '取消', type: 'warning'}
       ))
-      .then(() => {
-        const configToSave = JSON.parse(JSON.stringify(props.config))
-        configToSave.developerOptionsEnabled = true
-        configToSave.login.username = configToSave.login.username.trim()
-        configToSave.login.password = configToSave.login.password.trim()
-        if (configToSave.login.password) configToSave.login.password = md5(configToSave.login.password)
-        return http.setConfig(configToSave)
-      })
+      .then(() => http.setDeveloperSettings({
+        username: credentials.username,
+        password: credentials.password,
+        customTorrentUrl: props.config.customTorrentUrl || ''
+      }))
       .then(res => {
         ElMessage.success(res.message || '开发者选项已开启，页面即将刷新')
         developerDialogVisible.value = false
+        developerCredentials.value = {username: '', password: ''}
+        window.$skipUnsavedGuard = true
         setTimeout(() => window.location.reload(), 500)
       })
       .catch(error => {
