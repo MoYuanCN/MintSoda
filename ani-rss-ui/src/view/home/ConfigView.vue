@@ -207,6 +207,13 @@ const validateConfig = value => {
   if (!Number.isFinite(renameInterval) || renameInterval < 1) {
     return '重命名间隔必须至少为 1 秒'
   }
+  // 旧配置可能还没有并发字段，缺省时交给服务端补默认值。
+  if (value.rssConcurrency !== undefined && value.rssConcurrency !== null) {
+    const concurrency = Number(value.rssConcurrency)
+    if (!Number.isFinite(concurrency) || concurrency < 1 || concurrency > 16) {
+      return 'RSS 并发数需在 1 到 16 之间'
+    }
+  }
   const timeout = Number(value.rssTimeout)
   if (!Number.isFinite(timeout) || timeout < 1) {
     return 'RSS 超时时间必须至少为 1 秒'

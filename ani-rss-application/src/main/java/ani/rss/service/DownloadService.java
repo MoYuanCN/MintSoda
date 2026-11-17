@@ -11,6 +11,7 @@ import ani.rss.entity.StandbyRss;
 import ani.rss.entity.torrent.TorrentsInfo;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.enums.StringEnum;
+import ani.rss.enums.TorrentsStateEnum;
 import ani.rss.enums.TorrentsTagEnum;
 import ani.rss.util.other.*;
 import cn.hutool.core.date.DateField;
@@ -44,12 +45,78 @@ public class DownloadService {
     private static final Object LOCK = new Object();
 
     /**
+     * 单轮刷新内的目录与任务缓存。
+     * 短间隔轮询时避免为每个条目重复列目录或请求下载器，减少磁盘唤醒与网络开销。
+     */
+    private static final class PassCache {
+        private final Map<String, List<File>> dirFiles = new HashMap<>();
+        private final Map<String, String> downloadPaths = new HashMap<>();
+    }
+
+    private static final ThreadLocal<PassCache> PASS_CACHE = new ThreadLocal<>();
+
+    /**
+     * 开始一轮处理，建立本轮缓存。
+     */
+    public static void beginPass() {
+        PASS_CACHE.set(new PassCache());
+    }
+
+    /**
+     * 结束一轮处理，释放本轮缓存。
+     */
+    public static void endPass() {
+        PASS_CACHE.remove();
+    }
+
+    /**
+     * 列出目录内容，同一轮内相同目录只读取一次。
+     *
+     * @param path 目录
+     * @return 文件列表
+     */
+    private static List<File> listFilesCached(String path) {
+        PassCache cache = PASS_CACHE.get();
+        if (cache == null) {
+            return FileUtils.listFileList(path);
+        }
+        return cache.dirFiles.computeIfAbsent(path, FileUtils::listFileList);
+    }
+
+    /**
+     * 删除文件后使对应目录的缓存失效，避免同一轮内继续使用过期的文件列表。
+     *
+     * @param path 目录
+     */
+    private static void invalidateDirCache(String path) {
+        PassCache cache = PASS_CACHE.get();
+        if (cache != null) {
+            cache.dirFiles.remove(path);
+        }
+    }
+
+    /**
      * 下载动漫
      *
      * @param ani 订阅
      */
     @Synchronized("LOCK")
     public void downloadAni(Ani ani) {
+        // 单条刷新（如添加订阅后立即下载）没有外层轮次时，自行建立并释放本次缓存。
+        boolean ownsPass = PASS_CACHE.get() == null;
+        if (ownsPass) {
+            beginPass();
+        }
+        try {
+            downloadAniInternal(ani);
+        } finally {
+            if (ownsPass) {
+                endPass();
+            }
+        }
+    }
+
+    private void downloadAniInternal(Ani ani) {
         Boolean delete = CONFIG.getDelete();
         Boolean autoDisabled = CONFIG.getAutoDisabled();
         Integer downloadCount = CONFIG.getDownloadCount();
@@ -308,7 +375,8 @@ public class DownloadService {
             }
         }
 
-        List<File> files = FileUtils.listFileList(downloadPath);
+        List<File> files = listFilesCached(downloadPath);
+        boolean changed = false;
         for (File file : files) {
             String fileName = file.getName();
             if (!ReUtil.contains(StringEnum.SEASON_REG, fileName)) {
@@ -346,12 +414,16 @@ public class DownloadService {
                 log.info("已开启备用RSS, 自动删除 {}", file);
                 try {
                     FileUtil.del(file);
+                    changed = true;
                     log.info("删除成功 {}", file);
                 } catch (Exception e) {
                     log.error("删除失败 {}", file);
                     log.error(e.getMessage(), e);
                 }
             }
+        }
+        if (changed) {
+            invalidateDirCache(downloadPath);
         }
     }
 
@@ -378,7 +450,6 @@ public class DownloadService {
             log.error("种子下载出现问题 {} {}", name, torrentFile);
             return;
         }
-        ThreadUtil.sleep(1000);
         savePath = FileUtils.getAbsolutePath(savePath);
 
         String text = StrFormatter.format("{} 已更新", name);
@@ -391,6 +462,7 @@ public class DownloadService {
         for (int i = 1; i <= downloadRetry; i++) {
             try {
                 if (TorrentUtil.download(ani, item, savePath, torrentFile)) {
+                    trackAddedTorrent(item, savePath, torrentFile);
                     return;
                 }
             } catch (Exception e) {
@@ -501,6 +573,25 @@ public class DownloadService {
      * @return 下载位置
      */
     public String getDownloadPath(Ani ani, Config config) {
+        PassCache cache = PASS_CACHE.get();
+        String cacheKey = null;
+        if (cache != null && config == CONFIG) {
+            cacheKey = String.join("|",
+                    StrUtil.nullToEmpty(ani.getId()),
+                    String.valueOf(ani.getSeason()),
+                    StrUtil.nullToEmpty(ani.getTitle()),
+                    StrUtil.nullToEmpty(ani.getSubgroup()),
+                    String.valueOf(ani.getOva()),
+                    String.valueOf(ani.getReleaseDate()),
+                    String.valueOf(ani.getCustomDownloadPath()),
+                    StrUtil.nullToEmpty(ani.getCustomDownloadPathTemplate())
+            );
+            String cached = cache.downloadPaths.get(cacheKey);
+            if (cached != null) {
+                return cached;
+            }
+        }
+
         Boolean customDownloadPath = ani.getCustomDownloadPath();
         String customDownloadPathTemplate = ani.getCustomDownloadPathTemplate();
         Boolean ova = ani.getOva();
@@ -608,9 +699,30 @@ public class DownloadService {
             downloadPathTemplate = downloadPathTemplate.replace("${jpTitle}", jpTitle);
         }
 
-        return FileUtils.getAbsolutePath(downloadPathTemplate);
+        String downloadPath = FileUtils.getAbsolutePath(downloadPathTemplate);
+        if (cacheKey != null) {
+            cache.downloadPaths.put(cacheKey, downloadPath);
+        }
+        return downloadPath;
     }
 
+
+    /**
+     * 将本轮新增的任务登记到刷新缓存，使同时下载限制在后续订阅中仍然准确。
+     *
+     * @param item        资源项
+     * @param savePath    保存位置
+     * @param torrentFile 种子文件
+     */
+    private void trackAddedTorrent(Item item, String savePath, File torrentFile) {
+        String hash = FileUtil.mainName(torrentFile).trim().toLowerCase();
+        TorrentUtil.trackTorrent(new TorrentsInfo()
+                .setHash(hash)
+                .setName(item.getReName())
+                .setSavePath(savePath)
+                .setState(TorrentsStateEnum.downloading)
+                .setProgress(0.0));
+    }
 
     /**
      * 判断是否已经下载过
@@ -656,7 +768,7 @@ public class DownloadService {
         }
 
         String downloadPath = getDownloadPath(ani);
-        List<File> files = FileUtils.listFileList(downloadPath);
+        List<File> files = listFilesCached(downloadPath);
 
         if (files.stream()
                 .filter(file -> FileUtils.isVideoFormat(file.getName()))

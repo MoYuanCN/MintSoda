@@ -372,19 +372,25 @@ public class AniService {
     public Map<String, Object> previewAni(Ani ani) {
         List<Item> items = ItemsUtil.getItems(ani);
 
-        String downloadPath = downloadService.getDownloadPath(ani);
-
-        for (Item item : items) {
-            item.setHasDownloaded(false);
-            File torrent = TorrentUtil.getTorrent(ani, item);
-            if (torrent.exists()) {
-                item.setHasDownloaded(true)
-                        .setTorrentPath(torrent.getAbsolutePath());
-                continue;
+        // 预览会逐个条目检查本地目录，启用单轮缓存避免重复列目录与下载路径计算。
+        DownloadService.beginPass();
+        String downloadPath;
+        try {
+            downloadPath = downloadService.getDownloadPath(ani);
+            for (Item item : items) {
+                item.setHasDownloaded(false);
+                File torrent = TorrentUtil.getTorrent(ani, item);
+                if (torrent.exists()) {
+                    item.setHasDownloaded(true)
+                            .setTorrentPath(torrent.getAbsolutePath());
+                    continue;
+                }
+                if (downloadService.itemDownloaded(ani, item, false)) {
+                    item.setHasDownloaded(true);
+                }
             }
-            if (downloadService.itemDownloaded(ani, item, false)) {
-                item.setHasDownloaded(true);
-            }
+        } finally {
+            DownloadService.endPass();
         }
 
         List<Integer> omitList = ItemsUtil.omitList(ani, items);

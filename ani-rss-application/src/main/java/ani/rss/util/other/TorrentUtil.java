@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * 管理下载器的调用与种子存取
@@ -36,11 +37,68 @@ public class TorrentUtil {
     private static BaseDownload DOWNLOAD;
 
     /**
+     * 单轮刷新内的任务列表缓存，避免每个订阅都请求一次下载器。
+     */
+    private static final ThreadLocal<List<TorrentsInfo>> PASS_TORRENTS = new ThreadLocal<>();
+
+    /**
+     * 开始一轮刷新，拉取一次任务列表并在本轮内复用。
+     */
+    public static void beginPass() {
+        PASS_TORRENTS.set(new ArrayList<>(DOWNLOAD.getTorrentsInfos()));
+    }
+
+    /**
+     * 结束一轮刷新，释放任务列表缓存。
+     */
+    public static void endPass() {
+        PASS_TORRENTS.remove();
+    }
+
+    /**
+     * 记录本轮内新添加的任务，避免同一轮重复添加与计数错误。
+     *
+     * @param torrentsInfo 任务
+     */
+    public static void trackTorrent(TorrentsInfo torrentsInfo) {
+        List<TorrentsInfo> torrentsInfos = PASS_TORRENTS.get();
+        if (torrentsInfos == null || torrentsInfo == null) {
+            return;
+        }
+        boolean exists = torrentsInfos.stream()
+                .anyMatch(info -> Objects.equals(info.getHash(), torrentsInfo.getHash()));
+        if (!exists) {
+            torrentsInfos.add(torrentsInfo);
+        }
+    }
+
+    /**
+     * 强制从下载器重新拉取任务列表，并同步更新本轮缓存。
+     * 用于确认新添加的任务是否已经出现在下载器中。
+     *
+     * @return 种子列表
+     */
+    public static List<TorrentsInfo> refreshTorrentsInfos() {
+        List<TorrentsInfo> torrentsInfos = new ArrayList<>(DOWNLOAD.getTorrentsInfos());
+        List<TorrentsInfo> pass = PASS_TORRENTS.get();
+        // 请求失败时下载器返回空列表，此时保留本轮已有记录，避免丢失刚添加的任务。
+        if (pass != null && !torrentsInfos.isEmpty()) {
+            pass.clear();
+            pass.addAll(torrentsInfos);
+        }
+        return torrentsInfos;
+    }
+
+    /**
      * 获取任务列表
      *
      * @return 种子列表
      */
     public static List<TorrentsInfo> getTorrentsInfos() {
+        List<TorrentsInfo> torrentsInfos = PASS_TORRENTS.get();
+        if (torrentsInfos != null) {
+            return new ArrayList<>(torrentsInfos);
+        }
         return new ArrayList<>(DOWNLOAD.getTorrentsInfos());
     }
 
@@ -181,7 +239,6 @@ public class TorrentUtil {
      * @return 是否登录成功
      */
     public static Boolean login() {
-        ThreadUtil.sleep(1000);
         String downloadPath = CONFIG.getDownloadPathTemplate();
         if (StrUtil.isBlank(downloadPath)) {
             log.warn("下载位置未设置");
@@ -258,6 +315,10 @@ public class TorrentUtil {
             return false;
         }
         log.info("删除任务成功 {}", name);
+        List<TorrentsInfo> pass = PASS_TORRENTS.get();
+        if (pass != null) {
+            pass.removeIf(info -> Objects.equals(info.getHash(), torrentsInfo.getHash()));
+        }
         if (!deleteFiles) {
             return true;
         }

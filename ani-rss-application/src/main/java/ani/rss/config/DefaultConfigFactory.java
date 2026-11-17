@@ -75,6 +75,7 @@ public class DefaultConfigFactory {
                 .setRename(true)
                 .setRss(true)
                 .setRssTimeout(20)
+                .setRssConcurrency(4)
                 .setCustomTags(new ArrayList<>())
                 .setDelayedDownload(0)
                 .setFileExist(false)

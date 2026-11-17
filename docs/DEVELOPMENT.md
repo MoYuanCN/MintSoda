@@ -46,6 +46,9 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 - 旧版 `Config.notificationTemplate` 是完整消息正文，迁移时应并入默认文本通知模板；模板应直接渲染 `${title}`、`${subgroup}`、`${text}` 等字段，不再嵌套 `${notification}`。
 - 开发者设置由 `developerOptionsEnabled` 控制是否显示；通过关于页的凭据验证后，先确认并保存整份当前配置，再启用该标记并刷新页面。
 - 过滤规则或业务条件有多个调用点时抽取共享逻辑。RSS 下载、RSS 预览和合集预览应保持一致。
+- RSS 读取统一走 `ItemsUtil#getRss`：同一轮内复用响应、跨轮使用 `ETag` 条件请求、失败时回退到上次成功内容。需要新增 RSS 请求入口时复用该方法，不要自行发 HTTP 请求。
+- 短间隔轮询依赖单轮缓存：`ItemsUtil#beginRssBatch`/`endRssBatch`、`TorrentUtil#beginPass`/`endPass`、`DownloadService#beginPass`/`endPass` 分别缓存 RSS 响应、下载器任务列表和本地目录列表。新增轮次入口时要成对调用，避免使用过期数据。
+- 下载路径计算较重，单轮内会按订阅字段做记忆化；修改路径模板相关字段时同步检查缓存键。
 - 修改配置语义时更新用户指南；修改发布流程时同步检查 workflow、安装脚本、README 和更新说明。
 - 保持上游配置字段兼容。已有 JSON 中缺少新字段时应采用安全默认值，不要求用户手工重建配置。
 - 提交遵循 Conventional Commits，例如 `feat(match): add global reverse rules`、`docs: document fork-specific behavior`、`build: remove container publishing`。

@@ -13,6 +13,7 @@ import ani.rss.enums.TorrentsTagEnum;
 import ani.rss.service.DownloadService;
 import ani.rss.util.basic.HttpReq;
 import ani.rss.util.other.ConfigUtil;
+import ani.rss.util.other.TorrentUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
@@ -190,9 +191,9 @@ public class qBittorrent implements BaseDownload {
 
         String hash = FileUtil.mainName(torrentFile);
 
-        for (int i = 0; i < 3; i++) {
-            ThreadUtil.sleep(1000 * 10);
-            List<TorrentsInfo> torrentsInfos = getTorrentsInfos();
+        // 轮询确认任务已出现在下载器中：命中即返回，避免固定等待。
+        for (int i = 0; i < 10; i++) {
+            List<TorrentsInfo> torrentsInfos = TorrentUtil.refreshTorrentsInfos();
             Optional<TorrentsInfo> optionalTorrentsInfo = torrentsInfos
                     .stream()
                     .filter(torrentsInfo ->
@@ -203,6 +204,7 @@ public class qBittorrent implements BaseDownload {
             if (optionalTorrentsInfo.isPresent()) {
                 return true;
             }
+            ThreadUtil.sleep(i < 2 ? 500 : 1000);
         }
         return false;
     }
@@ -222,9 +224,7 @@ public class qBittorrent implements BaseDownload {
     @Override
     public List<TorrentsInfo> getTorrentsInfos() {
         String host = CONFIG.getDownloadToolHost();
-        String password = CONFIG.getDownloadToolPassword();
-
-        if (StrUtil.isBlank(host) || StrUtil.isBlank(password)) {
+        if (StrUtil.isBlank(host) || !configured()) {
             return new ArrayList<>();
         }
 
@@ -249,6 +249,20 @@ public class qBittorrent implements BaseDownload {
         } catch (Exception ignored) {
         }
         return new ArrayList<>();
+    }
+
+    /**
+     * 当前认证方式所需凭据是否已配置。
+     * API Key 模式需要以 qbt_ 开头的密钥；用户名密码模式需要账号和密码。
+     *
+     * @return 是否已配置
+     */
+    private static boolean configured() {
+        if ("USER_PASSWORD".equalsIgnoreCase(CONFIG.getQbAuthType())) {
+            return StrUtil.isNotBlank(CONFIG.getQbUsername())
+                    && StrUtil.isNotBlank(CONFIG.getQbPassword());
+        }
+        return StrUtil.isNotBlank(CONFIG.getDownloadToolPassword());
     }
 
     @Override

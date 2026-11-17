@@ -32,6 +32,7 @@ public class RenameTask implements BaseTask {
             ThreadUtil.sleep(renameSleepSeconds * 1000L);
             return;
         }
+        DownloadService.beginPass();
         try {
             List<TorrentsInfo> torrentsInfos = TorrentUtil.getTorrentsInfos();
             for (TorrentsInfo torrentsInfo : torrentsInfos) {
@@ -53,6 +54,8 @@ public class RenameTask implements BaseTask {
         } catch (Exception e) {
             String message = ExceptionUtils.getMessage(e);
             log.error(message, e);
+        } finally {
+            DownloadService.endPass();
         }
         ThreadUtil.sleep(renameSleepSeconds * 1000L);
     }

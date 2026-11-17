@@ -10,32 +10,146 @@ import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.enums.StringEnum;
 import ani.rss.util.basic.HttpReq;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.*;
+import cn.hutool.http.Header;
+import cn.hutool.http.HttpRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.*;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 
 @Slf4j
 public class ItemsUtil {
     private static final Config CONFIG = ConfigUtil.CONFIG;
-    private static final ThreadLocal<Map<String, String>> RSS_BATCH_CACHE = new ThreadLocal<>();
 
-    /** Share identical RSS fetches across subscriptions during one download pass. */
+    /**
+     * RSS 地址到最近一次响应体的缓存，用于同一轮任务中复用相同地址的结果。
+     * 使用并发结构，预览等并发入口写入时不会互相破坏。
+     */
+    private static final Map<String, RssFetch> RSS_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * 同一轮任务内复用响应；任务结束后缓存仅作为极短时间的去重，避免预览反复拉取。
+     */
+    private static volatile boolean BATCH_ACTIVE = false;
+
+    /**
+     * 非任务状态下的缓存有效期，避免预览界面展示过期内容。
+     */
+    private static final long PASSIVE_CACHE_TTL = 5_000L;
+
+    /**
+     * 各地址最近一次成功的响应，用于条件请求与请求失败时的兜底。
+     */
+    private static final Map<String, RssFetch> LAST_GOOD = new ConcurrentHashMap<>();
+
+    /**
+     * 请求失败后的退避截止时间，避免短间隔轮询持续压垮异常站点。
+     */
+    private static final Map<String, Long> BACKOFF_UNTIL = new ConcurrentHashMap<>();
+
+    /**
+     * 记录已提示过失败退避的地址，避免高频轮询时刷屏。
+     */
+    private static final Set<String> BACKOFF_LOGGED = new ConcurrentHashSet<>();
+
+    /**
+     * 本轮已确认失败的地址（没有可用旧内容时），避免同一轮内反复重试。
+     */
+    private static final Set<String> FAILED_THIS_PASS = new ConcurrentHashSet<>();
+
+    /**
+     * 开始一轮任务，清理上一轮的响应缓存。
+     */
     public static void beginRssBatch() {
-        RSS_BATCH_CACHE.set(new HashMap<>());
+        RSS_CACHE.clear();
+        FAILED_THIS_PASS.clear();
+        BATCH_ACTIVE = true;
     }
 
     public static void endRssBatch() {
-        RSS_BATCH_CACHE.remove();
+        RSS_CACHE.clear();
+        FAILED_THIS_PASS.clear();
+        BATCH_ACTIVE = false;
+    }
+
+    /**
+     * 并发预取一批订阅的 RSS 响应，写入本轮缓存供下载流程直接命中。
+     * 单个地址的失败只记录日志，不中断整轮刷新。
+     *
+     * @param aniList     订阅列表
+     * @param concurrency 并发数
+     */
+    public static void prefetchRss(List<Ani> aniList, int concurrency) {
+        Set<String> urls = new LinkedHashSet<>();
+        boolean standbyRss = Boolean.TRUE.equals(CONFIG.getStandbyRss());
+        for (Ani ani : aniList) {
+            if (StrUtil.isNotBlank(ani.getUrl())) {
+                urls.add(ani.getUrl());
+            }
+            if (!standbyRss) {
+                continue;
+            }
+            Optional.ofNullable(ani.getStandbyRssList())
+                    .orElseGet(List::of)
+                    .stream()
+                    .map(StandbyRss::getUrl)
+                    .filter(StrUtil::isNotBlank)
+                    .forEach(urls::add);
+        }
+
+        urls.removeIf(RSS_CACHE::containsKey);
+        if (urls.isEmpty()) {
+            return;
+        }
+
+        int threads = Math.max(1, Math.min(Math.max(1, concurrency), urls.size()));
+        ExecutorService executor = Executors.newFixedThreadPool(threads, r -> {
+            Thread thread = new Thread(r, "rss-prefetch");
+            thread.setDaemon(true);
+            return thread;
+        });
+        try {
+            List<Callable<Void>> tasks = urls.stream()
+                    .<Callable<Void>>map(url -> () -> {
+                        try {
+                            getRss(url);
+                        } catch (Exception e) {
+                            log.debug("预取 RSS 失败 {} {}", url, e.getMessage());
+                        }
+                        return null;
+                    })
+                    .toList();
+            // 为整体预取设定上限，间隔很短时不会因为个别站点缓慢拖住整轮刷新。
+            int rssTimeout = Math.max(1, ObjectUtil.defaultIfNull(CONFIG.getRssTimeout(), 20));
+            long budgetSeconds = (long) Math.ceil((double) urls.size() / threads) * rssTimeout;
+            budgetSeconds = Math.min(budgetSeconds, Math.max(10, rssTimeout * 2L));
+            executor.invokeAll(tasks, Math.max(1, budgetSeconds), TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("预取 RSS 被中断");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /**
+     * 单次 RSS 请求的结果。
+     *
+     * @param xml       响应体
+     * @param etag      ETag，用于条件请求
+     * @param fetchedAt 获取时间
+     */
+    private record RssFetch(String xml, String etag, long fetchedAt) {
     }
 
     /**
@@ -250,27 +364,86 @@ public class ItemsUtil {
      * @return XML
      */
     public static String getRss(String url) {
-        Map<String, String> batchCache = RSS_BATCH_CACHE.get();
-        if (batchCache != null && batchCache.containsKey(url)) {
-            return batchCache.get(url);
-        }
-        String xml = HttpReq.get(url)
-                .timeout(CONFIG.getRssTimeout() * 1000)
-                .thenFunction(res -> {
-                    HttpReq.assertStatus(res);
-                    HttpReq.assertXml(res);
-                    return res.body();
-                });
-
-        Assert.notBlank(xml, "xml is blank");
-        boolean isXml = StrUtil.startWith(xml, '<');
-        Assert.isTrue(isXml, "xml error");
-
-        if (batchCache != null) {
-            batchCache.put(url, xml);
+        RssFetch cached = RSS_CACHE.get(url);
+        if (cached != null && (BATCH_ACTIVE
+                || System.currentTimeMillis() - cached.fetchedAt() < PASSIVE_CACHE_TTL)) {
+            return cached.xml();
         }
 
+        String xml = fetchRss(url);
+        RSS_CACHE.put(url, new RssFetch(xml, null, System.currentTimeMillis()));
         return xml;
+    }
+
+    /**
+     * 请求 RSS，支持条件请求与失败兜底。
+     * <p>
+     * 命中 ETag 时服务端返回 304，直接复用上次内容；请求异常时若存在上次成功的响应，
+     * 会在退避期内继续使用旧内容，避免短间隔轮询反复失败并中断下载流程。
+     *
+     * @param url RSS 地址
+     * @return RSS 内容
+     */
+    private static String fetchRss(String url) {
+        long now = System.currentTimeMillis();
+        Long backoffUntil = BACKOFF_UNTIL.get(url);
+        RssFetch lastGood = LAST_GOOD.get(url);
+        if (backoffUntil != null && backoffUntil > now) {
+            if (lastGood != null) {
+                return lastGood.xml();
+            }
+            throw new IllegalStateException(StrFormatter.format("RSS 请求处于退避期 {}", url));
+        }
+
+        if (BATCH_ACTIVE && FAILED_THIS_PASS.contains(url)) {
+            throw new IllegalStateException(StrFormatter.format("RSS 本轮已失败，跳过 {}", url));
+        }
+
+        int timeout = Math.max(1, ObjectUtil.defaultIfNull(CONFIG.getRssTimeout(), 20)) * 1000;
+        try {
+            HttpRequest request = HttpReq.get(url).timeout(timeout);
+            if (lastGood != null && StrUtil.isNotBlank(lastGood.etag())) {
+                request.header("If-None-Match", lastGood.etag());
+            }
+            String xml = request
+                    .thenFunction(res -> {
+                        if (res.getStatus() == 304 && lastGood != null) {
+                            return lastGood.xml();
+                        }
+                        HttpReq.assertStatus(res);
+                        HttpReq.assertXml(res);
+                        String body = res.body();
+                        Assert.notBlank(body, "xml is blank");
+                        Assert.isTrue(StrUtil.startWith(StrUtil.trim(body), '<'), "xml error");
+                        LAST_GOOD.put(url, new RssFetch(
+                                body,
+                                res.header(Header.ETAG),
+                                System.currentTimeMillis()
+                        ));
+                        return body;
+                    });
+
+            Assert.notBlank(xml, "xml is blank");
+            Assert.isTrue(StrUtil.startWith(StrUtil.trim(xml), '<'), "xml error");
+            BACKOFF_UNTIL.remove(url);
+            BACKOFF_LOGGED.remove(url);
+            FAILED_THIS_PASS.remove(url);
+            return xml;
+        } catch (Exception e) {
+            if (lastGood != null) {
+                long backoff = Math.max(30_000L, Math.min(300_000L,
+                        Math.max(1, ObjectUtil.defaultIfNull(CONFIG.getRssSleepSeconds(), 900)) * 3_000L));
+                BACKOFF_UNTIL.put(url, System.currentTimeMillis() + backoff);
+                if (BACKOFF_LOGGED.add(url)) {
+                    log.warn("RSS 请求失败，暂时使用上次内容 {} {}", url, e.getMessage());
+                }
+                return lastGood.xml();
+            }
+            if (BATCH_ACTIVE) {
+                FAILED_THIS_PASS.add(url);
+            }
+            throw e;
+        }
     }
 
     public static List<Integer> omitList(Ani ani, List<Item> items) {

@@ -29,6 +29,16 @@ public class RssTask implements BaseTask {
     public static final AtomicBoolean DOWNLOAD_LOCK = new AtomicBoolean(false);
     public static AtomicBoolean LOOP = new AtomicBoolean(false);
 
+    /**
+     * 单轮刷新中并发预取 RSS 的默认最大连接数。
+     */
+    private static final int DEFAULT_RSS_PREFETCH_CONCURRENCY = 4;
+
+    /**
+     * 两次轮次之间的最小停顿，防止短间隔且处理超时时紧密循环。
+     */
+    private static final long MIN_INTERVAL_WAIT = 1000L;
+
     public static void syncDownload() {
         syncDownload(ANI_LIST);
     }
@@ -66,7 +76,13 @@ public class RssTask implements BaseTask {
             return;
         }
         ItemsUtil.beginRssBatch();
+        TorrentUtil.beginPass();
+        DownloadService.beginPass();
         try {
+            // 先并发拉取 RSS，后续逐个订阅只做本地解析，避免串行等待。
+            Integer concurrency = ConfigUtil.CONFIG.getRssConcurrency();
+            ItemsUtil.prefetchRss(aniList,
+                    concurrency == null ? DEFAULT_RSS_PREFETCH_CONCURRENCY : concurrency);
             for (Ani ani : aniList) {
                 if (!LOOP.get()) {
                     // 停止循环
@@ -94,6 +110,8 @@ public class RssTask implements BaseTask {
                 }
             }
         } finally {
+            DownloadService.endPass();
+            TorrentUtil.endPass();
             ItemsUtil.endRssBatch();
         }
     }
@@ -109,6 +127,7 @@ public class RssTask implements BaseTask {
             return;
         }
 
+        long start = System.currentTimeMillis();
         try {
             LOOP = loop;
             syncDownload(ANI_LIST);
@@ -116,6 +135,13 @@ public class RssTask implements BaseTask {
             String message = ExceptionUtils.getMessage(e);
             log.error(message, e);
         }
-        ThreadUtil.sleep(sleep, TimeUnit.SECONDS);
+        // 以固定间隔轮询：扣除本轮耗时，避免长任务把实际间隔越拖越长。
+        long elapsed = System.currentTimeMillis() - start;
+        long wait = Math.max(MIN_INTERVAL_WAIT, sleep * 1000L - elapsed);
+        if (elapsed >= sleep * 1000L) {
+            // 本轮耗时超过间隔时短暂让步，避免短间隔下连续满载运行。
+            log.debug("本轮 RSS 刷新耗时 {} ms，已超过设定间隔", elapsed);
+        }
+        ThreadUtil.sleep(wait, TimeUnit.MILLISECONDS);
     }
 }

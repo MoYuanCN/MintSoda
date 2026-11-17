@@ -186,6 +186,12 @@ public class Config implements Serializable {
     private Integer rssTimeout;
 
     /**
+     * 单轮刷新并发拉取 RSS 的最大连接数
+     */
+    @Schema(description = "RSS 并发数")
+    private Integer rssConcurrency;
+
+    /**
      * 文件已下载自动跳过
      */
     @Schema(description = "文件已下载自动跳过")

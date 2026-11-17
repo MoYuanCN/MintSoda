@@ -10,12 +10,37 @@
     </el-input-number>
   </SettingsItem>
   <SettingsItem label="RSS超时">
-    <el-input-number v-model:model-value="props.config['rssTimeout']"
-                     :max="60" :min="6">
-      <template #suffix>
-        <span>秒</span>
-      </template>
-    </el-input-number>
+    <div>
+      <el-input-number v-model:model-value="props.config['rssTimeout']"
+                       :max="120" :min="1">
+        <template #suffix>
+          <span>秒</span>
+        </template>
+      </el-input-number>
+      <br>
+      <el-text class="mx-1" size="small">
+        单个 RSS 请求的最长等待时间；超时后若已有成功内容会继续沿用旧内容
+      </el-text>
+    </div>
+  </SettingsItem>
+  <SettingsItem label="RSS并发">
+    <div>
+      <el-input-number v-model:model-value="props.config['rssConcurrency']"
+                       :max="16" :min="1">
+        <template #suffix>
+          <span>个</span>
+        </template>
+      </el-input-number>
+      <br>
+      <el-text class="mx-1" size="small">
+        每轮刷新同时拉取的 RSS 数量。间隔很短时建议保持 2-4，避免给 RSS 站点造成压力
+      </el-text>
+    </div>
+  </SettingsItem>
+  <SettingsItem label="刷新方式">
+    <el-text class="mx-1" size="small">
+      每轮以固定间隔开始：间隔从上轮开始时计算，处理耗时不会叠加到等待时间。相同 RSS 地址在同一轮只请求一次，并按 ETag 复用未变化的内容。
+    </el-text>
   </SettingsItem>
   <SettingsItem label="自动跳过">
     <div class="full-width">

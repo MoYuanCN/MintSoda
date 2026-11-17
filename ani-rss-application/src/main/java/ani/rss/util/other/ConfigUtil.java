@@ -187,6 +187,9 @@ public class ConfigUtil {
         if (config.getQbUsername() == null) config.setQbUsername("");
         if (config.getQbPassword() == null) config.setQbPassword("");
         if (config.getCustomTorrentUrl() == null) config.setCustomTorrentUrl("");
+        if (config.getRssConcurrency() == null) config.setRssConcurrency(4);
+        config.setRssConcurrency(Math.max(1, Math.min(16, config.getRssConcurrency())));
+        if (config.getRssTimeout() == null) config.setRssTimeout(20);
         if (config.getAppBackgroundImage() == null) config.setAppBackgroundImage("");
         if (config.getLoginBackgroundImage() == null) config.setLoginBackgroundImage("");
         if (config.getLoginLogoImage() == null) config.setLoginLogoImage("");
