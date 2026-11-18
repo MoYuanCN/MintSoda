@@ -138,7 +138,7 @@ bash ./package.sh
 <details>
 <summary><b>忘记密码怎么办？</b></summary>
 
-修改配置目录下的 `config.v2.json` 中 `login` 字段后重启，或使用 `--setup` 重新进入初始化引导。
+用环境变量 `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 启动即可覆盖并重置凭据；也可以加 `--setup` 重新进入 WebUI 初始化引导。配置中的密码是摘要，手工修改 `config.v2.json` 不可靠。
 
 </details>
 
