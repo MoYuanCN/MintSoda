@@ -43,13 +43,8 @@ const visible = computed({get: () => props.modelValue, set: value => emit('updat
 const makeAni = item => {
   const source = typeof item.source === 'string' ? JSON.parse(item.source) : item.source
   const ani = {...aniData, url: source.rss, type: props.type, season: 1, offset: 0, match: []}
-  if (props.type === 'anime-garden') {
-    ani.bgmUrl = `https://bgm.tv/subject/${source.bgmId}`
-    ani.subgroup = source.name
-  } else {
-    ani.bgmUrl = source.bgmUrl || `https://bgm.tv/subject/${source.bgmId}`
-    ani.subgroup = source.label || source.name
-  }
+  ani.bgmUrl = source.bgmUrl || `https://bgm.tv/subject/${source.bgmId}`
+  ani.subgroup = source.label || source.name
   // 将同番剧的后续字幕组作为 DTO 的备用 RSS 一并提交给解析接口。
   if (item.sources.length > 1) {
     ani.standbyRssList = item.sources.slice(1).map(value => {

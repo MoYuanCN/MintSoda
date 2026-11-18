@@ -208,15 +208,6 @@ public class AniUtil {
                 }
                 ani.setSubgroup(subgroup);
                 break;
-            case "anime-garden":
-                if (paramMap.containsKey("subject")) {
-                    String bgmUrl = "https://bgm.tv/subject/" + paramMap.get("subject");
-                    ani.setBgmUrl(bgmUrl);
-                }
-                if (paramMap.containsKey("fansub")) {
-                    ani.setSubgroup(paramMap.get("fansub"));
-                }
-                break;
             default:
                 String bgmUrl = dto.getBgmUrl();
                 ani.setBgmUrl(bgmUrl);
