@@ -48,7 +48,7 @@ import DelAniView from "./DelAniView.vue";
 import {fromNow} from "@/js/format.js";
 import {listAni} from "@/js/http.js";
 import AniCoverView from "@/view/home/AniCoverView.vue";
-import {showWeek} from "@/js/global.js";
+import {showWeek, subscriptionSort} from "@/js/global.js";
 
 const props = defineProps({
   title: String,
@@ -105,7 +105,7 @@ const changeFilterList = (text = '') => {
 const getList = () => {
   loading.value = true
 
-  listAni()
+  listAni(subscriptionSort.value)
       .then(res => {
         let data = res.data
         weekList.value = data.weekList

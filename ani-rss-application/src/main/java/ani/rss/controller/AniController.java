@@ -55,8 +55,8 @@ public class AniController extends BaseController {
     @Auth
     @Operation(summary = "订阅列表")
     @PostMapping("/listAni")
-    public Result<ListAni> listAni() {
-        ListAni listAni = aniService.listAni();
+    public Result<ListAni> listAni(@RequestParam(value = "sort", required = false) String sort) {
+        ListAni listAni = aniService.listAni(sort);
         return Result.success(listAni);
     }
 

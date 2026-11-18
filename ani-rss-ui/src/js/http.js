@@ -32,7 +32,7 @@ export let setConfig = (config) => api.post('api/setConfig', config);
  * 订阅列表
  * @returns {Promise<unknown>}
  */
-export let listAni = () => api.post('api/listAni')
+export let listAni = (sort) => api.post(sort ? `api/listAni?sort=${encodeURIComponent(sort)}` : 'api/listAni')
 
 /**
  * 添加订阅

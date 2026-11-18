@@ -66,12 +66,16 @@
   <SettingsItem label="圆角大小">
     <el-slider v-model="props.config.appCornerRadius" :min="0" :max="40" show-input/>
   </SettingsItem>
-  <SettingsItem label="排序">
-    <el-select v-model="props.config['sortType']" class="width-150">
+  <SettingsItem label="默认排序">
+    <el-select v-model="props.config['sortType']" class="width-200">
       <el-option value="SCORE" label="评分"/>
       <el-option value="PINYIN" label="拼音"/>
+      <el-option value="TITLE" label="标题"/>
       <el-option value="DOWNLOAD_TIME" label="更新时间"/>
+      <el-option value="UPDATE_WEEK" label="更新星期"/>
+      <el-option value="STANDBY_RSS" label="备用RSS数量"/>
     </el-select>
+    <el-text size="small" type="info">订阅页顶部可临时切换排序，不修改此默认值。</el-text>
   </SettingsItem>
   <SettingsItem label="点击封面">
     <el-select v-model="coverClickAction" class="width-150">

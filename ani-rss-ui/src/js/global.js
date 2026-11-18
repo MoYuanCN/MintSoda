@@ -54,6 +54,11 @@ const showWeek = useLocalStorage("show-week", true)
 const coverClickAction = useLocalStorage('cover-click-action', 'edit')
 
 /**
+ * 订阅页排序方式
+ */
+const subscriptionSort = useLocalStorage('subscription-sort', 'SCORE')
+
+/**
  * 启动页
  */
 const startupPage = useLocalStorage('startup-page', '/home')
@@ -167,6 +172,7 @@ export {
     showWeek,
     coverClickAction,
     startupPage,
+    subscriptionSort,
     showLastDownloadTime,
     color,
     colorChange,

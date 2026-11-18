@@ -205,8 +205,25 @@ public class AniService {
     }
 
     public ListAni listAni() {
+        return listAni(null);
+    }
+
+    /**
+     * 订阅列表，可临时指定排序方式，不改写配置。
+     *
+     * @param sortTypeName 排序方式，为空时使用设置中的默认值
+     * @return 订阅列表
+     */
+    public ListAni listAni(String sortTypeName) {
         Config config = ConfigUtil.CONFIG;
         AniSortTypeEnum sortType = config.getSortType();
+        if (sortTypeName != null && !sortTypeName.isBlank()) {
+            try {
+                sortType = AniSortTypeEnum.valueOf(sortTypeName.trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                // 前端传入了未知排序方式时回退到设置中的默认值
+            }
+        }
 
         ListAni listAni = new ListAni();
         List<ListAni.WeekAni> weekAniList = new ArrayList<>();

@@ -35,6 +35,16 @@
                        :label="selectItem.label"
                        :value="selectItem.label"/>
           </el-select>
+          <el-select
+              v-model:model-value="sortType"
+              class="subscription-select subscription-sort"
+              placeholder="排序"
+              @change="changeSort">
+            <el-option v-for="sortItem in sortOptions"
+                       :key="sortItem.value"
+                       :label="sortItem.label"
+                       :value="sortItem.value"/>
+          </el-select>
         </div>
         <div class="subscription-actions">
           <el-dropdown trigger="click">
@@ -77,6 +87,7 @@
 import {onMounted, ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {useLocalStorage} from "@vueuse/core";
+import {subscriptionSort} from "@/js/global.js";
 import SubscriptionListView from "@/view/home/SubscriptionListView.vue";
 import AddView from "@/view/home/AddView.vue";
 import CollectionView from "@/view/home/CollectionView.vue";
@@ -94,6 +105,19 @@ const releaseDateList = ref([])
 const subscriptionTotal = ref(0)
 const refreshLoading = ref(false)
 const enable = useLocalStorage('select-enable', '已启用')
+const sortType = subscriptionSort
+const sortOptions = [
+  {label: '按评分', value: 'SCORE'},
+  {label: '按拼音', value: 'PINYIN'},
+  {label: '按标题', value: 'TITLE'},
+  {label: '按更新时间', value: 'DOWNLOAD_TIME'},
+  {label: '按更新星期', value: 'UPDATE_WEEK'},
+  {label: '按备用RSS数量', value: 'STANDBY_RSS'}
+]
+
+const changeSort = () => {
+  listRef.value?.getList()
+}
 const enableSelect = [
   {
     label: '全部',
@@ -207,6 +231,10 @@ onMounted(() => {
 
 .subscription-select {
   width: 128px;
+}
+
+.subscription-sort {
+  width: 148px;
 }
 
 @media (max-width: 900px) {
