@@ -107,6 +107,7 @@ bash ./package.sh
 - 保持更新包的 `size` + `sha256` 双重校验；WebUI 更新同样校验，不要跳过。
 - 默认安全开关不能被放松：`allowCors=false`、`innerIP` 默认关闭但启用时行为不得削弱、`limitLoginAttempts` 保持生效、密码/API Key 变更后必须轮换 `tokenId` 与 JWT 会话。
 - 不要恢复内置的 `admin/admin` 默认凭据：`LoginBootstrapUtil` 负责首次启动（Windows 引导设置、Linux 生成随机强密码只输出一次、`ANI_RSS_USERNAME`/`ANI_RSS_PASSWORD` 覆盖），凭据强度规则在 `commons/CredentialUtils`，前后端需保持一致。
+- 主题相关设置（`accentColor`、`themeDynamicColor`、导航栏/弹窗的模糊度与不透明度）只用于 CSS 变量与强调色，不得写入任何主题样式文件或独立资源；预设仅写回已有配置字段。
 - 前端图标只在模板中以名称使用（`icon="Search"` 或无 import 的 `<Search/>`）时才需要加入 `ani-rss-ui/src/js/icons.js` 的全局注册表；显式 `import` 的图标不要重复注册，也不要恢复 `@element-plus/icons-vue` 的全量导入。
 - 前端 `v-html` 只能用于可信内容；`AboutView` 渲染的 Release 说明来自 GitHub API，属于外部内容，改动渲染链路时要考虑净化。`/api/custom.js`、`/api/custom.css` 会注入页面，视为管理员可信输入。
 

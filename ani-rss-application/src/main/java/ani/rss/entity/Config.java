@@ -547,6 +547,42 @@ public class Config implements Serializable {
     private Integer appCornerRadius;
 
     /**
+     * 主题强调色，留空使用默认蓝色
+     */
+    @Schema(description = "主题强调色")
+    private String accentColor;
+
+    /**
+     * 是否从已配置的背景图动态取色作为强调色
+     */
+    @Schema(description = "从背景图动态取色")
+    private Boolean themeDynamicColor;
+
+    /**
+     * 导航栏模糊度
+     */
+    @Schema(description = "导航栏模糊度")
+    private Integer navBlur;
+
+    /**
+     * 导航栏不透明度
+     */
+    @Schema(description = "导航栏不透明度")
+    private Integer navOpacity;
+
+    /**
+     * 弹窗模糊度
+     */
+    @Schema(description = "弹窗模糊度")
+    private Integer dialogBlur;
+
+    /**
+     * 弹窗不透明度
+     */
+    @Schema(description = "弹窗不透明度")
+    private Integer dialogOpacity;
+
+    /**
      * 是否自动清理未被引用的缓存
      */
     @Schema(description = "自动清理缓存")

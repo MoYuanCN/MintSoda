@@ -40,10 +40,19 @@
     </el-radio-group>
   </SettingsItem>
   <SettingsItem label="主题色">
-    <el-color-picker v-model="color" :predefine="predefineColors"
-                     @blur="colorChange(color)"
-                     @change="colorChange(color)"
-                     @active-change="colorChange"/>
+    <div class="theme-color-row">
+      <el-color-picker v-model="props.config.accentColor" :predefine="predefineColors"
+                       @change="colorChange(props.config.accentColor || '#409eff')"/>
+      <el-button bg text @click="resetAccentColor">恢复默认</el-button>
+    </div>
+    <el-checkbox v-model="props.config.themeDynamicColor" label="从背景图动态取色"/>
+    <el-text size="small" type="info">设置主题色后优先使用；未设置且开启动态取色时，从应用或登录背景图提取主色。</el-text>
+  </SettingsItem>
+  <SettingsItem label="界面质感">
+    <div class="theme-preset-row">
+      <el-button v-for="preset in qualityPresets" :key="preset.name" bg text
+                 @click="applyPreset(preset)">{{ preset.name }}</el-button>
+    </div>
   </SettingsItem>
   <SettingsItem label="应用背景图">
     <UiAssetPicker :config="props.config" field="appBackgroundImage"/>
@@ -60,8 +69,32 @@
   <SettingsItem label="卡片透明度">
     <el-slider v-model="props.config.cardOpacity" :min="0" :max="100" show-input/>
   </SettingsItem>
-  <SettingsItem label="背景模糊度">
+  <SettingsItem label="卡片模糊度">
     <el-slider v-model="props.config.cardBlur" :min="0" :max="40" show-input/>
+  </SettingsItem>
+  <SettingsItem label="导航栏">
+    <div class="theme-slider-pair">
+      <div>
+        <el-text size="small">不透明度</el-text>
+        <el-slider v-model="props.config.navOpacity" :min="0" :max="100" show-input/>
+      </div>
+      <div>
+        <el-text size="small">模糊度</el-text>
+        <el-slider v-model="props.config.navBlur" :min="0" :max="40" show-input/>
+      </div>
+    </div>
+  </SettingsItem>
+  <SettingsItem label="弹窗">
+    <div class="theme-slider-pair">
+      <div>
+        <el-text size="small">不透明度</el-text>
+        <el-slider v-model="props.config.dialogOpacity" :min="0" :max="100" show-input/>
+      </div>
+      <div>
+        <el-text size="small">模糊度</el-text>
+        <el-slider v-model="props.config.dialogBlur" :min="0" :max="40" show-input/>
+      </div>
+    </div>
   </SettingsItem>
   <SettingsItem label="圆角大小">
     <el-slider v-model="props.config.appCornerRadius" :min="0" :max="40" show-input/>
@@ -127,7 +160,6 @@
 import {ref} from "vue";
 import {Adjust, Css3Alt, Js, Moon, Sun} from "@vicons/fa";
 import {
-  color,
   colorChange,
   coverClickAction,
   maxContentWidth,
@@ -150,8 +182,70 @@ let predefineColors = ref([
   '#B18874', '#E9BA86', '#F68F6C', '#F0458B',
   '#C35653', '#40494E', '#6F0000', '#8D3647',
   '#E6C5D0', '#2377B3', '#49312D', '#7C9AB6',
-  '#A5B18D', '#E8662A', '#AB5D50'
+  '#A5B18D', '#E8662A', '#AB5D50',
+  // 浅色清新主题
+  '#6FA8DC', '#F4A6B8', '#7BC8A4', '#F6C177',
+  '#9DBFEF', '#E8A0C8', '#8ED1C4', '#B7A6E8'
 ])
+
+// 浅色清新主题预设：只修改已有的外观字段，不新增配置项、不产生额外文件。
+const qualityPresets = [
+  {
+    name: '蓝白玻璃',
+    accentColor: '#5B8FF9',
+    cardOpacity: 78, cardBlur: 14,
+    navOpacity: 72, navBlur: 18,
+    dialogOpacity: 82, dialogBlur: 16,
+    appCornerRadius: 16
+  },
+  {
+    name: '樱花粉白',
+    accentColor: '#E48FB2',
+    cardOpacity: 82, cardBlur: 18,
+    navOpacity: 78, navBlur: 20,
+    dialogOpacity: 86, dialogBlur: 18,
+    appCornerRadius: 18
+  },
+  {
+    name: '薄荷青白',
+    accentColor: '#4FB8A8',
+    cardOpacity: 88, cardBlur: 10,
+    navOpacity: 84, navBlur: 12,
+    dialogOpacity: 92, dialogBlur: 10,
+    appCornerRadius: 12
+  },
+  {
+    name: '磨砂雾面',
+    accentColor: '',
+    cardOpacity: 88, cardBlur: 24,
+    navOpacity: 86, navBlur: 24,
+    dialogOpacity: 90, dialogBlur: 24,
+    appCornerRadius: 10
+  },
+  {
+    name: '清透极简',
+    accentColor: '#409eff',
+    cardOpacity: 100, cardBlur: 0,
+    navOpacity: 100, navBlur: 0,
+    dialogOpacity: 100, dialogBlur: 0,
+    appCornerRadius: 8
+  }
+]
+
+const applyPreset = preset => {
+  Object.keys(preset).forEach(key => {
+    if (key !== 'name') props.config[key] = preset[key]
+  })
+  // 预设里的 accentColor 为空时交回动态取色或默认色。
+  props.config.themeDynamicColor = false
+  applyUiCustomization(props.config)
+}
+
+const resetAccentColor = () => {
+  props.config.accentColor = ''
+  props.config.themeDynamicColor = false
+  colorChange('#409eff')
+}
 
 let jsDialogVisible = ref(false)
 let cssDialogVisible = ref(false)
@@ -172,11 +266,37 @@ watch(() => [
   props.config.loginBackgroundImage,
   props.config.cardOpacity,
   props.config.cardBlur,
-  props.config.appCornerRadius
+  props.config.appCornerRadius,
+  props.config.accentColor,
+  props.config.themeDynamicColor,
+  props.config.navOpacity,
+  props.config.navBlur,
+  props.config.dialogOpacity,
+  props.config.dialogBlur
 ], () => applyUiCustomization(props.config), {immediate: true})
 </script>
 
 <style scoped>
+.theme-color-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.theme-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.theme-slider-pair {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
 .justify-end {
   justify-content: end;
 }

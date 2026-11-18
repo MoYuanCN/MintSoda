@@ -17,6 +17,10 @@ html.dark {
     --body-background-color: #f7f5fa;
     --app-card-opacity: 92%;
     --app-card-blur: 8px;
+    --app-nav-opacity: 92%;
+    --app-nav-blur: 8px;
+    --app-dialog-opacity: 92%;
+    --app-dialog-blur: 8px;
     --app-corner-radius: 12px;
     --app-background-image: none;
     --login-background-image: none;
@@ -44,10 +48,18 @@ body {
     background-attachment: fixed;
 }
 
-.app-nav,
-.el-card,
+.app-nav {
+    background-color: color-mix(in srgb, var(--el-bg-color) var(--app-nav-opacity), transparent);
+    backdrop-filter: blur(var(--app-nav-blur));
+}
+
 .el-dialog,
-.el-message-box,
+.el-message-box {
+    background-color: color-mix(in srgb, var(--el-bg-color) var(--app-dialog-opacity), transparent);
+    backdrop-filter: blur(var(--app-dialog-blur));
+}
+
+.el-card,
 .config-tabs .el-tabs__content {
     background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
     backdrop-filter: blur(var(--app-card-blur));

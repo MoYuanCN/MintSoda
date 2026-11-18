@@ -195,6 +195,12 @@ public class ConfigUtil {
         if (config.getLoginBackgroundImage() == null) config.setLoginBackgroundImage("");
         if (config.getLoginLogoImage() == null) config.setLoginLogoImage("");
         if (config.getAppLogoImage() == null) config.setAppLogoImage("");
+        if (config.getAccentColor() == null) config.setAccentColor("");
+        if (config.getThemeDynamicColor() == null) config.setThemeDynamicColor(false);
+        if (config.getNavBlur() == null) config.setNavBlur(8);
+        if (config.getNavOpacity() == null) config.setNavOpacity(92);
+        if (config.getDialogBlur() == null) config.setDialogBlur(8);
+        if (config.getDialogOpacity() == null) config.setDialogOpacity(92);
         if (config.getCacheAutoClear() == null) config.setCacheAutoClear(false);
         if (config.getCacheAutoClearHours() == null) config.setCacheAutoClearHours(72);
         config.setCacheAutoClearHours(Math.max(1, Math.min(24 * 30, config.getCacheAutoClearHours())));
