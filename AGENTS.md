@@ -18,7 +18,9 @@ ANI-RSS-Yuri 是 ANI-RSS 的 Fork：通过 RSS 订阅番剧，统一匹配规则
 | `ani-rss-application/` | 后端：`controller`、`service`、`task`、`download`、`notification`、`entity`、`util`、`config` |
 | `ani-rss-ui/` | 前端：Vue 3 + Vite + Element Plus，`src/view` 页面、`src/js` 工具与默认配置 |
 | `linux/` | Linux 安装、控制、卸载脚本 |
-| `docs/` | 用户指南、开发指南、分支特性、贡献规范、安全说明 |
+| `ani-rss-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖，不应引入宿主内部类 |
+| `examples/plugins/` | 示例插件与市场索引，不参与正式构建 |
+| `docs/` | 用户指南、开发指南、分支特性、贡献规范、安全说明、插件开发指南 |
 | `.github/workflows/` | 手动触发的构建检查与 Release 发布 |
 
 后端入口为 `ani-rss-application/src/main/java/ani/rss/AniRssApplication.java`；默认端口 17789，接口统一挂在 `/api` 前缀下。
@@ -110,6 +112,17 @@ bash ./package.sh
 - 主题相关设置（`accentColor`、`themeDynamicColor`、导航栏/弹窗的模糊度与不透明度）只用于 CSS 变量与强调色，不得写入任何主题样式文件或独立资源；预设仅写回已有配置字段。
 - 前端图标只在模板中以名称使用（`icon="Search"` 或无 import 的 `<Search/>`）时才需要加入 `ani-rss-ui/src/js/icons.js` 的全局注册表；显式 `import` 的图标不要重复注册，也不要恢复 `@element-plus/icons-vue` 的全量导入。
 - 前端 `v-html` 只能用于可信内容；`AboutView` 渲染的 Release 说明来自 GitHub API，属于外部内容，改动渲染链路时要考虑净化。`/api/custom.js`、`/api/custom.css` 会注入页面，视为管理员可信输入。
+
+## 插件系统
+
+- 唯一接口模块是 `ani-rss-plugin-api`；接口破坏性变更必须提升 `PluginApi.VERSION`，不得在插件 API 中引用 `ani.rss.application` 的内部类型。
+- 扩展点由 `PluginManager` 统一加载与分发：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块。新增扩展点时同步更新 `docs/PLUGIN_DEVELOPMENT.md`。
+- 插件过滤器在 `MatchRuleUtil` 之后执行，不得绕过反匹配 > 全局匹配 > 排除的既有优先级；RSS 下载、预览与合集预览必须共用同一插件过滤路径。
+- 插件路径一律经 `PluginPaths` 规范化并限制在 `plugins/` 内；插件标识仅允许 `A-Z a-z 0-9 . _ -`。
+- 安装与更新必须校验 `size` 与 `sha256`，远程地址经 `commons/URLUtils#verify`；先写临时目录校验通过后再替换正式目录。
+- 插件与服务同权限运行；新增插件接口默认加 `@Auth`，新增公开插件接口需在评审中说明理由。
+- `PLUGIN` 通知类型必须保留在 `ConfigUtil.format` 的允许列表内；删除插件后引用它的通知应静默跳过而不是报错。
+- 前端插件字段只按白名单类型渲染，不得把插件提供的内容当作 HTML 注入。
 
 ## 不要做的事
 

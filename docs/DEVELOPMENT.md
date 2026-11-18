@@ -10,13 +10,15 @@
 
 - `ani-rss-application/`：Java 应用、服务、任务、接口和打包配置。
 - `ani-rss-ui/`：Vue 页面和前端资源。
+- `ani-rss-plugin-api/`：稳定的插件接口模块，插件以 `provided` 依赖。
+- `examples/plugins/`：示例插件与市场索引，不参与正式构建。
 - `linux/`：Linux JAR 的 systemd 安装、控制与卸载脚本。
 - `.github/workflows/`：Windows / Linux 发布构建与构建检查。
 - `docs/`：本项目用户指南和开发指南。
 
 本项目只支持 Linux 与 Windows，不维护 Docker 或 macOS 构建。
 
-协作与安全要求见 [贡献指南](CONTRIBUTING.md) 与 [安全说明](SECURITY.md)；面向 AI 编码代理的完整仓库约定见根目录 `AGENTS.md`。
+插件开发与市场格式见 [插件开发指南](PLUGIN_DEVELOPMENT.md)。协作与安全要求见 [贡献指南](CONTRIBUTING.md) 与 [安全说明](SECURITY.md)；面向 AI 编码代理的完整仓库约定见根目录 `AGENTS.md`。
 
 ## 环境与构建
 

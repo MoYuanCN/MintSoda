@@ -109,6 +109,14 @@ assyuri uninstall  # 卸载服务
 - 可自定义应用/登录背景、应用/登录 Logo、圆角、内容宽度与启动页。
 - 支持自定义 CSS/JS 注入，以及 WebUI 在线更新。
 
+## 🧩 插件系统
+
+- 独立接口模块 `ani-rss-plugin-api`，插件以单独 JAR 加载，宿主与插件只共享稳定接口。
+- 扩展点：**通知渠道**、**订阅过滤器**、**订阅事件**、**周期任务**、**设置区块**。
+- 支持插件市场：填写 JSON 索引地址即可浏览、安装与检查更新，也可上传 JAR 或从链接安装。
+- 安装与更新校验 `sha256` 与文件大小，地址限公网 `http`/`https`。
+- 详见 [插件开发指南](docs/PLUGIN_DEVELOPMENT.md)，示例见 `examples/plugins/`。
+
 ## 🛠️ 本地构建
 
 需要 **Java 25**。Maven 前端插件会把 Node.js 与 pnpm 下载到 `ani-rss-ui/node/`，依赖缓存写入 `ani-rss-ui/.tools/pnpm-store/`，无需系统级 Node 环境。
@@ -129,6 +137,7 @@ bash ./package.sh
 | --- | --- |
 | `ani-rss-application/` | Spring Boot 后端：订阅、匹配、下载、通知与配置 |
 | `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端 |
+| `ani-rss-plugin-api/` | 稳定的插件接口模块 |
 | `linux/` | Linux 安装、控制与卸载脚本 |
 | `docs/` | 用户指南、开发指南、分支特性、贡献规范与安全说明 |
 

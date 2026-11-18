@@ -169,6 +169,18 @@ Body 只有两种来源，语义明确：
 
 `/api/publicSettings` 只返回渲染登录页所需的无敏感字段；新增的导航栏与弹窗参数目前随完整配置下发。
 
+## 插件系统
+
+- 新增稳定的接口模块 `ani-rss-plugin-api`，插件以独立 JAR 加载，每个插件一个类加载器；接口类与 JDK 类始终由宿主提供。
+- 插件生命周期为加载、启用、停用、重载与卸载，失败只影响该插件。
+- 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务与设置区块；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后执行。
+- 新增通知类型 `PLUGIN`，插件渠道的字段与值保存在 `NotificationConfig` 的 `pluginChannelId` 与 `pluginOptions`。
+- 新增 `/api/plugin/*` 接口：列表、详情、启用/停用/重载/卸载、配置读写、上传与链接安装、市场获取、市场安装、单条与全部更新检查、更新与市场地址管理。全部接口都要求登录。
+- 插件状态保存在配置目录的 `plugins/installed.json`；插件目录为 `plugins/{id}`，内含 `plugin.jar`、`plugin.json` 与 `data/`。
+- 安装与更新同时校验 `size` 与 `sha256`，下载地址经 `URLUtils#verify` 校验；先写临时目录校验通过后再替换，避免半成品。
+- 新增配置项 `pluginMarketUrl`（默认空）。市场为 JSON 索引，插件也可通过 `updateUrl` 提供自身更新条目。
+- 前端新增侧栏“插件”页与通知编辑中的“插件渠道”选择；文档新增 `docs/PLUGIN_DEVELOPMENT.md`，示例见 `examples/plugins/`。
+
 ## 缓存自动清理
 
 - 新增 `cacheAutoClear`（默认关闭）、`cacheAutoClearHours`（默认 72，范围 1-720）、`cacheLastClearTime`。
