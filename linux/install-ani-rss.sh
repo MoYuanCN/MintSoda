@@ -12,7 +12,7 @@ NC='\033[0m'
 INSTALL_DIR="/opt/ani-rss"
 SERVICE_USER="ani-rss"
 SERVICE_NAME="ani-rss.service"
-SERVER_PORT="7789"
+SERVER_PORT="17789"
 
 # 检查root权限
 check_root() {
