@@ -56,7 +56,7 @@ import {computed} from "vue";
 const route = useRoute()
 const appLogo = computed(() => uiCustomization.value.appLogoImage
     ? uiAssetUrl(uiCustomization.value.appLogoImage)
-    : '/icon.svg')
+    : '/icon.png')
 
 onMounted(() => {
   initLayout()

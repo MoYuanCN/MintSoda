@@ -56,7 +56,7 @@ import {uiCustomization, uiAssetUrl} from "@/js/global.js";
 let loading = ref(false)
 const loginLogo = computed(() => uiCustomization.value.loginLogoImage
     ? uiAssetUrl(uiCustomization.value.loginLogoImage)
-    : '/icon.svg')
+    : '/icon.png')
 const loginBackgroundStyle = computed(() => uiCustomization.value.loginBackgroundImage
     ? {backgroundImage: `linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),url("${uiAssetUrl(uiCustomization.value.loginBackgroundImage)}")`}
     : {})

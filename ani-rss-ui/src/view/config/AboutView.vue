@@ -142,7 +142,7 @@ md.use(MarkdownItGitHubAlerts)
 const actionLoading = ref(false)
 const appLogo = computed(() => uiCustomization.value.appLogoImage
     ? uiAssetUrl(uiCustomization.value.appLogoImage)
-    : '/icon.svg')
+    : '/icon.png')
 const developerDialogVisible = ref(false)
 const developerLoading = ref(false)
 const developerCredentials = ref({username: '', password: ''})
