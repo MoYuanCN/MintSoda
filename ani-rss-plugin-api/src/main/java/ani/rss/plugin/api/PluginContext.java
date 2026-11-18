@@ -64,5 +64,20 @@ public interface PluginContext {
      */
     void registerSettingsSection(SettingsSection section);
 
+    /**
+     * 注册模板变量提供方，可为通知、重命名与下载路径模板追加占位符
+     */
+    void registerTemplateVariableProvider(TemplateVariableProvider provider);
+
+    /**
+     * 注册下载拦截器，可在种子提交给下载器之前调整或取消任务
+     */
+    void registerDownloadInterceptor(DownloadInterceptor interceptor);
+
+    /**
+     * 注册插件自身的 HTTP 接口，路径挂载在 {@code /api/plugin/api/{pluginId}/} 下
+     */
+    void registerEndpoint(PluginEndpoint endpoint);
+
     List<NotificationChannel> notificationChannels();
 }

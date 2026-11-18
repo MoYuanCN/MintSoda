@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
@@ -38,6 +39,10 @@ import java.util.jar.JarFile;
 public class PluginManager {
 
     private final Map<String, LoadedPlugin> loaded = new ConcurrentHashMap<>();
+    /**
+     * 每个插件已注册的调度任务，停用时必须取消，否则重复启用会叠加执行。
+     */
+    private final Map<String, List<ScheduledFuture<?>>> scheduledTasks = new ConcurrentHashMap<>();
     private final PluginRegistry registry = PluginRegistry.load();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "plugin-scheduler");
@@ -129,6 +134,10 @@ public class PluginManager {
             loadedPlugin = load(id);
         }
         PluginContextImpl context = loadedPlugin.context();
+        if (context.enabled()) {
+            // 重复启用会重复注册扩展点与周期任务。
+            return;
+        }
         context.markEnabled(true);
         loadedPlugin.plugin().onEnable(context);
         scheduleTasks(loadedPlugin);
@@ -144,6 +153,7 @@ public class PluginManager {
         }
         PluginContextImpl context = loadedPlugin.context();
         context.markEnabled(false);
+        cancelTasks(id);
         try {
             loadedPlugin.plugin().onDisable(context);
         } catch (Exception e) {
@@ -171,6 +181,7 @@ public class PluginManager {
                 log.warn("插件 {} 卸载时资源释放失败", id);
             }
         }
+        cancelTasks(id);
         registry.remove(id);
         registry.sync();
         FileUtil.del(PluginPaths.dir(id));
@@ -181,6 +192,7 @@ public class PluginManager {
      */
     public synchronized void reload(String id) {
         boolean enabled = registry.get(id).map(PluginRecord::getEnable).orElse(false);
+        cancelTasks(id);
         disable(id);
         LoadedPlugin removed = loaded.remove(id);
         if (removed != null) {
@@ -200,10 +212,12 @@ public class PluginManager {
     private void scheduleTasks(LoadedPlugin loadedPlugin) {
         PluginContextImpl context = loadedPlugin.context();
         String id = loadedPlugin.descriptor().id();
+        cancelTasks(id);
+        List<ScheduledFuture<?>> futures = new ArrayList<>();
         for (ScheduledPluginTask task : context.tasks()) {
             long interval = Math.max(1, task.interval().toMillis());
             long delay = Math.max(0, task.initialDelay().toMillis());
-            scheduler.scheduleWithFixedDelay(() -> {
+            futures.add(scheduler.scheduleWithFixedDelay(() -> {
                 if (!context.enabled()) {
                     return;
                 }
@@ -213,7 +227,23 @@ public class PluginManager {
                     log.error("插件任务失败 {}#{}", id, task.id());
                     log.error(e.getMessage(), e);
                 }
-            }, delay, interval, TimeUnit.MILLISECONDS);
+            }, delay, interval, TimeUnit.MILLISECONDS));
+        }
+        if (!futures.isEmpty()) {
+            scheduledTasks.put(id, futures);
+        }
+    }
+
+    /**
+     * 取消插件已注册的调度任务。
+     */
+    private void cancelTasks(String id) {
+        List<ScheduledFuture<?>> futures = scheduledTasks.remove(id);
+        if (futures == null) {
+            return;
+        }
+        for (ScheduledFuture<?> future : futures) {
+            future.cancel(false);
         }
     }
 
@@ -250,14 +280,14 @@ public class PluginManager {
                     record == null ? "" : StrUtil.nullToEmpty(record.getLatestVersion()),
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     sections(context.sections()), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
-                    channels(context.notificationChannels())
+                    channels(context.notificationChannels()), endpoints(context.endpoints())
             );
         }
         File descriptorFile = PluginPaths.descriptorFile(id);
         if (!descriptorFile.isFile()) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "缺少 plugin.json", "", 0L, "", "", false,
-                    List.of(), "", List.of());
+                    List.of(), "", List.of(), List.of());
         }
         try {
             PluginDescriptor descriptor = GsonStatic.fromJson(FileUtil.readUtf8String(descriptorFile), PluginDescriptor.class);
@@ -271,11 +301,11 @@ public class PluginManager {
                     descriptor.updateUrl(), record == null ? "" : StrUtil.nullToEmpty(record.getLatestVersion()),
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     List.of(), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
-                    List.of());
+                    List.of(), List.of());
         } catch (Exception e) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "plugin.json 解析失败", "", 0L, "", "", false,
-                    List.of(), "", List.of());
+                    List.of(), "", List.of(), List.of());
         }
     }
 
@@ -283,6 +313,13 @@ public class PluginManager {
         return sections.stream()
                 .map(section -> new PluginInfo.SectionView(section.id(), section.title(), section.description(),
                         fields(section.fields())))
+                .toList();
+    }
+
+    private static List<PluginInfo.EndpointView> endpoints(List<PluginEndpoint> endpoints) {
+        return endpoints.stream()
+                .map(endpoint -> new PluginInfo.EndpointView(endpoint.path(),
+                        new ArrayList<>(endpoint.methods())))
                 .toList();
     }
 
@@ -369,6 +406,44 @@ public class PluginManager {
     }
 
     /**
+     * 所有已启用插件的模板变量提供方。
+     */
+    public List<TemplateVariableProvider> variableProviders() {
+        return loaded.values().stream()
+                .filter(plugin -> plugin.context().enabled())
+                .flatMap(plugin -> plugin.context().variableProviders().stream())
+                .toList();
+    }
+
+    /**
+     * 所有已启用插件的下载拦截器，按 order 排序。
+     */
+    public List<DownloadInterceptor> downloadInterceptors() {
+        return loaded.values().stream()
+                .filter(plugin -> plugin.context().enabled())
+                .flatMap(plugin -> plugin.context().downloadInterceptors().stream())
+                .sorted(Comparator.comparingInt(DownloadInterceptor::order))
+                .toList();
+    }
+
+    /**
+     * 查找插件注册的 HTTP 接口。
+     *
+     * @param pluginId 插件标识
+     * @param path     相对路径
+     */
+    public Optional<PluginEndpoint> endpoint(String pluginId, String path) {
+        LoadedPlugin loadedPlugin = loaded.get(pluginId);
+        if (loadedPlugin == null || !loadedPlugin.context().enabled()) {
+            return Optional.empty();
+        }
+        String target = StrUtil.strip(path, "/");
+        return loadedPlugin.context().endpoints().stream()
+                .filter(endpoint -> StrUtil.strip(endpoint.path(), "/").equals(target))
+                .findFirst();
+    }
+
+    /**
      * 分发订阅变更事件，异常只记录日志。
      */
     public void fireSubscriptionEvent(SubscriptionEvent event, ItemFilter.SubscriptionSnapshot snapshot) {
@@ -396,7 +471,10 @@ public class PluginManager {
     /**
      * 关闭调度器，供应用退出时调用。
      */
+    @jakarta.annotation.PreDestroy
     public void shutdown() {
+        scheduledTasks.values().forEach(futures -> futures.forEach(future -> future.cancel(false)));
+        scheduledTasks.clear();
         scheduler.shutdownNow();
     }
 }

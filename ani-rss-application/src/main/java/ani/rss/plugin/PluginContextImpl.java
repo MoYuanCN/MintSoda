@@ -21,6 +21,9 @@ public class PluginContextImpl implements PluginContext {
     private final List<SubscriptionListener> listeners = new CopyOnWriteArrayList<>();
     private final List<ScheduledPluginTask> tasks = new CopyOnWriteArrayList<>();
     private final List<SettingsSection> sections = new CopyOnWriteArrayList<>();
+    private final List<TemplateVariableProvider> variableProviders = new CopyOnWriteArrayList<>();
+    private final List<DownloadInterceptor> downloadInterceptors = new CopyOnWriteArrayList<>();
+    private final List<PluginEndpoint> endpoints = new CopyOnWriteArrayList<>();
     private volatile boolean enabled;
 
     public PluginContextImpl(PluginDescriptor descriptor, PluginRegistry registry, String appVersion) {
@@ -100,6 +103,21 @@ public class PluginContextImpl implements PluginContext {
     }
 
     @Override
+    public void registerTemplateVariableProvider(TemplateVariableProvider provider) {
+        variableProviders.add(provider);
+    }
+
+    @Override
+    public void registerDownloadInterceptor(DownloadInterceptor interceptor) {
+        downloadInterceptors.add(interceptor);
+    }
+
+    @Override
+    public void registerEndpoint(PluginEndpoint endpoint) {
+        endpoints.add(endpoint);
+    }
+
+    @Override
     public List<NotificationChannel> notificationChannels() {
         return List.copyOf(channels);
     }
@@ -120,6 +138,18 @@ public class PluginContextImpl implements PluginContext {
         return List.copyOf(sections);
     }
 
+    public List<TemplateVariableProvider> variableProviders() {
+        return List.copyOf(variableProviders);
+    }
+
+    public List<DownloadInterceptor> downloadInterceptors() {
+        return List.copyOf(downloadInterceptors);
+    }
+
+    public List<PluginEndpoint> endpoints() {
+        return List.copyOf(endpoints);
+    }
+
     /**
      * 停用时清空注册表；调度线程由管理器负责停止。
      */
@@ -129,5 +159,8 @@ public class PluginContextImpl implements PluginContext {
         listeners.clear();
         tasks.clear();
         sections.clear();
+        variableProviders.clear();
+        downloadInterceptors.clear();
+        endpoints.clear();
     }
 }

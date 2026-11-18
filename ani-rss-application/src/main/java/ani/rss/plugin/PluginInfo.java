@@ -25,6 +25,7 @@ import java.util.List;
  * @param sections      设置页区块
  * @param config        插件配置 JSON
  * @param channels      提供的通知渠道
+ * @param endpoints     提供的 HTTP 接口
  */
 public record PluginInfo(
         String id,
@@ -44,12 +45,14 @@ public record PluginInfo(
         Boolean updateAvailable,
         List<SectionView> sections,
         String config,
-        List<ChannelView> channels
+        List<ChannelView> channels,
+        List<EndpointView> endpoints
 ) {
     public PluginInfo {
         permissions = permissions == null ? List.of() : List.copyOf(permissions);
         sections = sections == null ? List.of() : List.copyOf(sections);
         channels = channels == null ? List.of() : List.copyOf(channels);
+        endpoints = endpoints == null ? List.of() : List.copyOf(endpoints);
     }
 
     public static PluginInfo from(PluginDescriptor descriptor) {
@@ -57,7 +60,7 @@ public record PluginInfo(
                 descriptor.id(), descriptor.name(), descriptor.version(), descriptor.apiVersion(),
                 descriptor.author(), descriptor.description(), descriptor.homepage(),
                 descriptor.permissions(), PluginState.DISABLED, "", "", 0L,
-                descriptor.updateUrl(), "", false, List.of(), "", List.of()
+                descriptor.updateUrl(), "", false, List.of(), "", List.of(), List.of()
         );
     }
 
@@ -69,5 +72,11 @@ public record PluginInfo(
     }
 
     public record ChannelView(String id, String name, List<FieldView> fields) {
+    }
+
+    public record EndpointView(String path, List<String> methods) {
+        public EndpointView {
+            methods = methods == null ? List.of() : List.copyOf(methods);
+        }
     }
 }

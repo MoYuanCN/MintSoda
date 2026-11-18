@@ -10,7 +10,7 @@ public final class PluginApi {
     /**
      * 当前插件接口版本
      */
-    public static final int VERSION = 1;
+    public static final int VERSION = 2;
 
     /**
      * 插件描述文件名

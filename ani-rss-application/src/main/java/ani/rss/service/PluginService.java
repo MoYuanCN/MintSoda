@@ -4,40 +4,36 @@ import ani.rss.commons.GsonStatic;
 import ani.rss.commons.URLUtils;
 import ani.rss.entity.Config;
 import ani.rss.plugin.PluginInfo;
+import ani.rss.plugin.PluginInstaller;
 import ani.rss.plugin.PluginManager;
 import ani.rss.plugin.PluginMarketIndex;
+import ani.rss.plugin.PluginMarketService;
 import ani.rss.plugin.PluginPaths;
-import ani.rss.plugin.PluginRecord;
-import ani.rss.plugin.api.PluginDescriptor;
-import ani.rss.util.basic.HttpReq;
 import ani.rss.util.other.ConfigUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.SecureUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 插件市场、安装、更新与配置。
  * <p>
- * 所有远程地址都经过 {@link URLUtils#verify} 校验；下载内容必须同时通过
- * 大小与 sha256 校验，避免安装被篡改或被截断的插件包。
+ * 下载与校验在 {@link PluginInstaller}，市场访问在 {@link PluginMarketService}；
+ * 这里只做流程编排，保持每个入口可单独阅读。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PluginService {
 
-    private static final long MAX_PLUGIN_SIZE = 64L * 1024 * 1024;
-
     private final PluginManager pluginManager;
+    private final PluginInstaller pluginInstaller;
+    private final PluginMarketService pluginMarketService;
 
     public List<PluginInfo> list() {
         return pluginManager.list();
@@ -78,115 +74,22 @@ public class PluginService {
         pluginManager.updateRecord(id, record -> record.setConfig(StrUtil.nullToEmpty(config)));
     }
 
-    /**
-     * 获取市场索引。
-     */
     public PluginMarketIndex market(String url) {
-        String marketUrl = StrUtil.blankToDefault(StrUtil.trim(url), StrUtil.trim(ConfigUtil.CONFIG.getPluginMarketUrl()));
-        Assert.notBlank(marketUrl, "未配置插件市场地址");
-        URLUtils.verify(marketUrl);
-        String body = HttpReq.get(marketUrl).execute().body();
-        return GsonStatic.fromJson(body, PluginMarketIndex.class);
+        return pluginMarketService.index(url);
     }
 
-    /**
-     * 从市场条目安装。
-     */
     public PluginInfo installFromMarket(PluginMarketIndex.MarketEntry entry) {
         Assert.notNull(entry, "插件条目不能为空");
         Assert.notBlank(entry.downloadUrl(), "插件下载地址不能为空");
-        return installFromUrl(entry.downloadUrl(), entry.sha256(), entry.size());
+        return pluginInstaller.installFromUrl(entry.downloadUrl(), entry.sha256(), entry.size(), "market");
     }
 
-    /**
-     * 从远程地址安装插件包。
-     *
-     * @param url    插件 JAR 地址
-     * @param sha256 期望的 sha256，为空时不做校验（不推荐）
-     * @param size   期望的字节数，为空时不做校验（不推荐）
-     */
     public PluginInfo installFromUrl(String url, String sha256, Long size) {
-        URLUtils.verify(url);
-        File temp = FileUtil.createTempFile("plugin-", ".jar", true);
-        try {
-            HttpReq.get(url).then(res -> {
-                HttpReq.assertStatus(res);
-                FileUtil.writeBytes(res.bodyBytes(), temp);
-            });
-            return installFromFile(temp, sha256, size, url);
-        } finally {
-            FileUtil.del(temp);
-        }
+        return pluginInstaller.installFromUrl(url, sha256, size, "url");
     }
 
-    /**
-     * 上传安装。
-     */
     public PluginInfo installFromUpload(MultipartFile file, String sha256) throws Exception {
-        Assert.notNull(file, "请选择插件包");
-        Assert.isTrue(file.getSize() > 0 && file.getSize() <= MAX_PLUGIN_SIZE, "插件包大小不合法");
-        File temp = FileUtil.createTempFile("plugin-", ".jar", true);
-        try {
-            try (InputStream inputStream = file.getInputStream()) {
-                FileUtil.writeFromStream(inputStream, temp);
-            }
-            return installFromFile(temp, sha256, null, "upload");
-        } finally {
-            FileUtil.del(temp);
-        }
-    }
-
-    /**
-     * 安装本地文件。先写入临时目录完成校验，通过后再替换正式目录，避免半成品。
-     */
-    public synchronized PluginInfo installFromFile(File jar, String sha256, Long size, String source) {
-        Assert.isTrue(jar.isFile(), "插件包不存在");
-        long length = jar.length();
-        Assert.isTrue(length > 0 && length <= MAX_PLUGIN_SIZE, "插件包大小不合法");
-        if (size != null) {
-            Assert.isTrue(length == size, "插件包大小不匹配");
-        }
-        String actualSha256 = SecureUtil.sha256(jar);
-        if (StrUtil.isNotBlank(sha256)) {
-            Assert.isTrue(actualSha256.equalsIgnoreCase(sha256.trim()), "插件包 sha256 不匹配");
-        }
-        PluginDescriptor descriptor = PluginManager.readDescriptor(jar);
-        String id = descriptor.id();
-
-        File targetDir = PluginPaths.dir(id);
-        File targetJar = PluginPaths.jarFile(id);
-        File targetDescriptor = PluginPaths.descriptorFile(id);
-        File staging = new File(FileUtil.getTmpDir(), "plugin-staging-" + java.util.UUID.randomUUID());
-        PluginPaths.ensure(staging);
-        try {
-            FileUtil.copy(jar, new File(staging, "plugin.jar"), true);
-            FileUtil.writeUtf8String(GsonStatic.toJson(descriptor), new File(staging, "plugin.json"));
-
-            boolean running = pluginManager.find(id).isPresent();
-            if (running) {
-                pluginManager.disable(id);
-            }
-            PluginPaths.ensure(targetDir);
-            FileUtil.move(new File(staging, "plugin.jar"), targetJar, true);
-            FileUtil.move(new File(staging, "plugin.json"), targetDescriptor, true);
-        } finally {
-            FileUtil.del(staging);
-        }
-
-        final String finalSha256 = actualSha256;
-        pluginManager.updateRecord(id, record -> record
-                .setSource(StrUtil.nullToEmpty(source))
-                .setInstalledAt(System.currentTimeMillis())
-                .setSha256(finalSha256));
-
-        boolean enable = pluginManager.registry().get(id).map(PluginRecord::getEnable).orElse(false);
-        if (enable) {
-            pluginManager.reload(id);
-        } else {
-            pluginManager.load(id);
-        }
-        log.info("插件已安装 {} {}", descriptor.name(), descriptor.version());
-        return info(id);
+        return pluginInstaller.installFromUpload(file, sha256);
     }
 
     /**
@@ -197,48 +100,16 @@ public class PluginService {
      */
     public PluginInfo checkUpdate(String id, String marketUrl) {
         PluginInfo current = info(id);
-        String latest = "";
-        String downloadUrl = "";
-        String sha256 = "";
-        Long size = null;
+        Optional<PluginMarketIndex.MarketEntry> marketEntry = pluginMarketService.entry(id, marketUrl);
+        Optional<PluginMarketIndex.MarketEntry> updateEntry = marketEntry.isPresent()
+                ? marketEntry
+                : pluginMarketService.selfEntry(current.updateUrl());
 
-        PluginMarketIndex index = null;
-        try {
-            index = market(StrUtil.blankToDefault(StrUtil.trim(marketUrl), StrUtil.trim(ConfigUtil.CONFIG.getPluginMarketUrl())));
-        } catch (Exception e) {
-            log.warn("插件市场获取失败，改用插件自带更新地址");
-        }
-
-        if (index != null) {
-            PluginMarketIndex.MarketEntry entry = index.plugins().stream()
-                    .filter(item -> id.equals(item.id()))
-                    .findFirst()
-                    .orElse(null);
-            if (entry != null) {
-                latest = StrUtil.nullToEmpty(entry.version());
-                downloadUrl = StrUtil.nullToEmpty(entry.downloadUrl());
-                sha256 = StrUtil.nullToEmpty(entry.sha256());
-                size = entry.size();
-            }
-        }
-
-        if (StrUtil.isBlank(latest) && StrUtil.isNotBlank(current.updateUrl())) {
-            URLUtils.verify(current.updateUrl());
-            String body = HttpReq.get(current.updateUrl()).execute().body();
-            PluginMarketIndex.MarketEntry entry = GsonStatic.fromJson(body, PluginMarketIndex.MarketEntry.class);
-            latest = StrUtil.nullToEmpty(entry.version());
-            downloadUrl = StrUtil.nullToEmpty(entry.downloadUrl());
-            sha256 = StrUtil.nullToEmpty(entry.sha256());
-            size = entry.size();
-        }
-
+        String latest = updateEntry.map(entry -> StrUtil.nullToEmpty(entry.version())).orElse("");
         boolean available = StrUtil.isNotBlank(latest) && !latest.equals(current.version());
-        String finalLatest = latest;
-        String finalDownloadUrl = downloadUrl;
-        String finalSha256 = sha256;
-        Long finalSize = size;
+
         pluginManager.updateRecord(id, record -> record
-                .setLatestVersion(finalLatest)
+                .setLatestVersion(latest)
                 .setUpdateAvailable(available)
                 .setLastCheckTime(System.currentTimeMillis()));
         if (available) {
@@ -255,39 +126,14 @@ public class PluginService {
         if (!Boolean.TRUE.equals(current.updateAvailable())) {
             return current;
         }
-        String downloadUrl = resolveDownloadUrl(id, marketUrl);
+        String downloadUrl = pluginMarketService.downloadUrl(id, marketUrl);
         Assert.notBlank(downloadUrl, "未找到插件下载地址");
-        PluginMarketIndex.MarketEntry entry = marketEntry(id, marketUrl);
-        installFromUrl(downloadUrl,
+        PluginMarketIndex.MarketEntry entry = pluginMarketService.entry(id, marketUrl).orElse(null);
+        pluginInstaller.installFromUrl(downloadUrl,
                 entry == null ? null : entry.sha256(),
-                entry == null ? null : entry.size());
+                entry == null ? null : entry.size(),
+                "update");
         return info(id);
-    }
-
-    private String resolveDownloadUrl(String id, String marketUrl) {
-        PluginMarketIndex.MarketEntry entry = marketEntry(id, marketUrl);
-        if (entry != null && StrUtil.isNotBlank(entry.downloadUrl())) {
-            return entry.downloadUrl();
-        }
-        PluginInfo current = info(id);
-        if (StrUtil.isNotBlank(current.updateUrl())) {
-            URLUtils.verify(current.updateUrl());
-            String body = HttpReq.get(current.updateUrl()).execute().body();
-            return StrUtil.nullToEmpty(GsonStatic.fromJson(body, PluginMarketIndex.MarketEntry.class).downloadUrl());
-        }
-        return "";
-    }
-
-    private PluginMarketIndex.MarketEntry marketEntry(String id, String marketUrl) {
-        try {
-            PluginMarketIndex index = market(marketUrl);
-            return index.plugins().stream()
-                    .filter(item -> id.equals(item.id()))
-                    .findFirst()
-                    .orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     /**

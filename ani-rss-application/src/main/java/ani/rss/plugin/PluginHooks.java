@@ -1,6 +1,7 @@
 package ani.rss.plugin;
 
 import ani.rss.entity.Ani;
+import ani.rss.entity.Item;
 import cn.hutool.extra.spring.SpringUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +40,7 @@ public final class PluginHooks {
     /**
      * 插件过滤，异常时放行，避免插件问题阻断下载主流程。
      */
-    public static boolean accepts(Ani ani, ani.rss.entity.Item item) {
+    public static boolean accepts(Ani ani, Item item) {
         PluginHook current = hook();
         if (current == null) {
             return true;
@@ -50,6 +51,40 @@ public final class PluginHooks {
             log.error("插件过滤执行失败");
             log.error(e.getMessage(), e);
             return true;
+        }
+    }
+
+    /**
+     * 插件模板变量，失败时返回空 Map，模板保持内置字段。
+     */
+    public static java.util.Map<String, String> templateVariables(Ani ani) {
+        PluginHook current = hook();
+        if (current == null) {
+            return java.util.Map.of();
+        }
+        try {
+            return current.templateVariables(ani);
+        } catch (Exception e) {
+            log.error("插件模板变量执行失败");
+            log.error(e.getMessage(), e);
+            return java.util.Map.of();
+        }
+    }
+
+    /**
+     * 下载拦截，异常时放行并沿用原始保存位置。
+     */
+    public static PluginHook.InterceptResult intercept(Ani ani, Item item, String savePath, String name) {
+        PluginHook current = hook();
+        if (current == null) {
+            return PluginHook.InterceptResult.allow(savePath, name);
+        }
+        try {
+            return current.intercept(ani, item, savePath, name);
+        } catch (Exception e) {
+            log.error("插件下载拦截执行失败");
+            log.error(e.getMessage(), e);
+            return PluginHook.InterceptResult.allow(savePath, name);
         }
     }
 
