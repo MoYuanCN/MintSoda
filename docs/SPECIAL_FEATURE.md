@@ -198,8 +198,6 @@ Body 只有两种来源，语义明确：
 
 ## 移除的功能
 
-以下功能刻意不恢复：
-
 - Aria2、Transmission 下载器与集成任务进度页。
 - 内置播放、刮削、NFO 生成与 Bangumi 点格子（`rate` / `setRate`）。
 - OpenList / AList 适配与上传。
