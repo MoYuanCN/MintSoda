@@ -5,11 +5,9 @@
 <h1 align="center">ANI-RSS-Yuri</h1>
 
 <p align="center">
-  通过 RSS 订阅番剧，统一匹配后自动交给 qBittorrent 下载。
 </p>
 
 <p align="center">
-  <a href="https://github.com/MoYuanCN/ani-rss-Yuri/releases"><img alt="release" src="https://img.shields.io/github/v/release/MoYuanCN/ani-rss-Yuri?label=release&logo=github"></a>
   <img alt="java" src="https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white">
   <img alt="vue" src="https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white">
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-4b5563?logo=linux&logoColor=white">
@@ -26,7 +24,9 @@
 
 ---
 
-**ANI-RSS-Yuri** 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的 Fork，保留上游的 RSS 订阅、番剧管理与自动下载流程，并按本分支的目标做减法：单一下载器、可预期的匹配规则、更自由的外观，以及面向 Windows 与 Linux 的便携部署。常规订阅和下载行为尽量与上游保持一致。
+## 项目简介
+
+**ANI-RSS-Yuri** 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的 分支项目，基于本分支开发者个人需求进行了深度魔改
 
 ## 🚀 快速开始
 
@@ -65,15 +65,13 @@ assyuri uninstall  # 卸载服务
 
 > 默认端口 **17789**，首次访问会按平台规则生成凭据或进入账号设置引导。
 
-## ✨ 功能特性
+## ✨ 本分支功能特性
 
 ### 📡 订阅与下载
 
 - 支持 **Mikan**、**AniBT** 等 RSS 源，多订阅统一管理。
-- 仅保留 **qBittorrent**，支持 API Key 与用户名/密码两种认证，兼容没有 API Key 的服务端。
-- RSS 刷新间隔以**秒**为单位，同一轮刷新复用相同地址的响应，并在本轮结束时统一写入订阅进度。
-- 支持备用 RSS、合集关联、保存路径模板、重命名与完成后整理。
-- Windows EXE 使用**便携配置目录**，升级不丢配置。
+- 仅保留 **qBittorrent**，支持 API Key 与用户名/密码两种认证，兼容没有API Key的 qBittorrent版本。
+- RSS 刷新间隔以**秒**为单位。
 
 ### 🎯 匹配规则
 
@@ -91,7 +89,7 @@ assyuri uninstall  # 卸载服务
 
 ### 🔀 订阅排序
 
-订阅页顶部可临时切换排序，不修改默认值：
+订阅页顶部可切换排序：
 
 | 排序 | 说明 |
 | --- | --- |
@@ -105,8 +103,8 @@ assyuri uninstall  # 卸载服务
 ## 🎨 外观与主题
 
 - **主题色**自由选择，或开启「从背景图动态取色」，自动提取可读的强调色。
-- 卡片、导航栏、弹窗分别支持**不透明度**与**模糊度**，可组合出亚克力与磨砂质感。
-- 内置浅色预设：**蓝白玻璃**、**樱花粉白**、**薄荷青白**、**磨砂雾面**、**清透极简**。
+- 卡片、导航栏、弹窗支持不透明度与模糊度。
+- 内置多套预设。
 - 可自定义应用/登录背景、应用/登录 Logo、圆角、内容宽度与启动页。
 - 支持自定义 CSS/JS 注入，以及 WebUI 在线更新。
 
@@ -132,36 +130,6 @@ bash ./package.sh
 | `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端 |
 | `linux/` | Linux 安装、控制与卸载脚本 |
 | `docs/` | 用户指南、开发指南、贡献规范与安全说明 |
-
-## ❓ 常见问题
-
-<details>
-<summary><b>忘记密码怎么办？</b></summary>
-
-用环境变量 `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 启动即可覆盖并重置凭据；也可以加 `--setup` 重新进入 WebUI 初始化引导。配置中的密码是摘要，手工修改 `config.v2.json` 不可靠。
-
-</details>
-
-<details>
-<summary><b>为什么只有 qBittorrent？</b></summary>
-
-本分支刻意收敛下载器范围，降低配置迁移与兼容成本。Aria2、Transmission 等不会恢复。
-
-</details>
-
-<details>
-<summary><b>可以用 Docker 吗？</b></summary>
-
-不提供也不维护容器镜像。请使用 JAR 或 Windows EXE，Linux 推荐 systemd 一键安装。
-
-</details>
-
-<details>
-<summary><b>升级会丢配置吗？</b></summary>
-
-不会。旧配置缺少新字段时会自动补默认值并做显式迁移，无法无损迁移时保留旧字段。
-
-</details>
 
 ## 📄 许可
 
