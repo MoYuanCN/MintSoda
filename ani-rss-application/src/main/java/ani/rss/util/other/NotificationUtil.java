@@ -26,6 +26,7 @@ public class NotificationUtil {
             .setWorkQueue(new LinkedBlockingQueue<>(256))
             .build();
 
+    // WEB_HOOK 仅用于读取旧配置，发送时复用自定义请求。
     public final static Map<NotificationTypeEnum, Class<? extends BaseNotification>>
             NOTIFICATION_MAP =
             Map.of(

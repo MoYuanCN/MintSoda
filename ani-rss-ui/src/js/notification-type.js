@@ -1,7 +1,7 @@
 export let notificationTypeList = [
     {
         name: 'TELEGRAM',
-        label: 'TG通知'
+        label: 'TG 通知'
     },
     {
         name: 'CUSTOM_REQUEST',

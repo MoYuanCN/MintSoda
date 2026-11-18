@@ -143,6 +143,11 @@ public class NotificationConfig implements Serializable {
     @Schema(description = "顺序")
     private Long sort;
 
+    /**
+     * 创建默认通知配置，同时用于补齐旧配置中缺失的字段。
+     *
+     * @return 默认通知配置
+     */
     public static NotificationConfig createNotificationConfig() {
         NotificationConfig notificationConfig = new NotificationConfig();
 
