@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件面向在本仓库工作的 AI 编码代理与协作者，说明项目定位、构建方式与必须遵守的约定。用户功能说明见 `docs/USER_GUIDE.md`，开发与提交流程见 `docs/DEVELOPMENT.md`、`docs/CONTRIBUTING.md`，安全要求见 `docs/SECURITY.md`。
+本文件面向在本仓库工作的 AI 编码代理与协作者，说明项目定位、构建方式与必须遵守的约定。用户功能说明见 `docs/USER_GUIDE.md`，开发与提交流程见 `docs/DEVELOPMENT.md`、`docs/CONTRIBUTING.md`，安全要求见 `docs/SECURITY.md`，相对上游的差异见 `docs/SPECIAL_FEATURE.md`。
 
 ## 项目定位
 
@@ -18,7 +18,7 @@ ANI-RSS-Yuri 是 ANI-RSS 的 Fork：通过 RSS 订阅番剧，统一匹配规则
 | `ani-rss-application/` | 后端：`controller`、`service`、`task`、`download`、`notification`、`entity`、`util`、`config` |
 | `ani-rss-ui/` | 前端：Vue 3 + Vite + Element Plus，`src/view` 页面、`src/js` 工具与默认配置 |
 | `linux/` | Linux 安装、控制、卸载脚本 |
-| `docs/` | 用户指南、开发指南、贡献规范、安全说明 |
+| `docs/` | 用户指南、开发指南、分支特性、贡献规范、安全说明 |
 | `.github/workflows/` | 手动触发的构建检查与 Release 发布 |
 
 后端入口为 `ani-rss-application/src/main/java/ani/rss/AniRssApplication.java`；默认端口 17789，接口统一挂在 `/api` 前缀下。

@@ -19,7 +19,8 @@
   <a href="#-功能特性">功能特性</a> ·
   <a href="#-外观与主题">外观与主题</a> ·
   <a href="docs/USER_GUIDE.md">使用指南</a> ·
-  <a href="docs/DEVELOPMENT.md">开发指南</a>
+  <a href="docs/DEVELOPMENT.md">开发指南</a> ·
+  <a href="docs/SPECIAL_FEATURE.md">分支特性</a>
 </p>
 
 ---
@@ -129,7 +130,7 @@ bash ./package.sh
 | `ani-rss-application/` | Spring Boot 后端：订阅、匹配、下载、通知与配置 |
 | `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端 |
 | `linux/` | Linux 安装、控制与卸载脚本 |
-| `docs/` | 用户指南、开发指南、贡献规范与安全说明 |
+| `docs/` | 用户指南、开发指南、分支特性、贡献规范与安全说明 |
 
 ## 📄 许可
 
