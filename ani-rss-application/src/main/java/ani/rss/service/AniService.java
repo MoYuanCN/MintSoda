@@ -9,6 +9,7 @@ import ani.rss.entity.dto.IdDTO;
 import ani.rss.entity.dto.ImportAniDataDTO;
 import ani.rss.entity.torrent.TorrentsInfo;
 import ani.rss.enums.AniSortTypeEnum;
+import ani.rss.plugin.PluginManager;
 import ani.rss.task.RssTask;
 import ani.rss.util.other.*;
 import cn.hutool.core.bean.BeanUtil;
@@ -36,6 +37,9 @@ public class AniService {
 
     @Resource
     private ClearService clearService;
+
+    @Resource
+    private ani.rss.plugin.PluginHook pluginHook;
 
     /**
      * 添加订阅
@@ -73,6 +77,7 @@ public class AniService {
 
         AniUtil.ANI_LIST.add(ani);
         AniUtil.sync();
+        pluginHook.fire(PluginManager.SubscriptionEvent.CREATED, ani);
         Boolean enable = ani.getEnable();
         if (enable) {
             ThreadUtil.execute(() -> {
@@ -162,6 +167,7 @@ public class AniService {
         }
         clearService.clearDir(torrentDir);
         AniUtil.sync();
+        pluginHook.fire(PluginManager.SubscriptionEvent.UPDATED, first.get());
 
         log.info("修改订阅 {} {} {}", ani.getTitle(), ani.getUrl(), ani.getId());
     }
@@ -177,6 +183,7 @@ public class AniService {
 
         AniUtil.ANI_LIST.removeAll(anis);
         AniUtil.sync();
+        anis.forEach(ani -> pluginHook.fire(PluginManager.SubscriptionEvent.DELETED, ani));
 
         ThreadUtil.execute(() -> {
             // 删除种子

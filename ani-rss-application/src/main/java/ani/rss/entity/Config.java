@@ -632,6 +632,12 @@ public class Config implements Serializable {
     private Boolean developerOptionsEnabled;
 
     /**
+     * 插件市场索引地址，留空表示不启用在线市场
+     */
+    @Schema(description = "插件市场地址")
+    private String pluginMarketUrl;
+
+    /**
      * 自定义集数获取规则
      */
     @Schema(description = "自定义集数获取规则")

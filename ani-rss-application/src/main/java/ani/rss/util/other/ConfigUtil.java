@@ -174,6 +174,7 @@ public class ConfigUtil {
         if (config.getEnabledExclude() == null) config.setEnabledExclude(false);
         if (config.getNotificationTemplateList() == null) config.setNotificationTemplateList(new java.util.ArrayList<>());
         if (config.getNotificationConfigList() == null) config.setNotificationConfigList(new java.util.ArrayList<>());
+        if (config.getPluginMarketUrl() == null) config.setPluginMarketUrl("");
         if (config.getDeveloperOptionsEnabled() == null) {
             config.setDeveloperOptionsEnabled(StrUtil.isNotBlank(config.getCustomTorrentUrl()));
         }
@@ -246,7 +247,8 @@ public class ConfigUtil {
             return !Set.of(
                     ani.rss.enums.NotificationTypeEnum.TELEGRAM,
                     ani.rss.enums.NotificationTypeEnum.EMBY_REFRESH,
-                    ani.rss.enums.NotificationTypeEnum.CUSTOM_REQUEST
+                    ani.rss.enums.NotificationTypeEnum.CUSTOM_REQUEST,
+                    ani.rss.enums.NotificationTypeEnum.PLUGIN
             ).contains(notificationConfig.getNotificationType());
         });
 

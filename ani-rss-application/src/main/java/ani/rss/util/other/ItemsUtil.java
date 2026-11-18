@@ -8,6 +8,7 @@ import ani.rss.entity.Item;
 import ani.rss.entity.StandbyRss;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.enums.StringEnum;
+import ani.rss.plugin.PluginHooks;
 import ani.rss.util.basic.HttpReq;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
@@ -358,6 +359,9 @@ public class ItemsUtil {
                 continue;
             }
             addNewItem.setSubgroup(match.subgroup());
+            if (!PluginHooks.accepts(ani, addNewItem)) {
+                continue;
+            }
             items.add(addNewItem);
         }
 

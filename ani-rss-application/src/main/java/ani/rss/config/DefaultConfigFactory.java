@@ -195,6 +195,7 @@ public class DefaultConfigFactory {
                 .setNotificationTemplate("")
                 .setNotificationConfigList(new ArrayList<>())
                 .setDeveloperOptionsEnabled(false)
+                .setPluginMarketUrl("")
                 .setNotificationTemplateList(new ArrayList<>(List.of(
                         new NotificationTemplate()
                                 .setId("default")

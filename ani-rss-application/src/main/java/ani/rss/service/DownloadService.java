@@ -10,6 +10,7 @@ import ani.rss.entity.Item;
 import ani.rss.entity.StandbyRss;
 import ani.rss.entity.torrent.TorrentsInfo;
 import ani.rss.enums.NotificationStatusEnum;
+import ani.rss.plugin.PluginHooks;
 import ani.rss.enums.StringEnum;
 import ani.rss.enums.TorrentsStateEnum;
 import ani.rss.enums.TorrentsTagEnum;
@@ -162,6 +163,10 @@ public class DownloadService {
             // 序列化整条资源开销很大，仅在开启 debug 日志时才格式化。
             if (log.isDebugEnabled()) {
                 log.debug(JSONUtil.formatJsonStr(GsonStatic.toJson(item)));
+            }
+            if (!PluginHooks.accepts(ani, item)) {
+                log.debug("插件已过滤 {}", item.getReName());
+                continue;
             }
             String reName = item.getReName();
             File torrent = TorrentUtil.getTorrent(ani, item);

@@ -29,6 +29,9 @@ public class Runner implements ApplicationRunner {
     @Resource
     private TaskService taskService;
 
+    @Resource
+    private ani.rss.plugin.PluginManager pluginManager;
+
     @Value("${server.port}")
     private String port;
 
@@ -40,6 +43,7 @@ public class Runner implements ApplicationRunner {
             backupService.backup();
 
             AniUtil.load();
+            pluginManager.init();
             taskService.start();
             String version = MavenUtils.getVersion();
             log.info("version {}", version);

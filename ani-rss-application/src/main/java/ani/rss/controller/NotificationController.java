@@ -34,6 +34,9 @@ public class NotificationController extends BaseController {
     public Result<Void> testNotification(@RequestBody NotificationConfig notificationConfig) {
         NotificationTypeEnum notificationType = notificationConfig.getNotificationType();
         Class<? extends BaseNotification> aClass = NotificationUtil.NOTIFICATION_MAP.get(notificationType);
+        if (aClass == null) {
+            throw new IllegalArgumentException("不支持的通知类型");
+        }
         BaseNotification baseNotification = ReflectUtil.newInstance(aClass);
         Ani ani = AniUtil.createAni();
         BgmInfo bgmInfo = BgmUtil.getBgmInfo("292970", true);

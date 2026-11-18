@@ -9,6 +9,7 @@ import ani.rss.notification.*;
 import cn.hutool.core.thread.ExecutorBuilder;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Comparator;
@@ -33,7 +34,8 @@ public class NotificationUtil {
                     NotificationTypeEnum.EMBY_REFRESH, EmbyRefreshNotification.class,
                     NotificationTypeEnum.TELEGRAM, TelegramNotification.class,
                     NotificationTypeEnum.CUSTOM_REQUEST, CustomRequestNotification.class,
-                    NotificationTypeEnum.WEB_HOOK, CustomRequestNotification.class
+                    NotificationTypeEnum.WEB_HOOK, CustomRequestNotification.class,
+                    NotificationTypeEnum.PLUGIN, PluginNotification.class
             );
 
     /**
@@ -83,6 +85,11 @@ public class NotificationUtil {
             }
 
             if (!NOTIFICATION_MAP.containsKey(notificationType)) {
+                continue;
+            }
+            if (notificationType == NotificationTypeEnum.PLUGIN
+                    && StrUtil.isBlank(notificationConfig.getPluginChannelId())) {
+                // 插件被卸载或渠道未选择时静默跳过，避免每条通知都报错。
                 continue;
             }
 

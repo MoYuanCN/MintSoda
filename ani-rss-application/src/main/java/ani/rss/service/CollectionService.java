@@ -10,6 +10,7 @@ import ani.rss.entity.torrent.TorrentsInfo;
 import ani.rss.entity.torrent.qBittorrentTorrentsInfo;
 import ani.rss.enums.StringEnum;
 import ani.rss.util.basic.HttpReq;
+import ani.rss.plugin.PluginHooks;
 import ani.rss.util.other.*;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.collection.CollUtil;
@@ -289,7 +290,7 @@ public class CollectionService {
 
                     MatchRuleUtil.Evaluation match = MatchRuleUtil.evaluate(ani, name, ani.getSubgroup());
                     if (match.accepted()) item.setSubgroup(match.subgroup());
-                    return match.accepted();
+                    return match.accepted() && PluginHooks.accepts(ani, name, ani.getSubgroup());
                 })
                 .map(item -> {
                     long length = item.getLength();
