@@ -24,7 +24,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 /** Sends a configurable HTTP request with rendered notification templates. */
 @Slf4j
@@ -49,14 +48,16 @@ public class CustomRequestNotification implements BaseNotification {
             throw new IllegalArgumentException("不支持的请求方法: " + methodName, e);
         }
 
+        // Body 只有两个来源：手写内容，或模板库中选中的模板；模板优先。
         NotificationTemplate selectedTemplate = BaseNotification.getSelectedTemplate(config);
+        boolean templateBody = selectedTemplate != null;
         String contentType = StrUtil.blankToDefault(config.getWebHookContentType(), "application/json").trim();
-        boolean jsonTemplate = selectedTemplate == null
-                ? isJson(contentType)
-                : "JSON".equalsIgnoreCase(selectedTemplate.getType());
+        boolean jsonTemplate = templateBody
+                ? !"TEXT".equalsIgnoreCase(selectedTemplate.getType())
+                : isJson(contentType);
         if (jsonTemplate && !isJson(contentType)) {
             contentType = "application/json";
-        } else if (selectedTemplate != null && !jsonTemplate && isJson(contentType)) {
+        } else if (!jsonTemplate && isJson(contentType)) {
             contentType = "text/plain";
         }
         Map<String, String> headers = renderHeaders(config.getWebHookHeader(), ani, text, status);
@@ -64,13 +65,12 @@ public class CustomRequestNotification implements BaseNotification {
             headers.put("Content-Type", contentType);
         }
 
-        String bodyTemplate = Optional.ofNullable(selectedTemplate)
-                .map(template -> StrUtil.blankToDefault(template.getContent(),
-                        "JSON".equalsIgnoreCase(template.getType())
-                                ? template.getCustomRequestBody()
-                                : template.getTelegramTemplate()))
-                .filter(StrUtil::isNotBlank)
-                .orElse(config.getWebHookBody());
+        String bodyTemplate = templateBody
+                ? StrUtil.blankToDefault(selectedTemplate.getContent(),
+                "JSON".equalsIgnoreCase(selectedTemplate.getType())
+                        ? selectedTemplate.getCustomRequestBody()
+                        : selectedTemplate.getTelegramTemplate())
+                : config.getWebHookBody();
         String body = StrUtil.isBlank(bodyTemplate) ? "" : jsonTemplate
                 ? renderJsonBody(bodyTemplate, ani, text, status)
                 : render(bodyTemplate, ani, text, status);

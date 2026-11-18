@@ -13,7 +13,7 @@
       <SettingsItem label="备注">
         <el-input v-model="notificationConfig['comment']" placeholder="无备注"/>
       </SettingsItem>
-      <SettingsItem label="消息模板">
+      <SettingsItem v-if="notificationConfig.notificationType !== 'CUSTOM_REQUEST'" label="消息模板">
         <div class="notification-template-select">
           <el-select v-model="notificationConfig.notificationTemplateId" clearable placeholder="使用单条通知模板"
                      @change="templateSelectionChanged">
@@ -21,7 +21,7 @@
                        :key="template.id" :label="`${template.name || '未命名模板'} · ${template.type === 'JSON' ? 'JSON' : '文本'}`"
                        :value="template.id"/>
           </el-select>
-          <el-text size="small" type="info">Telegram 使用文本模板；自定义请求可选文本或 JSON。未选择时使用渠道模板。</el-text>
+          <el-text size="small" type="info">Telegram 使用文本模板；未选择时使用渠道模板。</el-text>
         </div>
       </SettingsItem>
       <SettingsItem label="通知状态">
@@ -35,7 +35,8 @@
       </SettingsItem>
       <EmbyRefreshNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
       <TelegramNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
-      <WebhookNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
+      <WebhookNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"
+                               :templates="props.config.notificationTemplateList || []"/>
       <SettingsItem label="顺序">
         <div>
           <el-input-number
@@ -59,7 +60,7 @@
     <div class="flex notification-config-footer">
       <el-button bg text @click="messageTest" icon="Odometer" :loading="messageTestLoading">测试
       </el-button>
-      <el-button @click="dialogVisible = false" text bg icon="Check" type="primary">确定
+      <el-button @click="confirm" text bg icon="Check" type="primary">确定
       </el-button>
     </div>
   </el-dialog>
@@ -132,30 +133,18 @@ const templateSelectionChanged = id => {
 const messageTest = () => {
   messageTestLoading.value = true
 
-  let config = JSON.parse(JSON.stringify(notificationConfig.value))
+  const config = JSON.parse(JSON.stringify(notificationConfig.value))
   config.embyDelayed = 0
+  // 模板作为 Body 时由服务端直接渲染，这里只先校验 JSON 是否合法。
   const selectedTemplate = (props.config.notificationTemplateList || [])
       .find(template => template.id === config.notificationTemplateId)
-  if (selectedTemplate) {
-    const templateType = selectedTemplate.type === 'JSON' ? 'JSON' : 'TEXT'
-    const content = selectedTemplate.content ?? (templateType === 'JSON'
-        ? selectedTemplate.customRequestBody
-        : selectedTemplate.telegramTemplate) ?? ''
-    config.notificationTemplateId = ''
-    if (templateType === 'JSON') {
-      try {
-        JSON.parse(content)
-      } catch {
-        ElMessage.error('当前 JSON 模板格式无效，请先修正模板内容')
-        messageTestLoading.value = false
-        return
-      }
-      config.webHookBody = content
-      config.webHookContentType = 'application/json'
-    } else {
-      config.notificationTemplate = content
-      config.webHookBody = content
-      if (config.notificationType === 'CUSTOM_REQUEST') config.webHookContentType = 'text/plain'
+  if (selectedTemplate?.type === 'JSON' && selectedTemplate.content?.trim()) {
+    try {
+      JSON.parse(selectedTemplate.content)
+    } catch {
+      ElMessage.error('当前 JSON 模板格式无效，请先修正模板内容')
+      messageTestLoading.value = false
+      return
     }
   }
 
@@ -171,14 +160,24 @@ const messageTest = () => {
 let dialogVisible = ref(false)
 
 let props = defineProps(['config'])
+const emit = defineEmits(['confirm'])
 
+/**
+ * 弹窗内始终编辑副本，只有点击确定才把改动交给调用方，
+ * 取消或关闭弹窗不会新增通知，也不会改动已有通知。
+ */
 let show = (newNotificationConfig) => {
-  notificationConfig.value = newNotificationConfig
+  notificationConfig.value = JSON.parse(JSON.stringify(newNotificationConfig))
   const selectedId = notificationConfig.value.notificationTemplateId
   if (selectedId && !availableTemplates.value.some(template => template.id === selectedId)) {
     notificationConfig.value.notificationTemplateId = ''
   }
   dialogVisible.value = true
+}
+
+const confirm = () => {
+  dialogVisible.value = false
+  emit('confirm', JSON.parse(JSON.stringify(notificationConfig.value)))
 }
 
 defineExpose({

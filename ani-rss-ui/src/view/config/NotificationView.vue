@@ -75,7 +75,7 @@
                         启用
                       </el-text>
                     </el-dropdown-item>
-                    <el-dropdown-item @click="notificationConfigRef?.show(it)">
+                    <el-dropdown-item @click="edit(it)">
                       <el-text type="primary">
                         <el-icon>
                           <Edit/>
@@ -110,7 +110,8 @@
       添加通知
     </el-button>
   </div>
-  <NotificationConfigView ref="notificationConfigRef" v-model:config="props.config"/>
+  <NotificationConfigView ref="notificationConfigRef" v-model:config="props.config"
+                         @confirm="onConfirm"/>
 </template>
 
 <script setup>
@@ -160,16 +161,39 @@ const removeTemplate = index => {
   ElMessage.info('已删除模板；使用该模板的通知将改用各自的备用模板')
 }
 
+// 新增通知先编辑草稿，点击确定才写入列表；编辑则替换原项。
+let pendingAdd = false
+let editingNotification = null
+
 let add = () => {
   addLoading.value = true
   newNotification()
       .then((res) => {
-        props.config['notificationConfigList'].push(res.data)
+        pendingAdd = true
+        editingNotification = null
         notificationConfigRef.value?.show(res.data)
       })
       .finally(() => {
         addLoading.value = false
       })
+}
+
+let edit = (notification) => {
+  pendingAdd = false
+  editingNotification = notification
+  notificationConfigRef.value?.show(notification)
+}
+
+let onConfirm = (notification) => {
+  const list = props.config['notificationConfigList'] || (props.config['notificationConfigList'] = [])
+  if (pendingAdd) {
+    pendingAdd = false
+    list.push(notification)
+    return
+  }
+  const index = list.indexOf(editingNotification)
+  if (index > -1) list.splice(index, 1, notification)
+  editingNotification = null
 }
 
 // 与编辑弹窗共用配置状态，切换后沿用设置页的保存流程。
