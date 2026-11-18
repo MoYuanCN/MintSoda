@@ -172,7 +172,8 @@ const emit = defineEmits(['callback'])
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: var(--el-bg-color-overlay);
+  background: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
   border: 1px solid var(--el-border-color);
   border-radius: 8px;
   margin-bottom: 8px;
@@ -197,7 +198,8 @@ const emit = defineEmits(['callback'])
   margin-bottom: 24px;
   padding: 20px;
   border-radius: 8px;
-  background: var(--el-bg-color-overlay);
+  background: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
   border: 1px solid var(--el-border-color);
 }
 

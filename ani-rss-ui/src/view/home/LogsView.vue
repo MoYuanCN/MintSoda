@@ -311,7 +311,8 @@ onActivated(getLogs)
   flex-direction: column;
   overflow: hidden;
   border-radius: 8px;
-  background-color: var(--el-bg-color);
+  background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
 }
 
 .log-columns,

@@ -161,7 +161,8 @@ onActivated(loadAll)
   gap: 10px;
   padding: 12px;
   border-radius: 8px;
-  background-color: var(--el-bg-color);
+  background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
 }
 
 .metric-icon {
@@ -207,7 +208,8 @@ onActivated(loadAll)
   min-width: 0;
   padding: 12px;
   border-radius: 8px;
-  background-color: var(--el-bg-color);
+  background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
 }
 
 .section-title {

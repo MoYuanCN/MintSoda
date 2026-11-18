@@ -105,10 +105,25 @@ onMounted(() => {
   height: 100%;
   flex-flow: column;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--body-background-color);
+  isolation: isolate;
+}
+
+.content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background-image: var(--login-background-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  opacity: var(--app-background-opacity);
+  filter: blur(var(--app-background-blur));
+  transform: scale(1.04);
+  pointer-events: none;
 }
 
 .setup-page {
@@ -117,6 +132,10 @@ onMounted(() => {
 
 .setup-form {
   width: min(360px, 86vw);
+  padding: 24px 20px;
+  border-radius: var(--app-corner-radius);
+  background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
 }
 
 .title-h2 {

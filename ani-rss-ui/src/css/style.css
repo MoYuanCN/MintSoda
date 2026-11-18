@@ -15,15 +15,17 @@ html.dark {
 
 :root {
     --body-background-color: #f7f5fa;
-    --app-card-opacity: 92%;
-    --app-card-blur: 8px;
-    --app-nav-opacity: 92%;
-    --app-nav-blur: 8px;
-    --app-dialog-opacity: 92%;
-    --app-dialog-blur: 8px;
+    --app-card-opacity: 80%;
+    --app-card-blur: 14px;
+    --app-nav-opacity: 78%;
+    --app-nav-blur: 18px;
+    --app-dialog-opacity: 84%;
+    --app-dialog-blur: 16px;
     --app-corner-radius: 12px;
     --app-background-image: none;
     --login-background-image: none;
+    --app-background-blur: 10px;
+    --app-background-opacity: 100%;
 
     /* 全局圆角优化：更圆润 */
     --el-border-radius-small: calc(var(--app-corner-radius) * .67);
@@ -39,15 +41,33 @@ html.dark {
     --el-collapse-item-content-padding: 16px;
 }
 
-body {
+/* 底色放在 html 上，body 保持透明，负层级的背景图才不会被 body 底色盖住。 */
+html {
     background-color: var(--body-background-color);
+}
+
+body {
+    background-color: transparent;
+}
+
+/* 背景图单独成层：模糊只作用于图片，不影响界面文字与交互。 */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
     background-image: var(--app-background-image);
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
-    background-attachment: fixed;
+    opacity: var(--app-background-opacity);
+    filter: blur(var(--app-background-blur));
+    /* 模糊会让边缘透出底色，放大一点避免出现白边。 */
+    transform: scale(1.04);
+    pointer-events: none;
 }
 
+/* 页面与区块默认使用半透明 + 模糊的亚克力质感。 */
 .app-nav {
     background-color: color-mix(in srgb, var(--el-bg-color) var(--app-nav-opacity), transparent);
     backdrop-filter: blur(var(--app-nav-blur));
@@ -60,7 +80,41 @@ body {
 }
 
 .el-card,
+.el-tabs__content,
+.el-collapse,
+.el-descriptions,
+.el-empty,
+.el-drawer,
+.el-popover.el-popper,
+.el-select__popper,
+.el-dropdown__popper,
+.el-picker__popper,
 .config-tabs .el-tabs__content {
+    background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+    backdrop-filter: blur(var(--app-card-blur));
+}
+
+/* 卡片与表格自带不透明底色，改成半透明才能透出背景图。 */
+.el-card {
+    --el-card-bg-color: transparent;
+}
+
+.el-table {
+    --el-table-bg-color: transparent;
+    --el-table-tr-bg-color: transparent;
+    --el-table-header-bg-color: color-mix(in srgb, var(--el-bg-color) 55%, transparent);
+    --el-table-row-hover-bg-color: color-mix(in srgb, var(--el-fill-color-light) 70%, transparent);
+
+    background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+    backdrop-filter: blur(var(--app-card-blur));
+}
+
+/* 顶栏、工具条与保存栏等容器也保持亚克力，而非纯色块。 */
+.app-header,
+.config-savebar,
+.app-toolbar,
+.el-tabs__nav-wrap,
+.segmented-tabs > .el-tabs__header .el-tabs__nav-wrap {
     background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
     backdrop-filter: blur(var(--app-card-blur));
 }
@@ -73,7 +127,7 @@ body {
     .el-collapse-item {
         .el-collapse-item__content { /* 展开样式 */
             border-radius: var(--el-border-radius-base);
-            background-color: var(--el-fill-color-light);
+            background-color: color-mix(in srgb, var(--el-fill-color-light) 65%, transparent);
             padding: var(--el-collapse-item-content-padding);
         }
 
@@ -321,7 +375,6 @@ html, body, #app {
 .segmented-tabs > .el-tabs__header .el-tabs__nav-wrap {
     padding: 8px;
     border-radius: 8px;
-    background: var(--el-bg-color);
 }
 
 .segmented-tabs > .el-tabs__header .el-tabs__nav-wrap::after,

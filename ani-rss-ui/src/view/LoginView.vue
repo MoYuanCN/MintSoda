@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-center content" :style="loginBackgroundStyle">
+  <div class="flex-center content">
     <div id="login-page" class="flex-center">
       <div id="form">
         <div style="text-align: center;">
@@ -57,9 +57,6 @@ let loading = ref(false)
 const loginLogo = computed(() => uiCustomization.value.loginLogoImage
     ? uiAssetUrl(uiCustomization.value.loginLogoImage)
     : '/icon.png')
-const loginBackgroundStyle = computed(() => uiCustomization.value.loginBackgroundImage
-    ? {backgroundImage: `linear-gradient(rgba(0,0,0,.18),rgba(0,0,0,.18)),url("${uiAssetUrl(uiCustomization.value.loginBackgroundImage)}")`}
-    : {})
 
 let user = ref({
   username: '',
@@ -131,14 +128,34 @@ onMounted(() => {
   height: 100%;
   flex-flow: column;
   justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--body-background-color);
+  /* 背景单独成层，模糊与透明度不影响表单本身。 */
+  isolation: isolate;
+}
+
+.content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background-image: var(--login-background-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  opacity: var(--app-background-opacity);
+  filter: blur(var(--app-background-blur));
+  transform: scale(1.04);
+  pointer-events: none;
 }
 
 #form {
-  max-width: 200px;
+  max-width: 240px;
+  padding: 24px 20px;
+  border-radius: var(--app-corner-radius);
+  background-color: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
 }
 
 .title-h2 {

@@ -397,7 +397,8 @@ onActivated(() => {
   min-height: 0;
   overflow: hidden;
   border-radius: 8px;
-  background: var(--el-bg-color);
+  background: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
 }
 
 .config-tabs :deep(.el-tab-pane) {
@@ -454,7 +455,8 @@ onActivated(() => {
   padding: 8px 12px;
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
-  background: var(--el-bg-color);
+  background: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
