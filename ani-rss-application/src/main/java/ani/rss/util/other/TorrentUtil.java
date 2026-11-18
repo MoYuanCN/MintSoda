@@ -455,15 +455,28 @@ public class TorrentUtil {
      * @return 任务列表
      */
     public static List<TorrentsInfo> findTorrentsInfosByAni(List<Ani> anis) {
+        return findTorrentsInfosByAni(anis, getTorrentsInfos());
+    }
+
+    /**
+     * 在已取得的任务列表中按订阅的保存位置过滤，避免同一轮内重复请求下载器。
+     *
+     * @param ani           订阅
+     * @param torrentsInfos 已取得的任务列表
+     * @return 该订阅对应的任务
+     */
+    public static List<TorrentsInfo> findTorrentsInfosByAni(Ani ani, List<TorrentsInfo> torrentsInfos) {
+        return findTorrentsInfosByAni(List.of(ani), torrentsInfos);
+    }
+
+    public static List<TorrentsInfo> findTorrentsInfosByAni(List<Ani> anis, List<TorrentsInfo> torrentsInfos) {
         DownloadService downloadService = SpringUtil.getBean(DownloadService.class);
 
-        List<TorrentsInfo> torrentsInfos = getTorrentsInfos();
         List<TorrentsInfo> torrentsInfoList = new ArrayList<>();
         for (Ani ani : anis) {
             String downloadPath = downloadService.getDownloadPath(ani);
             for (TorrentsInfo torrentsInfo : torrentsInfos) {
-                String savePath = torrentsInfo.getSavePath();
-                if (savePath.equals(downloadPath)) {
+                if (downloadPath.equals(torrentsInfo.getSavePath())) {
                     torrentsInfoList.add(torrentsInfo);
                 }
             }

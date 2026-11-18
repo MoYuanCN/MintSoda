@@ -150,8 +150,19 @@ public class DownloadService {
         // 实时保存文件
         boolean sync = false;
 
+        // 同一订阅的任务只取一次，后续按名称/hash 匹配都在本地集合中完成。
+        List<TorrentsInfo> aniTorrents = new ArrayList<>(
+                TorrentUtil.findTorrentsInfosByAni(ani, torrentsInfos));
+        Set<String> torrentHashes = new HashSet<>();
+        for (TorrentsInfo torrentsInfo : torrentsInfos) {
+            torrentHashes.add(StrUtil.nullToEmpty(torrentsInfo.getHash()).toLowerCase());
+        }
+
         for (Item item : items) {
-            log.debug(JSONUtil.formatJsonStr(GsonStatic.toJson(item)));
+            // 序列化整条资源开销很大，仅在开启 debug 日志时才格式化。
+            if (log.isDebugEnabled()) {
+                log.debug(JSONUtil.formatJsonStr(GsonStatic.toJson(item)));
+            }
             String reName = item.getReName();
             File torrent = TorrentUtil.getTorrent(ani, item);
             boolean master = item.getMaster();
@@ -215,7 +226,7 @@ public class DownloadService {
 
             // 仅在主RSS更新后删除备用RSS
             if (delete && master && deleteStandbyRSSOnly) {
-                TorrentsInfo standbyRSS = torrentsInfos
+                TorrentsInfo standbyRSS = aniTorrents
                         .stream()
                         .filter(torrentsInfo -> {
                             if (!torrentsInfo.getSavePath().equals(savePath)) {
@@ -248,15 +259,14 @@ public class DownloadService {
                         continue;
                     }
                     torrentsInfos.remove(standbyRSS);
+                    // 同步移除，避免同一订阅的后续条目再次命中已删除的任务。
+                    aniTorrents.remove(standbyRSS);
+                    torrentHashes.remove(StrUtil.nullToEmpty(standbyRSS.getHash()).toLowerCase());
                 }
             }
 
             // 已经下载过
-            if (torrentsInfos
-                    .stream()
-                    .anyMatch(torrentsInfo ->
-                            // hash 相同
-                            torrentsInfo.getHash().equals(hash))) {
+            if (torrentHashes.contains(hash)) {
                 log.info("已有下载任务 hash:{} name:{}", hash, reName);
                 if (master && !is5) {
                     currentDownloadCount++;
@@ -265,7 +275,7 @@ public class DownloadService {
             }
 
             // 未开启rename不进行检测
-            if (itemDownloaded(ani, item, true)) {
+            if (itemDownloaded(ani, item, aniTorrents)) {
                 log.info("本地文件已存在 {}", reName);
                 if (master && !is5) {
                     currentDownloadCount++;
@@ -288,15 +298,16 @@ public class DownloadService {
                 continue;
             }
 
-            deleteStandbyRss(ani, item);
+            deleteStandbyRss(ani, item, aniTorrents, torrentHashes);
 
-            if (!AniUtil.ANI_LIST.contains(ani)) {
+            if (!AniUtil.contains(ani)) {
                 return;
             }
 
             sync = true;
 
             download(ani, item, savePath, saveTorrent);
+            torrentHashes.add(hash);
 
             if (master && !is5) {
                 currentDownloadCount++;
@@ -331,10 +342,13 @@ public class DownloadService {
     /**
      * 删除备用rss
      *
-     * @param ani  订阅
-     * @param item 资源项
+     * @param ani           订阅
+     * @param item          资源项
+     * @param torrentsInfos 该订阅对应的任务列表
+     * @param torrentHashes 本轮已存在任务的 hash 集合，删除任务后同步移除
      */
-    public void deleteStandbyRss(Ani ani, Item item) {
+    private void deleteStandbyRss(Ani ani, Item item, List<TorrentsInfo> torrentsInfos,
+                                  Set<String> torrentHashes) {
         Boolean standbyRss = CONFIG.getStandbyRss();
         Boolean coexist = CONFIG.getCoexist();
         Boolean delete = CONFIG.getDelete();
@@ -361,8 +375,6 @@ public class DownloadService {
 
         String downloadPath = getDownloadPath(ani);
 
-        List<TorrentsInfo> torrentsInfos = TorrentUtil.findTorrentsInfosByAni(ani);
-
         // 删除备用rss任务
         for (TorrentsInfo torrentsInfo : torrentsInfos) {
             String name = torrentsInfo.getName();
@@ -372,6 +384,7 @@ public class DownloadService {
             String s = ReUtil.get(StringEnum.SEASON_REG, name, 0);
             if (s.equalsIgnoreCase(episode)) {
                 TorrentUtil.delete(torrentsInfo, true, true);
+                torrentHashes.remove(StrUtil.nullToEmpty(torrentsInfo.getHash()).toLowerCase());
             }
         }
 
@@ -736,6 +749,12 @@ public class DownloadService {
      * @return 是否已下载
      */
     public Boolean itemDownloaded(Ani ani, Item item, Boolean downloadList) {
+        return itemDownloaded(ani, item, downloadList
+                ? TorrentUtil.findTorrentsInfosByAni(ani)
+                : List.of());
+    }
+
+    private Boolean itemDownloaded(Ani ani, Item item, List<TorrentsInfo> aniTorrents) {
         Boolean rename = CONFIG.getRename();
         if (!rename) {
             return false;
@@ -757,17 +776,14 @@ public class DownloadService {
         String reName = item.getReName();
         Double episode = item.getEpisode();
 
-        if (downloadList) {
-            List<TorrentsInfo> torrentsInfoList = TorrentUtil.findTorrentsInfosByAni(ani);
-            for (TorrentsInfo torrentsInfo : torrentsInfoList) {
-                String name = torrentsInfo.getName();
-                if (!name.equalsIgnoreCase(reName)) {
-                    continue;
-                }
-                log.info("已存在下载任务 {}", reName);
-                TorrentUtil.saveTorrent(ani, item);
-                return true;
+        for (TorrentsInfo torrentsInfo : aniTorrents) {
+            String name = torrentsInfo.getName();
+            if (!name.equalsIgnoreCase(reName)) {
+                continue;
             }
+            log.info("已存在下载任务 {}", reName);
+            TorrentUtil.saveTorrent(ani, item);
+            return true;
         }
 
         String downloadPath = getDownloadPath(ani);
