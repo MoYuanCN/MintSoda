@@ -191,7 +191,7 @@ Body 只有两种来源，语义明确：
 ## 部署
 
 - 默认端口改为 **17789**，同步开发代理、安装脚本与文档。
-- 新增 `linux/install-yuri.sh`：一条命令安装到**执行命令时所在目录**（不新建子目录）并注册 systemd 服务，支持 `--username`、`--password`、`--port`、`--dir`、`--setup`；凭据写入仅 root 可读的环境文件。
+- 新增 `linux/install-yuri.sh`：一条命令安装到**执行命令时所在目录**（不新建子目录）并注册 systemd 服务，安装时在终端交互询问用户名与两次密码（沿用与后端一致的强度校验），也可用 `--username`、`--password` 直接传入；另有 `--port`、`--dir`、`--setup`、`--yes`。重新安装检测到已有配置时默认沿用原账号。凭据写入仅 root 可读的环境文件。
 - 新增 `linux/assyuri`：数字菜单与子命令（`status`、`version`、`update`、`log`、`start/stop/restart`、`enable/disable`、`uninstall`）；无 `unzip` 时用 Python 读取版本。
 - `linux/install-ani-rss.sh` 保留为安装到 `/opt/ani-rss` 的旧方式。
 - Windows EXE 使用便携配置目录：配置保存在 EXE 同目录的 `config/`，并在首次启动时复制旧用户目录配置。

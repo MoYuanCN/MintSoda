@@ -2,17 +2,20 @@
 # ANI-RSS-Yuri 一键安装脚本
 #
 # 一行命令安装到当前目录（不创建子目录）并注册 systemd 服务：
-#   curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | sudo bash
 #
-# 支持非交互参数：
-#   bash install-yuri.sh --port 17789 --username myuser --password 'StrongPass!234' --yes
+# 安装过程中会在终端询问登录用户名与密码；也可直接传入参数跳过询问：
+#   sudo bash install-yuri.sh --port 17789 --username myuser --password 'StrongPass!234' --yes
 #
 # 说明：
 #   - 安装目录默认为执行命令时所在目录，可用 --dir 指定。
+#   - 未传 --username 时会交互询问；用户名留空则由程序自动生成随机凭据。
+#   - 用户名 3-32 位字母、数字、下划线或连字符；密码至少 8 位，且包含大写字母、
+#     小写字母、数字、符号中的至少两类，需输入两次确认。
 #   - 用户名与密码写入 /etc/ani-rss-yuri.env（仅 root 可读），由服务启动时读取；
-#     程序会在启动时校验强度并只保存摘要。
-#   - 未提供密码时，由程序在首次启动按平台规则生成或引导设置。
-#   - --setup 会强制进入 WebUI 初始化引导，不生成随机凭据。
+#     程序启动时会再次校验强度并只保存摘要。
+#   - 重新安装时若检测到已有配置，默认沿用原账号，选 n 可重新设置。
+#   - --setup 会跳过账号询问，改为在 WebUI 中完成初始化引导。
 
 set -euo pipefail
 
@@ -26,6 +29,7 @@ REPO_URL="https://github.com/MoYuanCN/ani-rss-Yuri"
 JAR_URL="$REPO_URL/releases/latest/download/ani-rss.jar"
 ASSYURI_URL="https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/assyuri"
 
+ENV_FILE="/etc/ani-rss-yuri.env"
 INSTALL_DIR="$(pwd)"
 PORT="17789"
 SERVICE_NAME="ani-rss.service"
@@ -44,13 +48,180 @@ require_root() {
     [ "$EUID" -eq 0 ] || die "请使用 root 运行：sudo bash install-yuri.sh"
 }
 
-confirm() {
-    [ "$ASSUME_YES" = "yes" ] && return 0
-    if [ -r /dev/tty ]; then
-        read -r -p "$1 [y/N]: " reply </dev/tty || reply="n"
+# 从终端读取输入。curl | bash 时标准输入是脚本本身，必须显式读取 /dev/tty。
+read_tty() {
+    local prompt="$1" silent="${2:-no}" value=""
+    if [ "$silent" = "yes" ]; then
+        IFS= read -r -s -p "$prompt" value </dev/tty || value=""
+        printf '\n' >/dev/tty
     else
+        IFS= read -r -p "$prompt" value </dev/tty || value=""
+    fi
+    printf '%s' "$value"
+}
+
+trim() {
+    local value="$1"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    printf '%s' "$value"
+}
+
+valid_username() {
+    [[ "$1" =~ ^[A-Za-z0-9_-]{3,32}$ ]]
+}
+
+# 与后端 CredentialUtils 保持一致：至少 8 位，四类字符中至少两类。
+# 成功时输出空字符串，失败时输出原因，始终返回 0，避免 set -e 提前退出。
+password_error() {
+    local password="$1" types=0
+    if [ "${#password}" -lt 8 ]; then
+        printf '%s' "密码至少需要 8 位"
         return 0
     fi
+    if [[ "$password" =~ [a-z] ]]; then types=$((types + 1)); fi
+    if [[ "$password" =~ [A-Z] ]]; then types=$((types + 1)); fi
+    if [[ "$password" =~ [0-9] ]]; then types=$((types + 1)); fi
+    if [[ "$password" =~ [^A-Za-z0-9] ]]; then types=$((types + 1)); fi
+    if [ "$types" -lt 2 ]; then
+        printf '%s' "密码需包含大写字母、小写字母、数字、符号中的至少两类"
+        return 0
+    fi
+    printf '%s' ""
+}
+
+has_tty() {
+    [ -r /dev/tty ] && [ -w /dev/tty ]
+}
+
+# 只传了 --username 或只传了 --password 时补齐另一半，避免留下无法登录的账号。
+prompt_missing_password() {
+    [ -n "$USERNAME" ] || return 0
+    [ -z "$PASSWORD" ] || return 0
+    if [ "$FORCE_SETUP" = "yes" ]; then
+        die "已指定 --setup 时不要再传入 --username"
+    fi
+    if ! has_tty; then
+        die "已指定 --username，但缺少 --password；请在终端交互安装或同时传入 --password"
+    fi
+    warn "已指定用户名 $USERNAME，请补充设置密码"
+    local password="" confirm_password="" error=""
+    while :; do
+        password="$(read_tty "登录密码（输入时不显示）: " yes)"
+        if [ -z "$password" ]; then
+            warn "密码不能为空，请重新输入"
+            continue
+        fi
+        error="$(password_error "$password")"
+        if [ -n "$error" ]; then
+            warn "$error，请重新输入"
+            continue
+        fi
+        confirm_password="$(read_tty "再次输入密码: " yes)"
+        if [ "$password" != "$confirm_password" ]; then
+            warn "两次输入的密码不一致，请重新输入"
+            continue
+        fi
+        break
+    done
+    PASSWORD="$password"
+    ok "已设置登录密码"
+}
+
+existing_username() {
+    sed -n 's/^ANI_RSS_USERNAME=//p' "$ENV_FILE" | head -1 | tr -d '"[[:space:]]'
+}
+
+prompt_credentials() {
+    if [ -n "$USERNAME" ]; then
+        prompt_missing_password
+        return 0
+    fi
+    # 重新安装时默认沿用已有账号，避免误把密码换成随机凭据。
+    if [ -f "$ENV_FILE" ]; then
+        if [ "$ASSUME_YES" = "yes" ] || ! has_tty; then
+            warn "检测到已有账号配置 $ENV_FILE，将沿用现有账号"
+            PASSWORD="**existing**"
+            USERNAME="$(existing_username)"
+            return 0
+        fi
+        if confirm "检测到已有账号配置，是否沿用现有用户名与密码？（选 n 可重新设置）"; then
+            USERNAME="$(existing_username)"
+            PASSWORD="**existing**"
+            if [ -n "$USERNAME" ]; then
+                ok "将沿用已有账号: $USERNAME"
+            else
+                warn "未能读取已有账号，继续使用现有配置"
+                PASSWORD=""
+            fi
+            return 0
+        fi
+    fi
+    if [ "$FORCE_SETUP" = "yes" ]; then
+        warn "已指定 --setup，跳过账号设置，首次访问时在 WebUI 中完成初始化"
+        return 0
+    fi
+    if [ "$ASSUME_YES" = "yes" ]; then
+        warn "已指定 --yes，跳过账号询问；未提供凭据时由程序在首次启动生成或引导设置"
+        return 0
+    fi
+    if ! has_tty; then
+        warn "未检测到可交互终端，跳过账号设置；请通过 WebUI 或环境变量配置账号"
+        return 0
+    fi
+
+    echo
+    log "请设置 ANI-RSS-Yuri 登录账号"
+    echo "  直接回车跳过：由程序在首次启动时生成随机凭据并输出到日志。"
+    echo
+
+    local input="" error=""
+    while :; do
+        input="$(trim "$(read_tty "登录用户名: ")")"
+        if [ -z "$input" ]; then
+            USERNAME=""
+            PASSWORD=""
+            warn "未设置用户名，稍后将由程序自动生成或进入引导"
+            return 0
+        fi
+        if valid_username "$input"; then
+            USERNAME="$input"
+            break
+        fi
+        warn "用户名需为 3-32 位字母、数字、下划线或连字符，请重新输入"
+    done
+
+    local password="" confirm_password=""
+    while :; do
+        password="$(read_tty "登录密码（输入时不显示）: " yes)"
+        if [ -z "$password" ]; then
+            warn "密码不能为空，请重新输入"
+            continue
+        fi
+        error="$(password_error "$password")"
+        if [ -n "$error" ]; then
+            warn "$error，请重新输入"
+            continue
+        fi
+        confirm_password="$(read_tty "再次输入密码: " yes)"
+        if [ "$password" != "$confirm_password" ]; then
+            warn "两次输入的密码不一致，请重新输入"
+            continue
+        fi
+        break
+    done
+
+    PASSWORD="$password"
+    ok "已设置登录账号: $USERNAME"
+}
+
+confirm() {
+    [ "$ASSUME_YES" = "yes" ] && return 0
+    if ! has_tty; then
+        return 0
+    fi
+    local reply="n"
+    read -r -p "$1 [y/N]: " reply </dev/tty || reply="n"
     [[ "$reply" =~ ^[Yy]$ ]]
 }
 
@@ -64,12 +235,23 @@ parse_args() {
             --setup) FORCE_SETUP="yes"; shift ;;
             --yes|-y) ASSUME_YES="yes"; shift ;;
             -h|--help)
-                sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+                sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
                 exit 0 ;;
             *) die "未知参数: $1" ;;
         esac
     done
     [[ "$PORT" =~ ^[0-9]+$ ]] && [ "$PORT" -ge 1 ] && [ "$PORT" -le 65535 ] || die "端口无效: $PORT"
+    if [ -n "$USERNAME" ] && ! valid_username "$USERNAME"; then
+        die "用户名需为 3-32 位字母、数字、下划线或连字符: $USERNAME"
+    fi
+    if [ -n "$PASSWORD" ] && [ -z "$USERNAME" ]; then
+        die "指定 --password 时必须同时指定 --username"
+    fi
+    if [ -n "$USERNAME" ] && [ -n "$PASSWORD" ]; then
+        local error
+        error="$(password_error "$PASSWORD")"
+        [ -z "$error" ] || die "$error"
+    fi
     mkdir -p "$INSTALL_DIR"
     INSTALL_DIR="$(cd "$INSTALL_DIR" && pwd)"
 }
@@ -144,14 +326,17 @@ WRAPPER
     ok "已安装 /usr/local/bin/assyuri"
 }
 
+# systemd EnvironmentFile 支持双引号，转义反斜杠与双引号以容纳特殊字符。
+escape_env_value() {
+    printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+}
+
 write_env_credentials() {
-    [ -n "$USERNAME" ] || return 0
-    local env_file="/etc/ani-rss-yuri.env"
-    local content="ANI_RSS_USERNAME=$USERNAME"
-    if [ -n "$PASSWORD" ]; then
-        content="$content
-ANI_RSS_PASSWORD=$PASSWORD"
-    fi
+    [ "$PASSWORD" = "**existing**" ] && return 0
+    local env_file="$ENV_FILE"
+    local content
+    content="ANI_RSS_USERNAME=\"$(escape_env_value "$USERNAME")\"
+ANI_RSS_PASSWORD=\"$(escape_env_value "$PASSWORD")\""
     (umask 077 && printf '%s\n' "$content" > "$env_file")
     ok "账号密码已写入 $env_file（仅 root 可读）"
 }
@@ -182,7 +367,7 @@ Environment="SERVER_PORT=$PORT"
 Environment="CONFIG=$INSTALL_DIR/config"
 Environment="SWAGGER_ENABLED=false"
 Environment="MCP_ENABLED=false"
-EnvironmentFile=-/etc/ani-rss-yuri.env
+EnvironmentFile=-$ENV_FILE
 
 [Install]
 WantedBy=multi-user.target
@@ -222,10 +407,14 @@ show_result() {
     local ip
     ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
     local setup_hint=""
-    if [ "$FORCE_SETUP" = "yes" ] || [ -z "$USERNAME" ]; then
-        setup_hint="首次访问会进入账号设置引导（或已在首次启动日志中输出随机凭据）。"
+    if [ "$PASSWORD" = "**existing**" ]; then
+        setup_hint="登录账号: $USERNAME（沿用原有密码）"
+    elif [ -n "$USERNAME" ]; then
+        setup_hint="登录账号: $USERNAME（密码为安装时设置的密码）"
+    elif [ "$FORCE_SETUP" = "yes" ]; then
+        setup_hint="首次访问会进入账号设置引导。"
     else
-        setup_hint="登录账号: $USERNAME"
+        setup_hint="未设置账号，首次启动会在日志输出随机凭据并引导登录。"
     fi
     echo
     ok "安装完成"
@@ -239,6 +428,7 @@ main() {
     parse_args "$@"
     require_root
     log "ANI-RSS-Yuri 安装开始，目标目录: $INSTALL_DIR"
+    prompt_credentials
     install_java
     create_user
     download_jar

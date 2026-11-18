@@ -43,7 +43,7 @@
 curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | sudo bash
 ```
 
-安装时可追加参数：
+安装过程中会在终端询问登录用户名与密码（直接回车则自动生成）；也可追加参数跳过询问：
 
 ```bash
 --username <用户名>   # 预设登录账号

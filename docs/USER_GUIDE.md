@@ -6,7 +6,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 
 - **Windows EXE**：配置文件保存在 EXE 同目录下的 `config/`。首次运行会创建该目录。检测到旧版 `%USERPROFILE%/ani-rss/` 配置且便携目录还没有配置文件时，程序会复制旧配置；原目录会保留。
 - **Windows 或 Linux 的 JAR**：若设置了 `CONFIG` 环境变量，则使用该目录；否则当前目录存在 `config/` 时使用它。Windows 没有上述目录时使用用户目录下的 `ani-rss/`；Linux 使用当前工作目录下的 `config/`。
-- **Linux 一键安装**：`curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | sudo bash` 会把 JAR 安装到执行命令时所在的目录（不新建子目录）并注册 systemd 服务。可追加 `--username` / `--password` 预设登录账号，或用 `--setup` 在 WebUI 中完成初始化，`--port` 修改端口，`--dir` 指定目录。安装完成后运行 `assyuri` 打开管理菜单，可查看运行状态、版本、更新、启停和日志，也可直接使用 `assyuri status` 等命令。
+- **Linux 一键安装**：`curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | sudo bash` 会把 JAR 安装到执行命令时所在的目录（不新建子目录）并注册 systemd 服务。安装过程中会在终端依次询问用户名与两次密码（密码输入时不回显）：用户名需 3-32 位字母、数字、下划线或连字符，密码至少 8 位且包含大写字母、小写字母、数字、符号中的至少两类；直接回车跳过则由程序在首次启动生成随机凭据。也可用 `--username` / `--password` 直接传入，或用 `--setup` 跳过询问并在 WebUI 中完成初始化，`--port` 修改端口，`--dir` 指定目录，`--yes` 跳过所有确认。安装完成后运行 `assyuri` 打开管理菜单，可查看运行状态、版本、更新、启停和日志，也可直接使用 `assyuri status` 等命令。
 - **Linux 固定目录安装**：`sudo bash linux/install-ani-rss.sh` 会把服务安装到 `/opt/ani-rss/`。安装脚本需要联网下载 JAR 和 Java 25。
 
 首次启动不再内置 `admin/admin`：
