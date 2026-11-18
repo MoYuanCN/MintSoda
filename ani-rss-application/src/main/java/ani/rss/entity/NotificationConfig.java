@@ -9,6 +9,7 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Accessors(chain = true)
@@ -42,10 +43,22 @@ public class NotificationConfig implements Serializable {
     private String notificationTemplateId;
 
     /**
-     * 通知类型
+     * 通知类型。插件渠道统一使用 PLUGIN。
      */
     @Schema(description = "通知类型")
     private NotificationTypeEnum notificationType;
+
+    /**
+     * 插件通知渠道标识，仅在通知类型为 PLUGIN 时使用
+     */
+    @Schema(description = "插件通知渠道")
+    private String pluginChannelId;
+
+    /**
+     * 插件通知渠道的字段值
+     */
+    @Schema(description = "插件通知渠道配置")
+    private Map<String, String> pluginOptions;
 
     /**
      * telegram bot token
@@ -180,6 +193,11 @@ public class NotificationConfig implements Serializable {
                 .setWebHookHeader("")
                 .setWebHookMethod("POST")
                 .setWebHookContentType("application/json");
+
+        // 插件渠道
+        notificationConfig
+                .setPluginChannelId("")
+                .setPluginOptions(new java.util.LinkedHashMap<>());
 
         // emby
         notificationConfig
