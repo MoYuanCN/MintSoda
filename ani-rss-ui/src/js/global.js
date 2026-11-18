@@ -99,7 +99,7 @@ const applyThemeColor = async config => {
         colorChange(picked || '#409eff')
         return
     }
-    colorChange('#409eff')
+    colorChange(color.value || '#409eff')
 }
 
 const applyUiCustomization = config => {
@@ -166,6 +166,8 @@ const color = useLocalStorage('--el-color-primary', '#409eff')
  * 改动强调色
  */
 const colorChange = (v) => {
+    // 同步到本地存储，未在设置中指定强调色时沿用上次选择。
+    color.value = v
     const el = document.documentElement
     el.style.setProperty('--el-color-primary', v)
 }
