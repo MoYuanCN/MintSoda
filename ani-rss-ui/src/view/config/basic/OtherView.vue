@@ -52,6 +52,25 @@
       </div>
     </div>
   </SettingsItem>
+  <SettingsItem label="自动清理缓存">
+    <div class="full-width">
+      <div class="flex cache-auto-row">
+        <el-switch v-model="props.config.cacheAutoClear"/>
+        <div class="cache-auto-hours">
+          <el-input-number v-model="props.config.cacheAutoClearHours" :min="1" :max="720" :disabled="!props.config.cacheAutoClear">
+            <template #suffix>
+              <span>小时</span>
+            </template>
+          </el-input-number>
+        </div>
+      </div>
+      <div>
+        <el-text class="mx-1" size="small">
+          开启后按此间隔自动清理未被引用的封面与预览缓存，默认关闭
+        </el-text>
+      </div>
+    </div>
+  </SettingsItem>
   <SettingsItem label="开机自启">
     <el-switch v-model="props.config['autoStart']"/>
   </SettingsItem>
@@ -96,4 +115,16 @@ let copy = (v) => {
 
 let props = defineProps(['config'])
 </script>
+
+<style scoped>
+.cache-auto-row {
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cache-auto-hours {
+  width: 160px;
+}
+</style>
 

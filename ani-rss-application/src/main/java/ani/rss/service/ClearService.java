@@ -105,6 +105,18 @@ public class ClearService {
     }
 
     /**
+     * 手动清理未被引用的缓存，并记录清理时间。
+     *
+     * @return 释放的大小
+     */
+    public Long clearUnusedCache() {
+        Long size = clearCover();
+        ConfigUtil.CONFIG.setCacheLastClearTime(System.currentTimeMillis());
+        ConfigUtil.sync();
+        return size;
+    }
+
+    /**
      * 清理残余封面
      *
      * @return 清理大小 bytes

@@ -169,7 +169,7 @@ public class ConfigService {
         File configDir = ConfigUtil.getConfigDir();
         String configDirStr = FileUtils.getAbsolutePath(configDir);
 
-        Long size = clearService.clearCover();
+        Long size = clearService.clearUnusedCache();
 
         // 清理 mikan 预览封面
         FileUtil.del(configDirStr + "/img");

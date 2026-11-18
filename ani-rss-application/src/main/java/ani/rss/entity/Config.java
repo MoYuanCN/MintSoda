@@ -546,6 +546,24 @@ public class Config implements Serializable {
     private Integer cardBlur;
     private Integer appCornerRadius;
 
+    /**
+     * 是否自动清理未被引用的缓存
+     */
+    @Schema(description = "自动清理缓存")
+    private Boolean cacheAutoClear;
+
+    /**
+     * 自动清理间隔（小时）
+     */
+    @Schema(description = "自动清理缓存间隔(小时)")
+    private Integer cacheAutoClearHours;
+
+    /**
+     * 上次自动清理缓存的时间戳
+     */
+    @Schema(description = "上次清理缓存时间")
+    private Long cacheLastClearTime;
+
     /** Custom torrent file endpoint. Supports <info_hash> and ${info_hash}. */
     private String customTorrentUrl;
 

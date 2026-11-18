@@ -195,6 +195,10 @@ public class ConfigUtil {
         if (config.getLoginBackgroundImage() == null) config.setLoginBackgroundImage("");
         if (config.getLoginLogoImage() == null) config.setLoginLogoImage("");
         if (config.getAppLogoImage() == null) config.setAppLogoImage("");
+        if (config.getCacheAutoClear() == null) config.setCacheAutoClear(false);
+        if (config.getCacheAutoClearHours() == null) config.setCacheAutoClearHours(72);
+        config.setCacheAutoClearHours(Math.max(1, Math.min(24 * 30, config.getCacheAutoClearHours())));
+        if (config.getCacheLastClearTime() == null) config.setCacheLastClearTime(0L);
         migrateLoginCredentials(config);
 
         // Migrate existing settings to the only supported download client.

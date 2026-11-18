@@ -2,6 +2,7 @@ package ani.rss.service;
 
 import ani.rss.task.BaseTask;
 import ani.rss.task.BgmTask;
+import ani.rss.task.CacheClearTask;
 import ani.rss.task.RenameTask;
 import ani.rss.task.RssTask;
 import cn.hutool.core.text.NamingCase;
@@ -49,7 +50,8 @@ public class TaskService {
         }
         LOOP.set(true);
 
-        List<Class<? extends BaseTask>> classList = List.of(RenameTask.class, RssTask.class, BgmTask.class);
+        List<Class<? extends BaseTask>> classList = List.of(
+                RenameTask.class, RssTask.class, BgmTask.class, CacheClearTask.class);
 
         for (Class<? extends BaseTask> aClass : classList) {
             BaseTask task = SpringUtil.getBean(aClass);
