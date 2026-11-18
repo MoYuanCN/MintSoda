@@ -161,7 +161,9 @@ Body 只有两种来源，语义明确：
 
 - 新增主题强调色 `accentColor`，留空时沿用用户上次保存的强调色，再回退到默认蓝色。
 - 新增 `themeDynamicColor`：从已配置的应用或登录背景图提取一个可读的强调色（先提饱和再限制亮度）。
-- 卡片、导航栏、弹窗分别可调**不透明度**与**模糊度**（`cardOpacity`/`cardBlur`、`navOpacity`/`navBlur`、`dialogOpacity`/`dialogBlur`），配合 `appCornerRadius` 组合出亚克力与磨砂质感。
+- 应用与登录背景分别支持**浅色/深色**两套图片（`appBackgroundImageDark`、`loginBackgroundImageDark`，留空沿用浅色），背景层自身提供 `backgroundBlur` / `backgroundOpacity`，模糊只作用于背景图。
+- 卡片、导航栏、弹窗分别可调**不透明度**与**模糊度**（`cardOpacity`/`cardBlur`、`navOpacity`/`navBlur`、`dialogOpacity`/`dialogBlur`），默认值即为半透明磨砂；页面、表格、设置区块与登录表单同样使用亚克力质感，而非纯色块。
+- 侧栏默认在右侧，菜单项均分侧栏高度；窄屏改为底部导航。
 - 提供浅色预设：蓝白玻璃、樱花粉白、薄荷青白、磨砂雾面、清透极简。预设只是写回上述已有字段，不生成主题文件或额外资源。
 - 支持应用/登录背景、应用/登录 Logo 上传与选择，默认 Logo 使用项目图标 `/icon.png`。
 

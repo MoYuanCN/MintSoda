@@ -55,10 +55,41 @@
     </div>
   </SettingsItem>
   <SettingsItem label="应用背景图">
-    <UiAssetPicker :config="props.config" field="appBackgroundImage"/>
+    <div class="theme-slider-pair">
+      <div>
+        <el-text size="small">浅色模式</el-text>
+        <UiAssetPicker :config="props.config" field="appBackgroundImage"/>
+      </div>
+      <div>
+        <el-text size="small">深色模式（留空沿用浅色）</el-text>
+        <UiAssetPicker :config="props.config" field="appBackgroundImageDark"/>
+      </div>
+    </div>
   </SettingsItem>
   <SettingsItem label="登录背景图">
-    <UiAssetPicker :config="props.config" field="loginBackgroundImage"/>
+    <div class="theme-slider-pair">
+      <div>
+        <el-text size="small">浅色模式</el-text>
+        <UiAssetPicker :config="props.config" field="loginBackgroundImage"/>
+      </div>
+      <div>
+        <el-text size="small">深色模式（留空沿用浅色）</el-text>
+        <UiAssetPicker :config="props.config" field="loginBackgroundImageDark"/>
+      </div>
+    </div>
+  </SettingsItem>
+  <SettingsItem label="背景效果">
+    <div class="theme-slider-pair">
+      <div>
+        <el-text size="small">模糊度</el-text>
+        <el-slider v-model="props.config.backgroundBlur" :min="0" :max="40" show-input/>
+      </div>
+      <div>
+        <el-text size="small">不透明度</el-text>
+        <el-slider v-model="props.config.backgroundOpacity" :min="0" :max="100" show-input/>
+      </div>
+    </div>
+    <el-text size="small" type="info">模糊与透明度只作用于背景图，不影响界面文字与交互。</el-text>
   </SettingsItem>
   <SettingsItem label="登录 Logo">
     <UiAssetPicker :config="props.config" field="loginLogoImage"/>
@@ -225,8 +256,8 @@ const qualityPresets = [
   {
     name: '清透极简',
     accentColor: '#409eff',
-    cardOpacity: 100, cardBlur: 0,
-    navOpacity: 100, navBlur: 0,
+    cardOpacity: 96, cardBlur: 2,
+    navOpacity: 96, navBlur: 2,
     dialogOpacity: 100, dialogBlur: 0,
     appCornerRadius: 8
   }
@@ -264,6 +295,10 @@ let props = defineProps(['config'])
 watch(() => [
   props.config.appBackgroundImage,
   props.config.loginBackgroundImage,
+  props.config.appBackgroundImageDark,
+  props.config.loginBackgroundImageDark,
+  props.config.backgroundBlur,
+  props.config.backgroundOpacity,
   props.config.cardOpacity,
   props.config.cardBlur,
   props.config.appCornerRadius,
@@ -293,7 +328,8 @@ watch(() => [
 
 .theme-slider-pair {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
   width: 100%;
 }
 

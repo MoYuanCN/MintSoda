@@ -41,6 +41,10 @@ public class ConfigController extends BaseController {
         java.util.Map<String, Object> settings = new java.util.LinkedHashMap<>();
         settings.put("appBackgroundImage", StrUtil.nullToEmpty(config.getAppBackgroundImage()));
         settings.put("loginBackgroundImage", StrUtil.nullToEmpty(config.getLoginBackgroundImage()));
+        settings.put("appBackgroundImageDark", StrUtil.nullToEmpty(config.getAppBackgroundImageDark()));
+        settings.put("loginBackgroundImageDark", StrUtil.nullToEmpty(config.getLoginBackgroundImageDark()));
+        settings.put("backgroundBlur", ObjectUtil.defaultIfNull(config.getBackgroundBlur(), 10));
+        settings.put("backgroundOpacity", ObjectUtil.defaultIfNull(config.getBackgroundOpacity(), 100));
         settings.put("loginLogoImage", StrUtil.nullToEmpty(config.getLoginLogoImage()));
         settings.put("appLogoImage", StrUtil.nullToEmpty(config.getAppLogoImage()));
         settings.put("cardOpacity", ObjectUtil.defaultIfNull(config.getCardOpacity(), 92));

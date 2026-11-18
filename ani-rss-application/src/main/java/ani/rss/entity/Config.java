@@ -540,6 +540,31 @@ public class Config implements Serializable {
 
     private String appBackgroundImage;
     private String loginBackgroundImage;
+
+    /**
+     * 深色模式下的应用背景图，留空时沿用浅色背景
+     */
+    @Schema(description = "深色模式应用背景图")
+    private String appBackgroundImageDark;
+
+    /**
+     * 深色模式下的登录背景图，留空时沿用浅色背景
+     */
+    @Schema(description = "深色模式登录背景图")
+    private String loginBackgroundImageDark;
+
+    /**
+     * 背景图模糊度
+     */
+    @Schema(description = "背景图模糊度")
+    private Integer backgroundBlur;
+
+    /**
+     * 背景图不透明度
+     */
+    @Schema(description = "背景图不透明度")
+    private Integer backgroundOpacity;
+
     private String loginLogoImage;
     private String appLogoImage;
     private Integer cardOpacity;

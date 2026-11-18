@@ -178,8 +178,8 @@ public class ConfigUtil {
             config.setDeveloperOptionsEnabled(StrUtil.isNotBlank(config.getCustomTorrentUrl()));
         }
         migrateLegacyGlobalReverseRules(config);
-        if (config.getCardOpacity() == null) config.setCardOpacity(92);
-        if (config.getCardBlur() == null) config.setCardBlur(8);
+        if (config.getCardOpacity() == null) config.setCardOpacity(80);
+        if (config.getCardBlur() == null) config.setCardBlur(14);
         if (config.getAppCornerRadius() == null) config.setAppCornerRadius(12);
         if (config.getQbAuthType() == null) {
             config.setQbAuthType(StrUtil.startWith(config.getDownloadToolPassword(), "qbt_") ? "API_KEY" : "USER_PASSWORD");
@@ -193,14 +193,20 @@ public class ConfigUtil {
         if (config.getRssTimeout() == null) config.setRssTimeout(20);
         if (config.getAppBackgroundImage() == null) config.setAppBackgroundImage("");
         if (config.getLoginBackgroundImage() == null) config.setLoginBackgroundImage("");
+        if (config.getAppBackgroundImageDark() == null) config.setAppBackgroundImageDark("");
+        if (config.getLoginBackgroundImageDark() == null) config.setLoginBackgroundImageDark("");
+        if (config.getBackgroundBlur() == null) config.setBackgroundBlur(10);
+        config.setBackgroundBlur(Math.max(0, Math.min(40, config.getBackgroundBlur())));
+        if (config.getBackgroundOpacity() == null) config.setBackgroundOpacity(100);
+        config.setBackgroundOpacity(Math.max(0, Math.min(100, config.getBackgroundOpacity())));
         if (config.getLoginLogoImage() == null) config.setLoginLogoImage("");
         if (config.getAppLogoImage() == null) config.setAppLogoImage("");
         if (config.getAccentColor() == null) config.setAccentColor("");
         if (config.getThemeDynamicColor() == null) config.setThemeDynamicColor(false);
-        if (config.getNavBlur() == null) config.setNavBlur(8);
-        if (config.getNavOpacity() == null) config.setNavOpacity(92);
-        if (config.getDialogBlur() == null) config.setDialogBlur(8);
-        if (config.getDialogOpacity() == null) config.setDialogOpacity(92);
+        if (config.getNavBlur() == null) config.setNavBlur(18);
+        if (config.getNavOpacity() == null) config.setNavOpacity(78);
+        if (config.getDialogBlur() == null) config.setDialogBlur(16);
+        if (config.getDialogOpacity() == null) config.setDialogOpacity(84);
         if (config.getCacheAutoClear() == null) config.setCacheAutoClear(false);
         if (config.getCacheAutoClearHours() == null) config.setCacheAutoClearHours(72);
         config.setCacheAutoClearHours(Math.max(1, Math.min(24 * 30, config.getCacheAutoClearHours())));

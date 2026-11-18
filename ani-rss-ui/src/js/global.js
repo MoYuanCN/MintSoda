@@ -1,5 +1,5 @@
 import {useColorMode, useDark, useDebounceFn, useEventListener, useLocalStorage} from "@vueuse/core";
-import {ref} from "vue";
+import {ref, watch} from "vue";
 
 /**
  * 保存登录信息
@@ -86,15 +86,26 @@ const hslToHex = (h, s, l) => {
     return `#${channel(0)}${channel(8)}${channel(4)}`
 }
 
+/**
+ * 是否处于深色模式。以 html.dark 为准，才能覆盖"跟随系统"的情况。
+ */
+const isDarkMode = () => document.documentElement.classList.contains('dark')
+
+const resolveBackground = (light, dark, isDark) => {
+    const preferred = isDark ? (dark || light) : light
+    return preferred || ''
+}
+
 const applyThemeColor = async config => {
-    const root = document.documentElement
     const accent = String(config.accentColor || '').trim()
     if (accent) {
         colorChange(accent)
         return
     }
     if (config.themeDynamicColor) {
-        const source = config.appBackgroundImage || config.loginBackgroundImage
+        const isDark = isDarkMode()
+        const source = resolveBackground(config.appBackgroundImage, config.appBackgroundImageDark, isDark)
+            || resolveBackground(config.loginBackgroundImage, config.loginBackgroundImageDark, isDark)
         const picked = await pickColorFromImage(source ? uiAssetUrl(source) : '')
         colorChange(picked || '#409eff')
         return
@@ -102,18 +113,31 @@ const applyThemeColor = async config => {
     colorChange(color.value || '#409eff')
 }
 
+/**
+ * 按当前亮暗模式选择背景图，并让背景层单独拥有模糊度与不透明度。
+ */
+const applyBackground = config => {
+    const root = document.documentElement
+    const isDark = isDarkMode()
+    const appImage = resolveBackground(config.appBackgroundImage, config.appBackgroundImageDark, isDark)
+    const loginImage = resolveBackground(config.loginBackgroundImage, config.loginBackgroundImageDark, isDark)
+    root.style.setProperty('--app-background-image', appImage ? `url("${uiAssetUrl(appImage)}")` : 'none')
+    root.style.setProperty('--login-background-image', loginImage ? `url("${uiAssetUrl(loginImage)}")` : 'none')
+    root.style.setProperty('--app-background-blur', `${clamp(config.backgroundBlur, 0, 40, 10)}px`)
+    root.style.setProperty('--app-background-opacity', `${clamp(config.backgroundOpacity, 0, 100, 100)}%`)
+}
+
 const applyUiCustomization = config => {
     uiCustomization.value = {...config}
     const root = document.documentElement
-    root.style.setProperty('--app-card-opacity', `${clamp(config.cardOpacity, 0, 100, 92)}%`)
-    root.style.setProperty('--app-card-blur', `${clamp(config.cardBlur, 0, 40, 8)}px`)
+    root.style.setProperty('--app-card-opacity', `${clamp(config.cardOpacity, 0, 100, 80)}%`)
+    root.style.setProperty('--app-card-blur', `${clamp(config.cardBlur, 0, 40, 14)}px`)
     root.style.setProperty('--app-corner-radius', `${clamp(config.appCornerRadius, 0, 40, 12)}px`)
-    root.style.setProperty('--app-nav-opacity', `${clamp(config.navOpacity, 0, 100, 92)}%`)
-    root.style.setProperty('--app-nav-blur', `${clamp(config.navBlur, 0, 40, 8)}px`)
-    root.style.setProperty('--app-dialog-opacity', `${clamp(config.dialogOpacity, 0, 100, 92)}%`)
-    root.style.setProperty('--app-dialog-blur', `${clamp(config.dialogBlur, 0, 40, 8)}px`)
-    root.style.setProperty('--app-background-image', config.appBackgroundImage ? `url("${uiAssetUrl(config.appBackgroundImage)}")` : 'none')
-    root.style.setProperty('--login-background-image', config.loginBackgroundImage ? `url("${uiAssetUrl(config.loginBackgroundImage)}")` : 'none')
+    root.style.setProperty('--app-nav-opacity', `${clamp(config.navOpacity, 0, 100, 78)}%`)
+    root.style.setProperty('--app-nav-blur', `${clamp(config.navBlur, 0, 40, 18)}px`)
+    root.style.setProperty('--app-dialog-opacity', `${clamp(config.dialogOpacity, 0, 100, 84)}%`)
+    root.style.setProperty('--app-dialog-blur', `${clamp(config.dialogBlur, 0, 40, 16)}px`)
+    applyBackground(config)
     applyThemeColor(config)
 }
 
@@ -121,6 +145,21 @@ const applyUiCustomization = config => {
  * 主题管理
  */
 const {store} = useColorMode()
+
+// 亮暗模式切换后背景图与动态取色需要重新计算。
+const syncThemeBackground = () => {
+    const config = uiCustomization.value
+    if (!config || Object.keys(config).length === 0) return
+    applyBackground(config)
+    applyThemeColor(config)
+}
+
+// 跟随系统时 store 不会变化，需要同时监听 html.dark 的增删。
+watch(store, syncThemeBackground)
+if (typeof MutationObserver !== 'undefined') {
+    new MutationObserver(syncThemeBackground)
+        .observe(document.documentElement, {attributes: true, attributeFilter: ['class']})
+}
 
 /**
  * 最大内容宽度
