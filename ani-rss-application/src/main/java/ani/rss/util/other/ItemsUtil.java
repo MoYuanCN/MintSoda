@@ -9,6 +9,7 @@ import ani.rss.entity.StandbyRss;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.enums.StringEnum;
 import ani.rss.util.basic.HttpReq;
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.ConcurrentHashSet;
 import cn.hutool.core.date.DateTime;
@@ -68,11 +69,24 @@ public class ItemsUtil {
     private static final Set<String> FAILED_THIS_PASS = new ConcurrentHashSet<>();
 
     /**
+     * 条件请求与退避记录的上限，超出时整体清理，避免长期运行后无界增长。
+     */
+    private static final int MAX_TRACKED_URLS = 4096;
+
+    /**
      * 开始一轮任务，清理上一轮的响应缓存。
      */
     public static void beginRssBatch() {
         RSS_CACHE.clear();
         FAILED_THIS_PASS.clear();
+        // 订阅被删除后 ETag 与退避记录没有入口清理，超过阈值时整体丢弃即可重建。
+        if (LAST_GOOD.size() > MAX_TRACKED_URLS) {
+            LAST_GOOD.clear();
+        }
+        if (BACKOFF_UNTIL.size() > MAX_TRACKED_URLS) {
+            BACKOFF_UNTIL.clear();
+            BACKOFF_LOGGED.clear();
+        }
         BATCH_ACTIVE = true;
     }
 
@@ -161,12 +175,12 @@ public class ItemsUtil {
     public static List<Item> getItems(Ani ani) {
         String url = ani.getUrl();
         String subgroup = StrUtil.blankToDefault(ani.getSubgroup(), "未知字幕组");
-        List<Item> items = new ArrayList<>(ItemsUtil.getItems(ani, url, subgroup)
-                .stream()
-                .peek(item -> item.setMaster(true))
-                .toList());
+        List<Item> items = new ArrayList<>(ItemsUtil.getItems(ani, url, subgroup));
+        for (Item item : items) {
+            item.setMaster(true);
+        }
 
-        if (!CONFIG.getStandbyRss()) {
+        if (!Boolean.TRUE.equals(CONFIG.getStandbyRss())) {
             items.sort(Comparator.comparingDouble(Item::getEpisode));
             return items;
         }
@@ -174,12 +188,15 @@ public class ItemsUtil {
         List<StandbyRss> standbyRssList = ani.getStandbyRssList();
         for (StandbyRss rss : standbyRssList) {
             subgroup = StrUtil.blankToDefault(rss.getLabel(), "未知字幕组");
-            Ani clone = ObjUtil.clone(ani);
+            // 只需替换集数偏移，浅拷贝避免每个备用 RSS 都序列化整个订阅对象。
+            Ani clone = new Ani();
+            BeanUtil.copyProperties(ani, clone);
             clone.setOffset(rss.getOffset());
-            items.addAll(ItemsUtil.getItems(clone, rss.getUrl(), subgroup)
-                    .stream()
-                    .peek(item -> item.setMaster(false))
-                    .toList());
+            List<Item> standbyItems = ItemsUtil.getItems(clone, rss.getUrl(), subgroup);
+            for (Item item : standbyItems) {
+                item.setMaster(false);
+            }
+            items.addAll(standbyItems);
         }
         // 多字幕组共存模式
         Boolean coexist = CONFIG.getCoexist();
@@ -465,15 +482,21 @@ public class ItemsUtil {
             return list;
         }
 
-        int[] array = items.stream().mapToInt(o -> o.getEpisode().intValue()).distinct().toArray();
-        int max = ArrayUtil.max(array);
-        int min = ArrayUtil.min(array);
+        Set<Integer> episodes = new HashSet<>();
+        int max = Integer.MIN_VALUE;
+        int min = Integer.MAX_VALUE;
+        for (Item item : items) {
+            int episode = item.getEpisode().intValue();
+            episodes.add(episode);
+            max = Math.max(max, episode);
+            min = Math.min(min, episode);
+        }
         if (max == min) {
             return list;
         }
 
         for (int ep = min; ep <= max; ep++) {
-            if (ArrayUtil.contains(array, ep)) {
+            if (episodes.contains(ep)) {
                 // 包含该集
                 continue;
             }

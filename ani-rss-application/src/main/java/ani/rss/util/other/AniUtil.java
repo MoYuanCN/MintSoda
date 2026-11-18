@@ -128,11 +128,69 @@ public class AniUtil {
     }
 
     /**
+     * 本轮刷新是否延迟写盘，按线程隔离，避免影响请求线程的即时保存。
+     */
+    private static final ThreadLocal<Boolean> DEFERRED_SYNC = new ThreadLocal<>();
+
+    /**
+     * 本轮刷新是否已累积待写入的修改。
+     */
+    private static final ThreadLocal<Boolean> SYNC_PENDING = new ThreadLocal<>();
+
+    /**
+     * 开始一轮刷新。
+     * <p>
+     * 短间隔轮询时每个订阅都会更新集数与下载时间，若每次都序列化整份订阅列表，
+     * 磁盘写入会随订阅数量线性增长。这里改为整轮结束只写一次。
+     */
+    public static void beginDeferredSync() {
+        DEFERRED_SYNC.set(true);
+        SYNC_PENDING.set(false);
+    }
+
+    /**
+     * 结束一轮刷新，若有改动则统一写盘。
+     */
+    public static void endDeferredSync() {
+        boolean pending = Boolean.TRUE.equals(SYNC_PENDING.get());
+        DEFERRED_SYNC.remove();
+        SYNC_PENDING.remove();
+        if (pending) {
+            sync();
+        }
+    }
+
+    /**
+     * 判断订阅是否仍在内存列表中。
+     * <p>
+     * 只比较 id，避免对大对象做字段级 equals 造成的开销。
+     *
+     * @param ani 订阅
+     * @return 是否仍在列表中
+     */
+    public static boolean contains(Ani ani) {
+        String id = ani.getId();
+        if (StrUtil.isBlank(id)) {
+            return false;
+        }
+        for (Ani it : ANI_LIST) {
+            if (id.equals(it.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * 将当前内存中的订阅列表同步保存到磁盘。
      * <p>
      * 使用同步锁避免并发写入；保存失败时记录日志。
      */
     public static synchronized void sync() {
+        if (Boolean.TRUE.equals(DEFERRED_SYNC.get())) {
+            SYNC_PENDING.set(true);
+            return;
+        }
         File configFile = getAniFile();
         log.debug("保存订阅 {}", configFile);
         try {

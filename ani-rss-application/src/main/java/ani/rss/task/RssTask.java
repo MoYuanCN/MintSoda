@@ -78,6 +78,7 @@ public class RssTask implements BaseTask {
         ItemsUtil.beginRssBatch();
         TorrentUtil.beginPass();
         DownloadService.beginPass();
+        AniUtil.beginDeferredSync();
         try {
             // 先并发拉取 RSS，后续逐个订阅只做本地解析，避免串行等待。
             Integer concurrency = ConfigUtil.CONFIG.getRssConcurrency();
@@ -89,7 +90,7 @@ public class RssTask implements BaseTask {
                     return;
                 }
 
-                if (!ANI_LIST.contains(ani)) {
+                if (!AniUtil.contains(ani)) {
                     // 订阅可能已经被删除
                     continue;
                 }
@@ -110,6 +111,7 @@ public class RssTask implements BaseTask {
                 }
             }
         } finally {
+            AniUtil.endDeferredSync();
             DownloadService.endPass();
             TorrentUtil.endPass();
             ItemsUtil.endRssBatch();
