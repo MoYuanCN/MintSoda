@@ -36,11 +36,13 @@ ANI-RSS-Yuri 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的 Fork，保�
 
 Windows 可使用发布的 EXE，也可使用 JAR。Linux 使用 JAR。运行 JAR 需要 Java 25。
 
-Linux 也可使用仓库中的 systemd 安装脚本：
+Linux 推荐使用一键安装脚本，直接安装到当前目录并注册 systemd 服务：
 
 ```bash
-sudo bash linux/install-ani-rss.sh
+curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | sudo bash
 ```
+
+安装时可追加 `--username` / `--password` 配置登录账号，或加 `--setup` 在 WebUI 中完成初始化。安装后运行 `assyuri` 打开菜单，可查看状态、版本、更新、停止服务等。旧的 `linux/install-ani-rss.sh` 仍可用，但会安装到 `/opt/ani-rss`。
 
 ## 本地构建
 
