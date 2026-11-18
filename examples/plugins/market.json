@@ -1,0 +1,20 @@
+{
+  "name": "ANI-RSS-Yuri 插件市场示例",
+  "updatedAt": "2026-01-01",
+  "plugins": [
+    {
+      "id": "hello-plugin",
+      "name": "示例插件",
+      "version": "1.0.0",
+      "description": "演示通知渠道、订阅过滤、周期任务与设置区块。",
+      "author": "ANI-RSS-Yuri",
+      "homepage": "",
+      "downloadUrl": "https://example.com/plugins/hello-plugin-1.0.0.jar",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "size": 12345,
+      "apiVersion": 1,
+      "permissions": ["notification", "item-filter"],
+      "updateUrl": ""
+    }
+  ]
+}

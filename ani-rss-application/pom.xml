@@ -65,6 +65,10 @@
             <artifactId>ani-rss-ui</artifactId>
         </dependency>
         <dependency>
+            <groupId>ani.rss</groupId>
+            <artifactId>ani-rss-plugin-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
