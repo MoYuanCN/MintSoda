@@ -13,7 +13,8 @@
       <SettingsItem label="备注">
         <el-input v-model="notificationConfig['comment']" placeholder="无备注"/>
       </SettingsItem>
-      <SettingsItem v-if="notificationConfig.notificationType !== 'CUSTOM_REQUEST'" label="消息模板">
+      <SettingsItem v-if="notificationConfig.notificationType !== 'CUSTOM_REQUEST'
+                     && notificationConfig.notificationType !== 'PLUGIN'" label="消息模板">
         <div class="notification-template-select">
           <el-select v-model="notificationConfig.notificationTemplateId" clearable placeholder="使用单条通知模板"
                      @change="templateSelectionChanged">
@@ -37,6 +38,7 @@
       <TelegramNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
       <WebhookNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"
                                :templates="props.config.notificationTemplateList || []"/>
+      <PluginNotificationView v-model:notification-config="notificationConfig"/>
       <SettingsItem label="顺序">
         <div>
           <el-input-number
@@ -72,6 +74,7 @@ import {computed, ref, watch} from "vue";
 import EmbyRefreshNotificationView from "./notification/EmbyRefreshNotificationView.vue";
 import TelegramNotificationView from "./notification/TelegramNotificationView.vue";
 import WebhookNotificationView from "./notification/WebhookNotificationView.vue";
+import PluginNotificationView from "./notification/PluginNotificationView.vue";
 import {notificationTypeList} from "@/js/notification-type.js";
 import {ElMessage} from "element-plus";
 import {testNotification} from "@/js/http.js";
@@ -96,6 +99,8 @@ let notificationConfig = ref({
   "embyApiKey": "",
   "embyRefreshViewIds": [],
   "embyDelayed": 0,
+  "pluginChannelId": "",
+  "pluginOptions": {},
   "statusList": [
     "DOWNLOAD_START",
     "OMIT",
@@ -109,6 +114,7 @@ const availableTemplates = computed(() => {
   const templates = props.config.notificationTemplateList || []
   if (type === 'TELEGRAM') return templates.filter(template => template.type !== 'JSON')
   if (type === 'CUSTOM_REQUEST') return templates
+  if (type === 'PLUGIN') return templates.filter(template => template.type !== 'JSON')
   return []
 })
 

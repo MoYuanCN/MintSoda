@@ -6,6 +6,7 @@ const DashboardView = () => import('@/view/home/DashboardView.vue')
 const SubscriptionView = () => import('@/view/home/SubscriptionView.vue')
 const LogsView = () => import('@/view/home/LogsView.vue')
 const ConfigView = () => import('@/view/home/ConfigView.vue')
+const PluginsView = () => import('@/view/config/PluginsView.vue')
 
 const startupPaths = ['/home', '/subscriptions']
 
@@ -25,6 +26,10 @@ const routes = [
     {
         path: '/logs',
         component: LogsView
+    },
+    {
+        path: '/plugins',
+        component: PluginsView
     },
     {
         path: '/settings',

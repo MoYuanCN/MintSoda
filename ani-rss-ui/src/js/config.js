@@ -118,6 +118,7 @@ export let configData = {
     "cacheLastClearTime": 0,
     "customTorrentUrl": "",
     "developerOptionsEnabled": false,
+    "pluginMarketUrl": "",
     "customEpisode": false,
     "customEpisodeStr": "",
     "customEpisodeGroupIndex": 0,

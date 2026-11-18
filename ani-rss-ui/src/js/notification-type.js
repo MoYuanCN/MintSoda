@@ -10,6 +10,10 @@ export let notificationTypeList = [
     {
         name: 'EMBY_REFRESH',
         label: '媒体库刷新'
+    },
+    {
+        name: 'PLUGIN',
+        label: '插件渠道'
     }
 ]
 

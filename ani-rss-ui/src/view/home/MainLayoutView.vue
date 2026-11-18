@@ -35,6 +35,12 @@
           </el-icon>
           <span>日志</span>
         </el-menu-item>
+        <el-menu-item index="/plugins">
+          <el-icon>
+            <Grid/>
+          </el-icon>
+          <span>插件</span>
+        </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon>
             <Setting/>
@@ -49,7 +55,7 @@
 <script setup>
 import {onMounted} from "vue";
 import {RouterView, useRoute} from "vue-router";
-import {Collection, House, Setting, Tickets} from "@element-plus/icons-vue";
+import {Collection, Grid, House, Setting, Tickets} from "@element-plus/icons-vue";
 import {initLayout, uiCustomization, uiAssetUrl} from "@/js/global.js";
 import {computed} from "vue";
 
