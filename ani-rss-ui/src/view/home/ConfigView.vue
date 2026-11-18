@@ -141,11 +141,7 @@ const stableStringify = value => JSON.stringify(value, (key, item) => {
   return item
 })
 
-const dirty = computed(() => {
-  if (!baseline.value) return false
-  return stableStringify(normalize(config.value)) !== baseline.value
-})
-
+// 逐键比较即可得出是否有改动，避免每次渲染都重新序列化整份设置。
 const changedKeys = computed(() => {
   if (!baseline.value) return []
   const current = normalize(config.value)
@@ -153,6 +149,8 @@ const changedKeys = computed(() => {
   const keys = new Set([...Object.keys(current), ...Object.keys(saved)])
   return [...keys].filter(key => stableStringify(current[key]) !== stableStringify(saved[key]))
 })
+
+const dirty = computed(() => changedKeys.value.length > 0)
 
 const tabKeyMap = {
   download: new Set([

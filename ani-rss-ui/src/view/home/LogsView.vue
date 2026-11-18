@@ -126,9 +126,14 @@ const loggerNames = computed(() => Array.from(new Set(
     logs.value.map(item => item.loggerName).filter(Boolean)
 )).sort())
 
-const levelCounts = computed(() => Object.fromEntries(
-    levels.map(level => [level, logs.value.filter(item => item.level === level).length])
-))
+// 单次遍历统计各等级，避免为每个等级重复扫描全部日志。
+const levelCounts = computed(() => {
+  const counts = Object.fromEntries(levels.map(level => [level, 0]))
+  for (const item of logs.value) {
+    if (item.level in counts) counts[item.level]++
+  }
+  return counts
+})
 
 const normalizedLogs = computed(() => logs.value.map(item => {
   const {loggerName, ts} = item

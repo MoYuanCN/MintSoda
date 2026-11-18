@@ -74,10 +74,6 @@ export default defineConfig({
                             test: /node_modules[\\/](@element-plus[\\/]icons-vue)/,
                         },
                         {
-                            name: 'movi-player',
-                            test: /node_modules[\\/]movi-player/,
-                        },
-                        {
                             name: 'element-plus',
                             test: /node_modules[\\/]element-plus/
                         }

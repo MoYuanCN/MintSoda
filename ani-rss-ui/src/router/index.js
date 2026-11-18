@@ -1,9 +1,11 @@
 import {createRouter, createWebHashHistory} from 'vue-router'
-import DashboardView from '@/view/home/DashboardView.vue'
-import SubscriptionView from '@/view/home/SubscriptionView.vue'
-import LogsView from '@/view/home/LogsView.vue'
-import ConfigView from '@/view/home/ConfigView.vue'
 import {startupPage} from '@/js/global.js'
+
+// 按路由拆分代码，首屏只加载当前页面。
+const DashboardView = () => import('@/view/home/DashboardView.vue')
+const SubscriptionView = () => import('@/view/home/SubscriptionView.vue')
+const LogsView = () => import('@/view/home/LogsView.vue')
+const ConfigView = () => import('@/view/home/ConfigView.vue')
 
 const startupPaths = ['/home', '/subscriptions']
 

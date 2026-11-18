@@ -54,7 +54,7 @@
             <el-form-item label="BgmUrl">
               <div class="tmdb-group">
                 <el-input v-model.trim="props.ani.bgmUrl" placeholder="https://bgm.tv/subject/12345"/>
-                <el-button bg text icon="link" @click="openUrl(props.ani.bgmUrl)"/>
+                <el-button bg text :icon="Link" @click="openUrl(props.ani.bgmUrl)"/>
               </div>
             </el-form-item>
             <el-form-item label="主 RSS">
@@ -284,7 +284,7 @@ import StandbyRssView from "./StandbyRssView.vue";
 import MikanView from "./MikanView.vue";
 import TmdbGroupView from "./TmdbGroupView.vue";
 import CustomTagsView from "@/view/config/CustomTagsView.vue";
-import {Refresh, RefreshRight} from "@element-plus/icons-vue";
+import {Link, Refresh, RefreshRight} from "@element-plus/icons-vue";
 import * as http from "@/js/http.js";
 import {getBgmTitle} from "@/js/http.js";
 import AniBTView from "@/view/home/AniBTView.vue";
