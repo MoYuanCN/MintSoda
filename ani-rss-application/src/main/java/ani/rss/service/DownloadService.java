@@ -10,6 +10,7 @@ import ani.rss.entity.Item;
 import ani.rss.entity.StandbyRss;
 import ani.rss.entity.torrent.TorrentsInfo;
 import ani.rss.enums.NotificationStatusEnum;
+import ani.rss.plugin.PluginHook;
 import ani.rss.plugin.PluginHooks;
 import ani.rss.enums.StringEnum;
 import ani.rss.enums.TorrentsStateEnum;
@@ -118,16 +119,17 @@ public class DownloadService {
     }
 
     private void downloadAniInternal(Ani ani) {
-        Boolean delete = CONFIG.getDelete();
-        Boolean autoDisabled = CONFIG.getAutoDisabled();
-        Integer downloadCount = CONFIG.getDownloadCount();
-        Integer delayedDownload = CONFIG.getDelayedDownload();
+        Boolean delete = Boolean.TRUE.equals(CONFIG.getDelete());
+        Boolean autoDisabled = Boolean.TRUE.equals(CONFIG.getAutoDisabled());
+        Integer downloadCount = ObjectUtil.defaultIfNull(CONFIG.getDownloadCount(), 0);
+        Integer delayedDownload = ObjectUtil.defaultIfNull(CONFIG.getDelayedDownload(), 0);
         Boolean deleteStandbyRSSOnly = CONFIG.getDeleteStandbyRSSOnly();
 
         String title = ani.getTitle();
         Integer season = ani.getSeason();
-        Boolean downloadNew = ani.getDownloadNew();
-        List<Double> notDownload = ani.getNotDownload();
+        Boolean downloadNew = Boolean.TRUE.equals(ani.getDownloadNew());
+        // 旧配置或导入的订阅可能没有该字段，缺省视为没有禁止下载的集数。
+        List<Double> notDownload = ObjectUtil.defaultIfNull(ani.getNotDownload(), List.of());
 
         List<TorrentsInfo> torrentsInfos = TorrentUtil.getTorrentsInfos();
 
@@ -470,6 +472,17 @@ public class DownloadService {
         }
         savePath = FileUtils.getAbsolutePath(savePath);
 
+        // 插件可在提交下载器之前调整保存位置、名称，或直接取消本次下载。
+        PluginHook.InterceptResult intercept = PluginHooks.intercept(ani, item, savePath, name);
+        if (!intercept.allowed()) {
+            log.info("插件取消下载 {}", name);
+            FileUtil.del(torrentFile);
+            return;
+        }
+        savePath = FileUtils.getAbsolutePath(intercept.savePath());
+        item.setReName(intercept.name());
+        name = intercept.name();
+
         String text = StrFormatter.format("{} 已更新", name);
         if (!master) {
             text = StrFormatter.format("(备用RSS) {}", text);
@@ -683,42 +696,19 @@ public class DownloadService {
             downloadPathTemplate = downloadPathTemplate.replace("${quarterName}", quarterName);
         }
 
-        downloadPathTemplate = downloadPathTemplate.replace("${tmdbYear}", String.valueOf(tmdbYear));
-        downloadPathTemplate = downloadPathTemplate.replace("${year}", String.valueOf(year));
-        downloadPathTemplate = downloadPathTemplate.replace("${month}", String.valueOf(month));
-        downloadPathTemplate = downloadPathTemplate.replace("${monthFormat}", monthFormat);
-
-        int season = ani.getSeason();
-        String seasonFormat = String.format("%02d", season);
-
-        downloadPathTemplate = downloadPathTemplate.replace("${season}", String.valueOf(season));
-        downloadPathTemplate = downloadPathTemplate.replace("${seasonFormat}", seasonFormat);
-
-        // 只有模板真正使用 ${bgmId} 时才解析，避免无 BGM 的合集因取不到 id 而失败。
-        if (downloadPathTemplate.contains("${bgmId}")) {
-            String bgmId = BgmUtil.getSubjectId(ani);
-            downloadPathTemplate = downloadPathTemplate.replace("${bgmId}", bgmId);
-        }
+        // 年份可能因季度规则被调整，这里先写入本方法的计算值，再交给统一模板替换。
+        TemplateVariables variables = TemplateVariables.from(ani)
+                .put("tmdbYear", String.valueOf(tmdbYear))
+                .put("year", String.valueOf(year))
+                .put("month", String.valueOf(month))
+                .put("monthFormat", monthFormat);
+        downloadPathTemplate = variables.apply(downloadPathTemplate);
 
         List<Func1<Ani, Object>> list = List.of(
-                Ani::getTitle,
-                Ani::getThemoviedbName,
-                Ani::getSubgroup
+                Ani::getThemoviedbName
         );
 
         downloadPathTemplate = RenameUtil.replaceField(downloadPathTemplate, ani, list);
-
-        String tmdbId = Opt.ofNullable(ani.getTmdb())
-                .map(Tmdb::getId)
-                .filter(StrUtil::isNotBlank)
-                .orElse("");
-
-        downloadPathTemplate = downloadPathTemplate.replace("${tmdbid}", tmdbId);
-
-        if (downloadPathTemplate.contains("${jpTitle}")) {
-            String jpTitle = RenameUtil.getJpTitle(ani);
-            downloadPathTemplate = downloadPathTemplate.replace("${jpTitle}", jpTitle);
-        }
 
         String downloadPath = FileUtils.getAbsolutePath(downloadPathTemplate);
         if (cacheKey != null) {

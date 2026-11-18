@@ -9,6 +9,7 @@ import ani.rss.notification.*;
 import cn.hutool.core.thread.ExecutorBuilder;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,7 +48,8 @@ public class NotificationUtil {
      * @param notificationStatusEnum 通知状态
      */
     public static void send(Config config, Ani ani, String text, NotificationStatusEnum notificationStatusEnum) {
-        Boolean isMessage = ani.getMessage();
+        // 旧配置或导入的订阅可能缺少该字段，缺省按开启处理，避免下载流程在通知阶段中断。
+        Boolean isMessage = ObjectUtil.defaultIfNull(ani.getMessage(), true);
 
         if (!isMessage) {
             // 未开启此订阅通知

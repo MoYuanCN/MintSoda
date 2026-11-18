@@ -10,7 +10,6 @@ import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
 import lombok.extern.slf4j.Slf4j;
-import wushuo.tmdb.api.entity.Tmdb;
 import wushuo.tmdb.api.entity.TmdbEpisode;
 
 import java.util.*;
@@ -87,30 +86,18 @@ public class RenameUtil {
         itemTitle = getName(itemTitle);
 
         String resolution = getResolution(itemTitle);
-        String tmdbId = Optional.ofNullable(ani.getTmdb())
-                .map(Tmdb::getId)
-                .filter(StrUtil::isNotBlank)
-                .orElse("");
 
-        renameTemplate = renameTemplate.replace("${seasonFormat}", seasonFormat);
         renameTemplate = renameTemplate.replace("${episodeFormat}", episodeFormat);
-        renameTemplate = renameTemplate.replace("${season}", String.valueOf(season));
         renameTemplate = renameTemplate.replace("${episode}", episodeStr);
+        // 使用资源项的实时字幕组，可能来自反匹配规则而非订阅本身。
         renameTemplate = renameTemplate.replace("${subgroup}", subgroup);
         renameTemplate = renameTemplate.replace("${itemTitle}", itemTitle);
         renameTemplate = renameTemplate.replace("${resolution}", resolution);
-        renameTemplate = renameTemplate.replace("${tmdbid}", tmdbId);
-        renameTemplate = renameTemplate.replace("${title}", title);
 
         renameTemplate = replaceEpisodeTitle(renameTemplate, episode, ani);
 
-        String bgmId = BgmUtil.getSubjectId(ani);
-        renameTemplate = renameTemplate.replace("${bgmId}", bgmId);
-
-        if (renameTemplate.contains("${jpTitle}")) {
-            String jpTitle = getJpTitle(ani);
-            renameTemplate = renameTemplate.replace("${jpTitle}", jpTitle);
-        }
+        // 订阅字段、jpTitle、bgmId 与插件变量统一处理，避免各处重复拼接。
+        renameTemplate = TemplateVariables.from(ani).apply(renameTemplate);
 
         List<Func1<Ani, Object>> list = List.of(
                 Ani::getThemoviedbName

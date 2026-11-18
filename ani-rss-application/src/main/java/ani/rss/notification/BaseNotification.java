@@ -10,7 +10,7 @@ import ani.rss.service.DownloadService;
 import ani.rss.util.other.ConfigUtil;
 import ani.rss.util.other.ItemsUtil;
 import ani.rss.util.other.RenameUtil;
-import cn.hutool.core.date.DateUtil;
+import ani.rss.util.other.TemplateVariables;
 import cn.hutool.core.lang.Opt;
 import cn.hutool.core.lang.func.Func1;
 import cn.hutool.core.text.StrFormatter;
@@ -19,7 +19,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import wushuo.tmdb.api.entity.Tmdb;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,38 +112,24 @@ public interface BaseNotification {
         notificationTemplate = notificationTemplate.replace("${episodeFormat}", episodeFormat);
 
 
-        Date releaseDate = ani.getReleaseDate();
-        int year = DateUtil.year(releaseDate);
-        int month = DateUtil.month(releaseDate) + 1;
-        int date = DateUtil.dayOfMonth(releaseDate);
-
-        notificationTemplate = notificationTemplate.replace("${year}", String.valueOf(year));
-        notificationTemplate = notificationTemplate.replace("${month}", String.valueOf(month));
-        notificationTemplate = notificationTemplate.replace("${date}", String.valueOf(date));
-
         List<Func1<Ani, Object>> list = List.of(
-                Ani::getTitle,
                 Ani::getScore,
-                Ani::getSeason,
                 Ani::getThemoviedbName,
                 Ani::getBgmUrl,
                 Ani::getCurrentEpisodeNumber,
-                Ani::getTotalEpisodeNumber,
-                Ani::getSubgroup
+                Ani::getTotalEpisodeNumber
         );
 
-        int season = ani.getSeason();
-        String seasonFormat = String.format("%02d", season);
-        notificationTemplate = notificationTemplate.replace("${seasonFormat}", seasonFormat);
+        // 标题、字幕组、季、TMDB 与日期由统一模板变量处理。
+        notificationTemplate = TemplateVariables.from(ani).apply(notificationTemplate);
 
         notificationTemplate = RenameUtil.replaceField(notificationTemplate, ani, list);
 
-        String tmdbId = Optional.of(ani)
+        String tmdbId = Opt.ofNullable(ani)
                 .map(Ani::getTmdb)
                 .map(Tmdb::getId)
                 .filter(StrUtil::isNotBlank)
                 .orElse("");
-        notificationTemplate = notificationTemplate.replace("${tmdbid}", tmdbId);
 
         String tmdbUrl = "";
         if (StrUtil.isNotBlank(tmdbId)) {
@@ -165,11 +150,6 @@ public interface BaseNotification {
         DownloadService downloadService = SpringUtil.getBean(DownloadService.class);
         String downloadPath = downloadService.getDownloadPath(ani);
         notificationTemplate = notificationTemplate.replace("${downloadPath}", downloadPath);
-
-        if (notificationTemplate.contains("${jpTitle}")) {
-            String jpTitle = RenameUtil.getJpTitle(ani);
-            notificationTemplate = notificationTemplate.replace("${jpTitle}", jpTitle);
-        }
 
         notificationTemplate = RenameUtil.replaceEpisodeTitle(notificationTemplate, episode, ani);
 
