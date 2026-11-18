@@ -50,7 +50,7 @@ curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/in
 --password <密码>     # 预设登录密码，留空则在首次启动时生成或引导设置
 --port <端口>         # 默认 17789
 --dir <目录>          # 默认安装到执行命令时所在目录
---setup              # 强制在 WebUI 完成首次账号初始化
+--setup              # 未配置账号时强制在 WebUI 完成首次初始化（已配置则忽略）
 ```
 
 安装完成后运行 `assyuri` 打开管理菜单，也可以直接使用子命令：

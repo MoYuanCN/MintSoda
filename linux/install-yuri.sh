@@ -132,13 +132,34 @@ existing_username() {
     sed -n 's/^ANI_RSS_USERNAME=//p' "$ENV_FILE" | head -1 | tr -d '"[[:space:]]'
 }
 
+env_has_credentials() {
+    [ -f "$ENV_FILE" ] && [ -n "$(existing_username)" ]
+}
+
 prompt_credentials() {
+    # 已提供用户名时直接沿用，--setup 不得覆盖已有凭据设置。
     if [ -n "$USERNAME" ]; then
+        if [ "$FORCE_SETUP" = "yes" ]; then
+            warn "已指定账号，忽略 --setup；如需初始化请在清空账号后重新运行"
+            FORCE_SETUP="no"
+        fi
         prompt_missing_password
         return 0
     fi
+
+    # 已有账号配置时 --setup 完全失效，不允许把已配置的账号重置为引导状态。
+    if [ "$FORCE_SETUP" = "yes" ]; then
+        if env_has_credentials; then
+            warn "检测到已有账号配置，忽略 --setup"
+            FORCE_SETUP="no"
+        else
+            warn "已指定 --setup，跳过账号设置，首次访问时在 WebUI 中完成初始化"
+            return 0
+        fi
+    fi
+
     # 重新安装时默认沿用已有账号，避免误把密码换成随机凭据。
-    if [ -f "$ENV_FILE" ]; then
+    if env_has_credentials; then
         if [ "$ASSUME_YES" = "yes" ] || ! has_tty; then
             warn "检测到已有账号配置 $ENV_FILE，将沿用现有账号"
             PASSWORD="**existing**"
@@ -148,19 +169,11 @@ prompt_credentials() {
         if confirm "检测到已有账号配置，是否沿用现有用户名与密码？（选 n 可重新设置）"; then
             USERNAME="$(existing_username)"
             PASSWORD="**existing**"
-            if [ -n "$USERNAME" ]; then
-                ok "将沿用已有账号: $USERNAME"
-            else
-                warn "未能读取已有账号，继续使用现有配置"
-                PASSWORD=""
-            fi
+            ok "将沿用已有账号: $USERNAME"
             return 0
         fi
     fi
-    if [ "$FORCE_SETUP" = "yes" ]; then
-        warn "已指定 --setup，跳过账号设置，首次访问时在 WebUI 中完成初始化"
-        return 0
-    fi
+
     if [ "$ASSUME_YES" = "yes" ]; then
         warn "已指定 --yes，跳过账号询问；未提供凭据时由程序在首次启动生成或引导设置"
         return 0

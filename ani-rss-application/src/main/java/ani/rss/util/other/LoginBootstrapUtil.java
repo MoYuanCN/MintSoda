@@ -38,6 +38,20 @@ public class LoginBootstrapUtil {
     }
 
     /**
+     * 配置中是否已经存在可用的登录凭据。
+     *
+     * @param config 配置
+     * @param login  登录凭据
+     * @return 是否已配置
+     */
+    private static boolean hasCredentials(Config config, Login login) {
+        if (Boolean.TRUE.equals(config.getLoginConfigured())) {
+            return true;
+        }
+        return StrUtil.isNotBlank(login.getUsername()) && StrUtil.isNotBlank(login.getPassword());
+    }
+
+    /**
      * 是否通过 --setup 强制进入初始化引导。
      *
      * @return 是否强制引导
@@ -65,17 +79,22 @@ public class LoginBootstrapUtil {
             return;
         }
 
-        // 显式要求初始化时忽略已保存的凭据，直接进入引导。
+        // 已有可用凭据时 --setup 完全失效，避免把已配置的账号重新变成待初始化。
+        if (hasCredentials(config, login)) {
+            if (forceSetup()) {
+                log.warn("账号已配置，忽略 --setup；如需重设账号请在设置页修改或使用 {} / {} 覆盖",
+                        ENV_USERNAME, ENV_PASSWORD);
+            }
+            setupRequired = false;
+            ready = true;
+            return;
+        }
+
+        // 仅在尚未配置凭据时，显式要求初始化才进入引导。
         if (forceSetup()) {
             setupRequired = true;
             ready = true;
             log.warn("已通过 --setup 进入初始化引导，请在 WebUI 设置登录用户名与密码");
-            return;
-        }
-
-        if (Boolean.TRUE.equals(config.getLoginConfigured())) {
-            setupRequired = false;
-            ready = true;
             return;
         }
 
