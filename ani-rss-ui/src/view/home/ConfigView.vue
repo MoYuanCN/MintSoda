@@ -198,7 +198,7 @@ const loadConfig = (silent = false) => {
 }
 
 // 与后端 CredentialUtils 保持一致的最短密码长度。
-const PASSWORD_MIN_LENGTH = 12
+const PASSWORD_MIN_LENGTH = 8
 
 const checkPasswordStrength = password => {
   if (!password) return ''
@@ -210,8 +210,8 @@ const checkPasswordStrength = password => {
   if (/[A-Z]/.test(password)) types++
   if (/\d/.test(password)) types++
   if (/[^A-Za-z0-9]/.test(password)) types++
-  if (types < 3) {
-    return '密码需包含大写字母、小写字母、数字、符号中的至少三类'
+  if (types < 2) {
+    return '密码需包含大写字母、小写字母、数字、符号中的至少两类'
   }
   return ''
 }

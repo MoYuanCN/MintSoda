@@ -18,7 +18,7 @@
           </el-form-item>
           <el-alert v-if="error" class="setup-error" :closable="false" show-icon type="error" :title="error"/>
           <el-text class="setup-tips" size="small">
-            密码至少 {{ passwordMinLength }} 位，且需包含大写字母、小写字母、数字、符号中的至少三类。
+            密码至少 {{ passwordMinLength }} 位，且需包含大写字母、小写字母、数字、符号中的至少两类。
           </el-text>
           <el-button class="setup-submit" type="primary" :loading="loading" @click="submit">
             完成初始化
@@ -34,7 +34,7 @@ import {onMounted, reactive, ref} from "vue";
 import {ElMessage} from "element-plus";
 import * as http from "@/js/http.js";
 
-const passwordMinLength = ref(12)
+const passwordMinLength = ref(8)
 const loading = ref(false)
 const error = ref('')
 
@@ -52,7 +52,7 @@ const checkPassword = value => {
   if (/[A-Z]/.test(value)) types++
   if (/\d/.test(value)) types++
   if (/[^A-Za-z0-9]/.test(value)) types++
-  if (types < 3) return '密码需包含大写字母、小写字母、数字、符号中的至少三类'
+  if (types < 2) return '密码需包含大写字母、小写字母、数字、符号中的至少两类'
   return ''
 }
 
@@ -93,7 +93,7 @@ onMounted(() => {
           location.reload()
           return
         }
-        passwordMinLength.value = res.data.passwordMinLength || 12
+        passwordMinLength.value = res.data.passwordMinLength || 8
       })
       .catch(() => {})
 })

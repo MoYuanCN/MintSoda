@@ -18,7 +18,7 @@ public class CredentialUtils {
     private static final String SYMBOL = "!#%+-_=@";
     private static final String ALL = LOWER + UPPER + DIGIT + SYMBOL;
 
-    public static final int MIN_PASSWORD_LENGTH = 12;
+    public static final int MIN_PASSWORD_LENGTH = 8;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -40,8 +40,8 @@ public class CredentialUtils {
         if (password.chars().anyMatch(Character::isUpperCase)) types++;
         if (password.chars().anyMatch(Character::isDigit)) types++;
         if (password.chars().anyMatch(c -> !Character.isLetterOrDigit(c))) types++;
-        if (types < 3) {
-            return "密码需包含大写字母、小写字母、数字、符号中的至少三类";
+        if (types < 2) {
+            return "密码需包含大写字母、小写字母、数字、符号中的至少两类";
         }
         return null;
     }

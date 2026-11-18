@@ -49,7 +49,7 @@ ANI-RSS-Yuri 是自托管的番剧订阅与下载服务，通常部署在家庭�
 
 ## 部署要求
 
-- 首次启动不再提供默认口令：Windows 引导在浏览器中设置账号，Linux 生成随机强密码并只在首次启动日志输出一次，也可用 `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 强制覆盖。密码以摘要形式存放。
+- 首次启动不再提供默认口令：Windows 引导在浏览器中设置账号，Linux 生成随机强密码并只在首次启动日志输出一次，也可用 `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 强制覆盖。密码至少 8 位且包含大写字母、小写字母、数字、符号中的至少两类，以摘要形式存放。
 - 不要把端口直接暴露到公网。需要外网访问时，置于 HTTPS 反向代理之后，并开启 `innerIP` 或 IP 白名单，只信任实际代理地址。
 - 保持 `SWAGGER_ENABLED=false`、`MCP_ENABLED=false`，仅在受限网络内临时开启；MCP 端点只接受 API Key。
 - `allowCors` 默认关闭。开启后服务会返回 `Access-Control-Allow-Origin: *`，任何站点都可发起跨域请求，仅在确有需要时开启。
