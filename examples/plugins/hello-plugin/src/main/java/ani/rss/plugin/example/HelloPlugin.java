@@ -1,16 +1,20 @@
 package ani.rss.plugin.example;
 
 import ani.rss.plugin.api.ConfigField;
+import ani.rss.plugin.api.DownloadInterceptor;
 import ani.rss.plugin.api.ItemFilter;
 import ani.rss.plugin.api.NotificationChannel;
 import ani.rss.plugin.api.NotificationPayload;
 import ani.rss.plugin.api.Plugin;
 import ani.rss.plugin.api.PluginContext;
+import ani.rss.plugin.api.PluginEndpoint;
 import ani.rss.plugin.api.SettingsSection;
+import ani.rss.plugin.api.TemplateVariableProvider;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 示例插件：注册一个通知渠道、一个过滤器和一组设置项。
@@ -81,6 +85,49 @@ public class HelloPlugin implements Plugin {
             @Override
             public void run(PluginContext context) {
                 context.log("示例周期任务执行");
+            }
+        });
+
+        context.registerTemplateVariableProvider(new TemplateVariableProvider() {
+            @Override
+            public String id() {
+                return "hello-variables";
+            }
+
+            @Override
+            public Map<String, String> variables(ItemFilter.SubscriptionSnapshot ani) {
+                // 模板中可以写 ${helloSubgroup}，值来自插件计算。
+                return Map.of("helloSubgroup", "插件-" + ani.group());
+            }
+        });
+
+        context.registerDownloadInterceptor(new DownloadInterceptor() {
+            @Override
+            public String id() {
+                return "hello-download";
+            }
+
+            @Override
+            public DownloadCandidate intercept(DownloadCandidate candidate, Map<String, Object> ctx) {
+                // 演示改写：只读透传，实际插件可返回 withSavePath / withName，或返回 null 取消。
+                return candidate;
+            }
+        });
+
+        context.registerEndpoint(new PluginEndpoint() {
+            @Override
+            public String path() {
+                return "status";
+            }
+
+            @Override
+            public Set<String> methods() {
+                return Set.of("GET", "POST");
+            }
+
+            @Override
+            public String handle(EndpointRequest request) {
+                return "{\"ok\":true,\"plugin\":\"hello-plugin\"}";
             }
         });
 

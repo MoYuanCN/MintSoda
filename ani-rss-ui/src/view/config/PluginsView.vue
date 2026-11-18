@@ -74,6 +74,9 @@
                     <el-text v-if="plugin.channels?.length" size="small" type="info">
                       通知渠道：{{ plugin.channels.map(it => it.name || it.id).join('、') }}
                     </el-text>
+                    <el-text v-if="plugin.endpoints?.length" size="small" type="info">
+                      接口：{{ plugin.endpoints.map(it => `/${it.path}`).join('、') }}
+                    </el-text>
                   </div>
 
                   <el-collapse v-if="plugin.sections?.length" class="plugin-sections">

@@ -2,12 +2,12 @@
   "id": "hello-plugin",
   "name": "示例插件",
   "version": "1.0.0",
-  "apiVersion": 1,
+  "apiVersion": 2,
   "mainClass": "ani.rss.plugin.example.HelloPlugin",
   "author": "ANI-RSS-Yuri",
-  "description": "演示通知渠道、订阅过滤与设置区块的最小插件。",
+  "description": "演示通知渠道、订阅过滤、模板变量、下载拦截、HTTP 接口与设置区块的最小插件。",
   "homepage": "",
   "updateUrl": "",
-  "permissions": ["notification", "item-filter"],
+  "permissions": ["notification", "item-filter", "template-variable", "download-interceptor", "endpoint"],
   "minAppVersion": ""
 }

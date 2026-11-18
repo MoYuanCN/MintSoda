@@ -12,8 +12,8 @@
       "downloadUrl": "https://example.com/plugins/hello-plugin-1.0.0.jar",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 12345,
-      "apiVersion": 1,
-      "permissions": ["notification", "item-filter"],
+      "apiVersion": 2,
+      "permissions": ["notification", "item-filter", "template-variable", "download-interceptor", "endpoint"],
       "updateUrl": ""
     }
   ]
