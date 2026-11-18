@@ -1,5 +1,12 @@
 <template>
   <div class="app-shell">
+    <main class="app-main">
+      <RouterView v-slot="{ Component }">
+        <KeepAlive>
+          <component :is="Component"/>
+        </KeepAlive>
+      </RouterView>
+    </main>
     <aside class="app-nav">
       <div class="app-brand">
         <img class="app-logo" :src="appLogo" alt="ANI-RSS-Yuri">
@@ -36,13 +43,6 @@
         </el-menu-item>
       </el-menu>
     </aside>
-    <main class="app-main">
-      <RouterView v-slot="{ Component }">
-        <KeepAlive>
-          <component :is="Component"/>
-        </KeepAlive>
-      </RouterView>
-    </main>
   </div>
 </template>
 
@@ -75,11 +75,16 @@ onMounted(() => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--el-bg-color);
+  height: 100%;
+  border-left: 1px solid var(--el-border-color-lighter);
+  /* 侧栏亚克力需要自行建立层叠上下文，否则模糊会透出下层页面内容。 */
+  position: relative;
+  z-index: 1;
 }
 
 .app-brand {
   height: 80px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -95,17 +100,35 @@ onMounted(() => {
   height: 34px;
 }
 
+/* 菜单项均分侧栏剩余高度，铺满整列而不是聚在顶部。 */
 .app-menu {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: 0;
   background: none;
+  padding: 8px 12px;
+  box-sizing: border-box;
 }
 
 .app-menu :deep(.el-menu-item) {
-  height: 46px;
-  margin: 8px 12px;
+  flex: 1;
+  height: auto;
+  min-height: 52px;
+  margin: 4px 0;
   border-radius: 8px;
   border: none !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  line-height: 1.2;
+  padding: 0 8px !important;
+}
+
+.app-menu :deep(.el-menu-item .el-icon) {
+  margin: 0;
 }
 
 .app-menu :deep(.el-menu-item.is-active) {
@@ -128,11 +151,14 @@ onMounted(() => {
   .app-nav {
     position: fixed;
     left: 0;
+    right: 0;
     bottom: 0;
     z-index: 10;
     width: 100%;
+    height: 58px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     border-top: 1px solid var(--el-border-color-light);
+    border-left: none;
   }
 
   .app-brand {
@@ -142,7 +168,7 @@ onMounted(() => {
   .app-menu {
     flex: none;
     height: 58px;
-    display: flex;
+    flex-direction: row;
     justify-content: space-around;
     gap: 4px;
     padding: 4px;
@@ -152,6 +178,7 @@ onMounted(() => {
   .app-menu :deep(.el-menu-item) {
     flex: 1;
     height: 50px;
+    min-height: 0;
     line-height: 1;
     display: flex;
     flex-direction: column;
