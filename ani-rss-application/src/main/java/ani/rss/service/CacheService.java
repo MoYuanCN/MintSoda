@@ -8,7 +8,6 @@ import ani.rss.util.other.ConfigUtil;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -21,45 +20,6 @@ import java.util.Map;
 @Slf4j
 @Service
 public class CacheService {
-
-    /**
-     * k: Bgm Id, v: Bgm Score
-     *
-     * @return JsonObject
-     */
-    public JsonObject getBgmScore() {
-        return getScore("bgm");
-    }
-
-    public JsonObject getScore(String source) {
-        Config config = ConfigUtil.CONFIG;
-        String outTradeNo = config.getOutTradeNo();
-        if (StrUtil.isBlank(outTradeNo)) {
-            return new JsonObject();
-        }
-
-        JsonObject jsonObject = new JsonObject();
-        try {
-            String url = StrFormatter.format(
-                    "https://cache.wushuo.top/{}/score/{}",
-                    source,
-                    SecureUtil.sha256(outTradeNo)
-            );
-            jsonObject = HttpReq.get(url)
-                    .timeout(1000 * 5)
-                    .thenFunction(res -> {
-                        int status = res.getStatus();
-                        if (status == 404) {
-                            return new JsonObject();
-                        }
-                        HttpReq.assertStatus(res);
-                        return GsonStatic.fromJson(res.body(), JsonObject.class);
-                    });
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-        return jsonObject;
-    }
 
     public Map<String, MikanBgm> getMikanBgm() {
         Config config = ConfigUtil.CONFIG;
