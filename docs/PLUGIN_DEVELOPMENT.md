@@ -1,6 +1,6 @@
 # 插件开发指南
 
-本文说明如何为 ANI-RSS-Yuri 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：第三方代码以独立 JAR 加载，通过稳定接口接入通知、订阅过滤、订阅事件、周期任务与设置界面。
+本文说明如何为 ANI-RSS-Yuri 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：第三方代码以独立 JAR 加载，通过稳定接口接入通知、订阅过滤、订阅事件、周期任务、设置界面、模板变量、下载拦截与自定义 HTTP 接口。
 
 > 安全边界见 [安全说明](SECURITY.md)。插件与服务同权限运行，**只安装你信任的插件**。
 
@@ -14,7 +14,8 @@
 | `PluginHook` | 宿主内部桥接，把匹配规则之后的条目交给插件过滤器。 |
 | 插件市场 | 可配置的 JSON 索引，支持列出、安装与更新插件。 |
 
-- 插件接口版本由 `PluginApi.VERSION` 表示，当前为 `1`。宿主只加载 `apiVersion` 不大于自身版本的插件，破坏性变更时提升该值。
+- 插件接口版本由 `PluginApi.VERSION` 表示，当前为 `2`。宿主只加载 `apiVersion` 不大于自身版本的插件，破坏性变更时提升该值。
+- 版本 2 新增模板变量、下载拦截与自定义接口三个扩展点；均为新增能力，不改变既有扩展点语义。
 - 插件包是**单个 JAR**，根目录包含 `plugin.json` 与编译后的类；不得打包接口模块本身。
 - 每个插件独立类加载器，`ani.rss.plugin.api.*` 与 JDK 类始终由宿主提供，避免类型不一致。
 - 插件加载、启用或运行失败只影响该插件，主程序继续运行。
@@ -228,6 +229,90 @@ context.registerSettingsSection(new SettingsSection(
 
 插件页按声明自动渲染表单，值通过 `PluginContext#getConfig` / `saveConfig` 读写。
 
+### 模板变量
+
+为通知、重命名与下载路径模板追加占位符：
+
+```java
+context.registerTemplateVariableProvider(new TemplateVariableProvider() {
+    @Override
+    public String id() {
+        return "my-variables";
+    }
+
+    @Override
+    public Map<String, String> variables(ItemFilter.SubscriptionSnapshot ani) {
+        return Map.of("myField", "value");
+    }
+});
+```
+
+- 之后模板里可直接写 `${myField}`，三类模板都会生效。
+- 与内置字段同名时插件值优先；返回 `null` 字段会被忽略。
+- 宿主内置字段包括 `${title}`、`${subgroup}`、`${season}`、`${seasonFormat}`、`${tmdbid}`、`${year}`、`${month}`、`${date}`、`${jpTitle}`、`${bgmId}` 等；`${jpTitle}` 与 `${bgmId}` 只在模板引用时才联网解析。
+- 宿主对同一订阅的变量有 5 秒缓存，避免逐条重命名时重复请求；不要在这里做耗时过长或带副作用的操作。
+
+### 下载拦截
+
+在种子提交给下载器之前调整任务或取消下载：
+
+```java
+context.registerDownloadInterceptor(new DownloadInterceptor() {
+    @Override
+    public String id() {
+        return "my-download";
+    }
+
+    @Override
+    public int order() {
+        return 100; // 数值越小越先执行
+    }
+
+    @Override
+    public DownloadCandidate intercept(DownloadCandidate candidate, Map<String, Object> ctx) {
+        if (candidate.size() != null && candidate.size() > 8L * 1024 * 1024 * 1024) {
+            return null; // 取消本次下载
+        }
+        return candidate.withSavePath(candidate.savePath() + "/" + candidate.subgroup());
+    }
+});
+```
+
+- 返回 `null` 取消下载，宿主会删除已下载的种子文件，下次轮询按原有重试逻辑处理。
+- 用 `withSavePath` / `withName` 返回修改后的任务，其余字段只读。
+- 任一拦截器异常只记录日志并继续，不会中断下载流程。
+- 拦截发生在订阅过滤之后、提交给下载器之前。
+
+### 自定义 HTTP 接口
+
+插件可以对外提供接口，宿主负责鉴权与分发：
+
+```java
+context.registerEndpoint(new PluginEndpoint() {
+    @Override
+    public String path() {
+        return "status";
+    }
+
+    @Override
+    public Set<String> methods() {
+        return Set.of("GET", "POST");
+    }
+
+    @Override
+    public String handle(EndpointRequest request) {
+        return "{\"ok\":true}";
+    }
+});
+```
+
+- 完整路径为 `/api/plugin/api/{pluginId}/{path}`，例如上面的例子是 `/api/plugin/api/my-plugin/status`。
+- 所有请求**都要求登录**，鉴权方式与插件管理接口一致（`@Auth`）；不需要额外实现鉴权。
+- `methods()` 默认只允许 `POST`，返回空集合表示不限制方法。
+- 请求体上限 256KB，超过会直接拒绝。
+- 返回值按字符串原样放进 `Result.data`；需要返回 JSON 时自行拼接或序列化。
+- 不要在接口里返回令牌、密码或完整配置。
+
 ## 编译与打包
 
 插件需要以 `provided` 依赖接口模块：
@@ -312,6 +397,7 @@ cd examples/plugins/hello-plugin
 - 在 `onEnable` 中注册、在 `onDisable` 中释放资源；不要依赖 `onUnload` 做关键清理。
 - 不要在静态字段中缓存宿主对象，重载后可能失效。
 - 网络请求设置超时，失败时抛异常交由宿主记录与重试，不要静默吞掉。
+- 模板变量提供方与下载拦截器会被主流程同步调用，保持轻量；耗时任务放到周期任务里。
 - 日志不要输出令牌、密码或完整响应体。
 - 周期任务保持幂等，避免在任务里做长时间阻塞操作。
 - 需要持久化时使用 `dataDir()` 或 `saveConfig`，不要在插件目录外写文件。

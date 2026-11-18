@@ -173,7 +173,10 @@ Body 只有两种来源，语义明确：
 
 - 新增稳定的接口模块 `ani-rss-plugin-api`，插件以独立 JAR 加载，每个插件一个类加载器；接口类与 JDK 类始终由宿主提供。
 - 插件生命周期为加载、启用、停用、重载与卸载，失败只影响该插件。
-- 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务与设置区块；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后执行。
+- 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截与插件自定义接口；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后执行。
+- 模板变量由 `TemplateVariables` 统一应用，通知、重命名与下载路径共用同一批字段；插件可通过 `TemplateVariableProvider` 追加或覆盖字段。
+- 下载拦截在种子提交给下载器之前执行，可改写保存位置与名称，或返回 `null` 取消任务。
+- 插件自定义接口挂在 `/api/plugin/api/{pluginId}/{path}`，由 `PluginEndpointController` 统一鉴权与分发，请求体上限 256KB。
 - 新增通知类型 `PLUGIN`，插件渠道的字段与值保存在 `NotificationConfig` 的 `pluginChannelId` 与 `pluginOptions`。
 - 新增 `/api/plugin/*` 接口：列表、详情、启用/停用/重载/卸载、配置读写、上传与链接安装、市场获取、市场安装、单条与全部更新检查、更新与市场地址管理。全部接口都要求登录。
 - 插件状态保存在配置目录的 `plugins/installed.json`；插件目录为 `plugins/{id}`，内含 `plugin.jar`、`plugin.json` 与 `data/`。

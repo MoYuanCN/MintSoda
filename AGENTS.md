@@ -116,7 +116,9 @@ bash ./package.sh
 ## 插件系统
 
 - 唯一接口模块是 `ani-rss-plugin-api`；接口破坏性变更必须提升 `PluginApi.VERSION`，不得在插件 API 中引用 `ani.rss.application` 的内部类型。
-- 扩展点由 `PluginManager` 统一加载与分发：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块。新增扩展点时同步更新 `docs/PLUGIN_DEVELOPMENT.md`。
+- 扩展点由 `PluginManager` 统一加载与分发：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、插件自定义接口。新增扩展点时同步更新 `docs/PLUGIN_DEVELOPMENT.md`。
+- 模板占位符统一走 `util/other/TemplateVariables`，不要在通知、重命名、下载路径里再各写一份替换逻辑。
+- 插件自定义接口必须经 `/api/plugin/api/{pluginId}/**` 分发并保持 `@Auth`，不要为插件单独开放免鉴权路由。
 - 插件过滤器在 `MatchRuleUtil` 之后执行，不得绕过反匹配 > 全局匹配 > 排除的既有优先级；RSS 下载、预览与合集预览必须共用同一插件过滤路径。
 - 插件路径一律经 `PluginPaths` 规范化并限制在 `plugins/` 内；插件标识仅允许 `A-Z a-z 0-9 . _ -`。
 - 安装与更新必须校验 `size` 与 `sha256`，远程地址经 `commons/URLUtils#verify`；先写临时目录校验通过后再替换正式目录。
