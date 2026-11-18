@@ -42,6 +42,11 @@ public class AniRssApplication {
                 "--swagger-enabled", "SWAGGER_ENABLED"
         );
 
+        // --setup 是开关式参数，其余参数使用 --name=value 形式。
+        if (Global.ARGS.contains("--setup")) {
+            System.setProperty("SETUP", "true");
+        }
+
         mapping.forEach((k, v) -> {
             for (String arg : Global.ARGS) {
                 String separator = k + "=";

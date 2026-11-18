@@ -38,6 +38,16 @@ public class LoginBootstrapUtil {
     }
 
     /**
+     * 是否通过 --setup 强制进入初始化引导。
+     *
+     * @return 是否强制引导
+     */
+    private static boolean forceSetup() {
+        return "true".equalsIgnoreCase(SystemUtil.get("SETUP", "false"))
+                || "true".equalsIgnoreCase(System.getProperty("SETUP", "false"));
+    }
+
+    /**
      * 启动时检查登录凭据状态。
      *
      * @param port 服务端口，用于打开浏览器
@@ -52,6 +62,14 @@ public class LoginBootstrapUtil {
 
         if (applyEnvOverride(config, login)) {
             ready = true;
+            return;
+        }
+
+        // 显式要求初始化时忽略已保存的凭据，直接进入引导。
+        if (forceSetup()) {
+            setupRequired = true;
+            ready = true;
+            log.warn("已通过 --setup 进入初始化引导，请在 WebUI 设置登录用户名与密码");
             return;
         }
 
