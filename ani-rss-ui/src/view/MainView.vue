@@ -3,7 +3,8 @@
       :locale="zhCn"
       :link="linkConfig"
       :dialog="dialogConfig">
-    <LoginView v-if="!authorization"/>
+    <SetupView v-if="setupRequired"/>
+    <LoginView v-else-if="!authorization"/>
     <MainLayoutView v-else/>
   </el-config-provider>
 </template>
@@ -11,9 +12,10 @@
 <script setup>
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import LoginView from "@/view/LoginView.vue";
+import SetupView from "@/view/SetupView.vue";
 import MainLayoutView from "@/view/home/MainLayoutView.vue";
 import {authorization, init, applyUiCustomization} from "@/js/global.js";
-import {reactive, onMounted} from "vue";
+import {onMounted, reactive, ref} from "vue";
 import * as http from "@/js/http.js";
 
 /**
@@ -30,9 +32,16 @@ let dialogConfig = reactive({
 
 init()
 
+const setupRequired = ref(false)
+
 onMounted(() => {
   http.publicSettings()
       .then(res => applyUiCustomization(res.data))
+      .catch(() => {})
+  http.setupStatus()
+      .then(res => {
+        setupRequired.value = Boolean(res.data?.required)
+      })
       .catch(() => {})
 })
 

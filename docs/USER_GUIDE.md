@@ -8,7 +8,13 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 - **Windows 或 Linux 的 JAR**：若设置了 `CONFIG` 环境变量，则使用该目录；否则当前目录存在 `config/` 时使用它。Windows 没有上述目录时使用用户目录下的 `ani-rss/`；Linux 使用当前工作目录下的 `config/`。
 - **Linux systemd 安装**：可运行 `sudo bash linux/install-ani-rss.sh`。服务文件、JAR 和配置位于 `/opt/ani-rss/`。安装脚本需要联网下载 JAR 和 Java 25。
 
-初次启动后请登录并修改默认账号密码，再配置 qBittorrent 的地址和认证方式。
+首次启动不再内置 `admin/admin`：
+
+- **Windows**：程序会自动打开浏览器并显示“初始化登录账号”页面，用户名需为 3-32 位字母、数字、下划线或连字符，密码至少 12 位并包含大小写字母、数字、符号中的至少三类。完成前无法登录。
+- **Linux**：启动时自动生成随机用户名与强密码，并只在首次启动的日志中输出一次；请立即保存，后续启动不会再次显示。
+- **环境变量覆盖**：设置 `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 可强制覆盖登录凭据，每次启动都会生效；密码不满足强度要求时程序拒绝启动。
+
+初始化完成后即可登录，再配置 qBittorrent 的地址和认证方式。设置页同样会校验用户名与密码强度，修改后所有已登录会话失效。
 
 ## 设置页
 

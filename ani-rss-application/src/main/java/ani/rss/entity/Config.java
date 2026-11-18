@@ -318,6 +318,12 @@ public class Config implements Serializable {
     private Login login;
 
     /**
+     * 是否已完成首次登录凭据配置
+     */
+    @Schema(description = "是否已完成首次登录凭据配置")
+    private Boolean loginConfigured;
+
+    /**
      * 禁止多端登录
      */
     @Schema(description = "禁止多端登录")

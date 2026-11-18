@@ -270,6 +270,19 @@ export let login = (user) => {
 }
 
 /**
+ * 首次启动初始化状态
+ * @returns {Promise<unknown>}
+ */
+export let setupStatus = () => api.post('api/setupStatus', null, {silent: true})
+
+/**
+ * 首次启动设置账号
+ * @param user 用户名与密码
+ * @returns {Promise<unknown>}
+ */
+export let setup = user => api.post('api/setup', user)
+
+/**
  * 测试IP白名单
  * @returns {Promise<Response>}
  */

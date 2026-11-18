@@ -21,6 +21,10 @@
       <el-text class="mx-1" size="small">
         修改用户名或密码后，所有已登录会话都会失效，需要重新登录
       </el-text>
+      <br>
+      <el-text class="mx-1" size="small" type="info">
+        用户名需为 3-32 位字母、数字、下划线或连字符；密码至少 12 位，且包含大写字母、小写字母、数字、符号中的至少三类。
+      </el-text>
     </div>
   </SettingsItem>
   <SettingsItem label="登录有效">

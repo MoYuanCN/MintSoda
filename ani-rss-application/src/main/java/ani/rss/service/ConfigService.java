@@ -112,9 +112,27 @@ public class ConfigService {
         // 密码未发生修改
         if (StrUtil.isBlank(loginPassword)) {
             config.getLogin().setPassword(password);
+        } else {
+            // 前端传的是明文摘要，这里无法还原明文，只拦下明显的弱口令摘要。
+            if (ani.rss.commons.CredentialUtils.md5("admin").equalsIgnoreCase(loginPassword)) {
+                throw new IllegalArgumentException("不能使用 admin 作为密码");
+            }
+            config.setLoginConfigured(true);
         }
         if (StrUtil.isBlank(loginUsername)) {
             config.getLogin().setUsername(username);
+        } else if (!loginUsername.equals(username)) {
+            // 仅校验新用户名，避免历史配置里的用户名让设置无法保存。
+            String usernameError = ani.rss.commons.CredentialUtils.checkUsername(loginUsername);
+            if (usernameError != null) {
+                throw new IllegalArgumentException(usernameError);
+            }
+        }
+        // 初始化状态由服务端维护；只有确实存在凭据时才标记完成，
+        // 避免空凭据的配置通过保存接口绕过首次初始化。
+        Login newLogin = config.getLogin();
+        if (StrUtil.isNotBlank(newLogin.getUsername()) && StrUtil.isNotBlank(newLogin.getPassword())) {
+            config.setLoginConfigured(true);
         }
 
         Boolean proxy = config.getProxy();

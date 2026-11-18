@@ -47,9 +47,10 @@ export let configData = {
     "proxyPassword": "",
     "downloadCount": 0,
     "login": {
-        "username": "admin",
+        "username": "",
         "password": ""
     },
+    "loginConfigured": false,
     "multiLoginForbidden": true,
     "loginEffectiveHours": 3,
     "exclude": [

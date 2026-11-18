@@ -6,6 +6,7 @@ import ani.rss.service.BackupService;
 import ani.rss.service.TaskService;
 import ani.rss.util.other.AniUtil;
 import ani.rss.util.other.ConfigUtil;
+import ani.rss.util.other.LoginBootstrapUtil;
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import jakarta.annotation.Resource;
@@ -35,6 +36,7 @@ public class Runner implements ApplicationRunner {
     public void run(@NonNull ApplicationArguments args) {
         try {
             ConfigUtil.load();
+            LoginBootstrapUtil.init(port);
             backupService.backup();
 
             AniUtil.load();
@@ -52,6 +54,14 @@ public class Runner implements ApplicationRunner {
         } catch (Exception e) {
             String message = ExceptionUtils.getMessage(e);
             log.error(message, e);
+            Throwable cause = e;
+            while (cause.getCause() != null && cause.getCause() != cause) {
+                cause = cause.getCause();
+            }
+            if (cause instanceof IllegalArgumentException || cause instanceof IllegalStateException) {
+                // 环境变量里的用户名或强口令不合规时直接给结论，避免只看到堆栈。
+                log.error("启动失败: {}", cause.getMessage());
+            }
             System.exit(1);
         }
         RuntimeUtil.addShutdownHook(() -> log.info("程序退出..."));

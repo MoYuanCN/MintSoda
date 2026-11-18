@@ -11,7 +11,6 @@ import ani.rss.util.other.RenameUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.crypto.SecureUtil;
 import cn.hutool.system.OsInfo;
 import cn.hutool.system.SystemUtil;
 
@@ -40,7 +39,8 @@ public class DefaultConfigFactory {
         String ovaDownloadPathTemplate = StrFormatter.format("{}/${title}", ovaDownloadPath);
         String completedPathTemplate = StrFormatter.format("{}/${title}/Season ${season}", completedPath);
 
-        String password = SecureUtil.md5("admin");
+        // 首次启动不再内置弱口令，凭据在 LoginBootstrapUtil 中按平台生成或引导设置。
+        String password = "";
 
         String apiKey = RandomUtil.randomString(64).toLowerCase();
 
@@ -112,8 +112,10 @@ public class DefaultConfigFactory {
                 .setProxyUsername("")
                 .setProxyPassword("")
                 .setDownloadCount(0)
+                // loginConfigured 保持 null，交给 ConfigUtil.format 依据已有凭据判断，
+                // 否则升级旧配置时会被默认值覆盖成“未初始化”并重置账号。
                 .setLogin(new Login()
-                        .setUsername("admin")
+                        .setUsername("")
                         .setPassword(password)
                 )
                 .setMultiLoginForbidden(true)

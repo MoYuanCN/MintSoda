@@ -195,6 +195,7 @@ public class ConfigUtil {
         if (config.getLoginBackgroundImage() == null) config.setLoginBackgroundImage("");
         if (config.getLoginLogoImage() == null) config.setLoginLogoImage("");
         if (config.getAppLogoImage() == null) config.setAppLogoImage("");
+        migrateLoginCredentials(config);
 
         // Migrate existing settings to the only supported download client.
         config.setDownloadToolType("qBittorrent");
@@ -265,6 +266,30 @@ public class ConfigUtil {
             }
         }
         config.setNotificationTemplate("");
+    }
+
+    /**
+     * 补齐登录凭据状态。
+     * <p>
+     * 旧配置可能仍是 admin/admin，直接标记为已配置以免升级后无法登录，
+     * 但会提示尽快修改；只有用户名或密码为空的全新配置才算未初始化。
+     */
+    private static void migrateLoginCredentials(Config config) {
+        ani.rss.entity.Login login = config.getLogin();
+        if (login == null) {
+            config.setLogin(new ani.rss.entity.Login().setUsername("").setPassword(""));
+        }
+        if (Boolean.TRUE.equals(config.getLoginConfigured())) {
+            return;
+        }
+        String username = login.getUsername();
+        String password = login.getPassword();
+        boolean hasCredentials = StrUtil.isNotBlank(username) && StrUtil.isNotBlank(password);
+        config.setLoginConfigured(hasCredentials);
+        if (hasCredentials && "admin".equals(username)
+                && ani.rss.commons.CredentialUtils.md5("admin").equalsIgnoreCase(password)) {
+            log.warn("检测到默认账号 admin/admin，请在设置中修改用户名与强密码");
+        }
     }
 
     private static void migrateLegacyGlobalReverseRules(Config config) {

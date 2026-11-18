@@ -197,7 +197,34 @@ const loadConfig = (silent = false) => {
       })
 }
 
+// 与后端 CredentialUtils 保持一致的最短密码长度。
+const PASSWORD_MIN_LENGTH = 12
+
+const checkPasswordStrength = password => {
+  if (!password) return ''
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return `密码至少需要 ${PASSWORD_MIN_LENGTH} 位`
+  }
+  let types = 0
+  if (/[a-z]/.test(password)) types++
+  if (/[A-Z]/.test(password)) types++
+  if (/\d/.test(password)) types++
+  if (/[^A-Za-z0-9]/.test(password)) types++
+  if (types < 3) {
+    return '密码需包含大写字母、小写字母、数字、符号中的至少三类'
+  }
+  return ''
+}
+
 const validateConfig = value => {
+  const username = (value.login?.username || '').trim()
+  // 只校验新用户名，历史配置中的用户名不阻止保存其他设置。
+  const savedUsername = baseline.value ? (JSON.parse(baseline.value).login?.username || '').trim() : username
+  if (username !== savedUsername && !/^[A-Za-z0-9_-]{3,32}$/.test(username)) {
+    return '用户名需为 3-32 位字母、数字、下划线或连字符'
+  }
+  const passwordError = checkPasswordStrength((value.login?.password || '').trim())
+  if (passwordError) return passwordError
   const interval = Number(value.rssSleepSeconds)
   if (!Number.isFinite(interval) || interval < 1) {
     return 'RSS 刷新间隔必须至少为 1 秒'
