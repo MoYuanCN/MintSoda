@@ -194,18 +194,6 @@
       </el-collapse>
     </section>
 
-    <section v-if="props.config.developerOptionsEnabled" class="settings-section settings-section-developer">
-      <div class="settings-section-heading">
-        <h3>开发者设置</h3>
-      </div>
-      <SettingsItem label="自定义种子地址">
-        <el-input v-model.trim="props.config.customTorrentUrl" type="textarea"
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                  placeholder="https://torrent.example.com/api/public/<info_hash>"/>
-        <el-alert :closable="false" show-icon type="info"
-                  title="读取到 info_hash 后会请求此地址获取种子。支持 <info_hash> 或 ${info_hash}；未写占位符时会自动追加哈希。留空则使用来源站点的种子地址。"/>
-      </SettingsItem>
-    </section>
   </div>
 </template>
 
