@@ -25,6 +25,7 @@
 - 编码统一 UTF-8。仓库内文本以 LF 存储（本地 `core.autocrlf=true` 的检出会是 CRLF），不要引入混合行尾；新增 shell 脚本保持 LF 与可执行位。
 - 后端：Java 25、Spring Boot、Lombok；实体使用 `@Data` + `@Accessors(chain = true)`，日志使用 `@Slf4j`，依赖注入沿用 `@Resource` 或构造注入。业务异常交给 `CustomExceptionHandler` 统一转换为 `Result`。
 - 前端：Vue 3 `<script setup>` + Element Plus。`.vue` 模板与脚本 2 空格缩进，`src/js/config.js` 等配置对象 4 空格缩进。请求统一走 `src/js/api.js` / `src/js/http.js`。
+- 界面文案统一走 `vue-i18n`，不要在模板或脚本中硬编码中文；新增或修改文案的流程见[多语言与翻译贡献](I18N.md)。
 - 命名沿用现有风格：Java 类 `PascalCase`、方法与变量 `camelCase`；前端组件与视图用 `PascalCase.vue`，工具模块用小写文件名。
 - 注释只写“为什么”，不写“做了什么”，语言与所在文件一致；配置迁移、匹配优先级等易错逻辑应保留简短说明。
 

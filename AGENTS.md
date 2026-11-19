@@ -62,6 +62,7 @@ bash ./package.sh
 - `.vue` 模板与脚本缩进为 2 空格；`src/js/config.js` 等配置文件沿用 4 空格。
 - 请求统一走 `src/js/api.js` / `src/js/http.js`，不要在组件里直接拼 `fetch`。
 - 新增设置项时同步更新 `src/js/config.js` 的默认对象，否则 `setConfig` 会缺失字段。
+- 界面文案统一通过 `vue-i18n` 的 `$t` / `t` 获取，禁止在模板与脚本中硬编码中文；词条按 `zh-CN` 为源写入 `ani-rss-ui/src/i18n/locales/`，新增或修改流程见 `docs/I18N.md`。
 
 ## 配置变更清单
 

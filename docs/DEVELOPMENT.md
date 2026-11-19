@@ -66,6 +66,7 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 ## 代码约定
 
 - Java 使用现有包结构和 Lombok 实体风格；前端使用 Vue 3 `<script setup>` 与现有组件样式。
+- 界面文案统一通过 `ani-rss-ui/src/i18n/` 的 `$t` / `t` 获取，新增文案需同步 `locales` 下四种语言；流程见[多语言与翻译贡献](I18N.md)。
 - 配置字段需覆盖四处：实体类、后端默认值和旧配置补齐、前端默认对象、对应设置界面。
 - 一轮 RSS 刷新用 `AniUtil.beginDeferredSync` / `endDeferredSync` 包裹，期间 `AniUtil.sync` 只标记待保存，结束时写一次 `ani.v2.json`；新增的刷新入口要保持同样包裹，否则会退化为逐条写盘。
 - 复用通知模板使用 `id / name / type / content` 字段；`type` 为 `TEXT` 或 `JSON`。更改持久化格式时，保留旧字段读取能力并在 `ConfigUtil.format` 中迁移已有配置。
