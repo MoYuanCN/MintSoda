@@ -28,6 +28,19 @@ import java.util.function.Function;
 @Slf4j
 public class ItemsUtil {
     private static final Config CONFIG = ConfigUtil.CONFIG;
+    /**
+     * RSS 预取线程池。固定线程数、空闲线程回收后复用，避免每轮刷新都新建线程池；
+     * 单轮并发上限仍由 {@link Semaphore} 控制，与原有语义一致。
+     */
+    private static final ThreadPoolExecutor PREFETCH_EXECUTOR = new ThreadPoolExecutor(
+            16, 16, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r -> {
+        Thread thread = new Thread(r, "rss-prefetch");
+        thread.setDaemon(true);
+        return thread;
+    });
+    static {
+        PREFETCH_EXECUTOR.allowCoreThreadTimeOut(true);
+    }
 
     /**
      * 开始一轮任务，清理上一轮的响应缓存。委托给 {@link RssFetcher}。
@@ -74,32 +87,43 @@ public class ItemsUtil {
         }
 
         int threads = Math.max(1, Math.min(Math.max(1, concurrency), urls.size()));
-        ExecutorService executor = Executors.newFixedThreadPool(threads, r -> {
-            Thread thread = new Thread(r, "rss-prefetch");
-            thread.setDaemon(true);
-            return thread;
-        });
-        try {
-            List<Callable<Void>> tasks = urls.stream()
-                    .<Callable<Void>>map(url -> () -> {
-                        try {
-                            getRss(url);
-                        } catch (Exception e) {
-                            log.debug("预取 RSS 失败 {} {}", url, e.getMessage());
-                        }
-                        return null;
-                    })
-                    .toList();
-            // 为整体预取设定上限，间隔很短时不会因为个别站点缓慢拖住整轮刷新。
-            int rssTimeout = Math.max(1, ObjectUtil.defaultIfNull(CONFIG.getRssTimeout(), 20));
-            long budgetSeconds = (long) Math.ceil((double) urls.size() / threads) * rssTimeout;
-            budgetSeconds = Math.min(budgetSeconds, Math.max(10, rssTimeout * 2L));
-            executor.invokeAll(tasks, Math.max(1, budgetSeconds), TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.warn("预取 RSS 被中断");
-        } finally {
-            executor.shutdownNow();
+        Semaphore permits = new Semaphore(threads);
+        List<Future<?>> futures = new ArrayList<>();
+        for (String url : urls) {
+            futures.add(PREFETCH_EXECUTOR.submit(() -> {
+                try {
+                    permits.acquire();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                try {
+                    getRss(url);
+                } catch (Exception e) {
+                    log.debug("预取 RSS 失败 {} {}", url, e.getMessage());
+                } finally {
+                    permits.release();
+                }
+            }));
+        }
+        // 为整体预取设定上限，间隔很短时不会因为个别站点缓慢拖住整轮刷新。
+        int rssTimeout = Math.max(1, ObjectUtil.defaultIfNull(CONFIG.getRssTimeout(), 20));
+        long budgetSeconds = (long) Math.ceil((double) urls.size() / threads) * rssTimeout;
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(Math.max(10, Math.min(budgetSeconds, rssTimeout * 2L)));
+        for (Future<?> future : futures) {
+            try {
+                future.get(Math.max(1L, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("预取 RSS 被中断");
+                return;
+            } catch (TimeoutException e) {
+                // 单个地址超时不再等待，其余任务继续在后台完成后写入本轮缓存。
+                log.debug("预取 RSS 超时");
+                return;
+            } catch (ExecutionException e) {
+                log.debug("预取 RSS 失败 {}", e.getMessage());
+            }
         }
     }
 

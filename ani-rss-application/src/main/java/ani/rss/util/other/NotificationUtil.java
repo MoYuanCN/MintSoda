@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -27,6 +28,12 @@ public class NotificationUtil {
             .setMaxPoolSize(1)
             .setWorkQueue(new LinkedBlockingQueue<>(256))
             .build();
+
+    /**
+     * 通知实现均为无状态对象，复用实例避免每次发送都走反射构造。
+     */
+    private static final Map<Class<? extends BaseNotification>, BaseNotification> INSTANCES =
+            new ConcurrentHashMap<>();
 
     // WEB_HOOK 仅用于读取旧配置，发送时复用自定义请求。
     public final static Map<NotificationTypeEnum, Class<? extends BaseNotification>>
@@ -97,7 +104,7 @@ public class NotificationUtil {
 
             Class<? extends BaseNotification> aClass = NOTIFICATION_MAP.get(notificationType);
 
-            BaseNotification baseNotification = ReflectUtil.newInstance(aClass);
+            BaseNotification baseNotification = INSTANCES.computeIfAbsent(aClass, ReflectUtil::newInstance);
             EXECUTOR_SERVICE.execute(() -> {
                 int currentRetry = 0;
                 do {
