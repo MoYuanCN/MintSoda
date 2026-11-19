@@ -43,8 +43,16 @@ public class HttpRequestPlus extends HttpRequest {
     @Override
     public HttpResponse execute(boolean isAsync) {
         String url = getUrl();
+        boolean trace = Boolean.TRUE.equals(ani.rss.util.other.ConfigUtil.CONFIG.getDevHttpTrace());
+        long start = System.currentTimeMillis();
         try {
-            return super.execute(isAsync);
+            HttpResponse response = super.execute(isAsync);
+            if (trace) {
+                // 只记录方法、状态与耗时，不记录请求头或请求体，避免泄露凭据。
+                log.info("http {} {} {} {}ms", getMethod(), url, response.getStatus(),
+                        System.currentTimeMillis() - start);
+            }
+            return response;
         } catch (Exception e) {
             String message = ExceptionUtils.getMessage(e);
             log.error("url: {}, error: {}", url, message);

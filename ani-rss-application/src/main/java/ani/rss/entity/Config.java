@@ -628,6 +628,18 @@ public class Config implements Serializable {
     /** Custom torrent file endpoint. Supports <info_hash> and ${info_hash}. */
     private String customTorrentUrl;
 
+    /**
+     * 覆盖出站请求的 User-Agent，留空使用内置标识
+     */
+    @Schema(description = "自定义 User-Agent")
+    private String customUserAgent;
+
+    /**
+     * 记录出站请求的耗时与状态码，便于排查站点异常
+     */
+    @Schema(description = "记录出站请求日志")
+    private Boolean devHttpTrace;
+
     /** Whether authenticated developer-only configuration controls are enabled. */
     private Boolean developerOptionsEnabled;
 

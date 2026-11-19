@@ -75,9 +75,38 @@ public class ConfigController extends BaseController {
                 && !(customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
             return Result.error("自定义种子地址必须以 http:// 或 https:// 开头");
         }
-        ConfigUtil.CONFIG.setCustomTorrentUrl(customUrl).setDeveloperOptionsEnabled(true);
+        String userAgent = StrUtil.trimToEmpty(settings.getCustomUserAgent());
+        if (userAgent.length() > 256) {
+            return Result.error("User-Agent 过长");
+        }
+        ConfigUtil.CONFIG.setCustomTorrentUrl(customUrl)
+                .setCustomUserAgent(userAgent)
+                .setDevHttpTrace(Boolean.TRUE.equals(settings.getDevHttpTrace()))
+                .setDeveloperOptionsEnabled(true);
         ConfigUtil.sync();
         return Result.success("开发者选项已保存");
+    }
+
+    @Auth
+    @Operation(summary = "开发者网络自检")
+    @PostMapping("/devNetworkCheck")
+    public Result<java.util.Map<String, Object>> devNetworkCheck() {
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        try {
+            long start = System.currentTimeMillis();
+            int status = ani.rss.util.basic.HttpReq.get("https://bgm.tv/")
+                    .timeout(8000)
+                    .execute()
+                    .getStatus();
+            long cost = System.currentTimeMillis() - start;
+            result.put("ok", status >= 200 && status < 400);
+            result.put("message", StrUtil.format("bgm.tv 返回 {}，耗时 {}ms", status, cost));
+        } catch (Exception e) {
+            // 只回显异常原因，不返回请求头或完整响应，避免泄露凭据。
+            result.put("ok", false);
+            result.put("message", "请求失败: " + e.getMessage());
+        }
+        return Result.success(result);
     }
 
     @Auth

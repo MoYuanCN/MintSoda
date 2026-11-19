@@ -117,6 +117,8 @@ export let configData = {
     "cacheAutoClearHours": 72,
     "cacheLastClearTime": 0,
     "customTorrentUrl": "",
+    "customUserAgent": "",
+    "devHttpTrace": false,
     "developerOptionsEnabled": false,
     "pluginMarketUrl": "",
     "customEpisode": false,

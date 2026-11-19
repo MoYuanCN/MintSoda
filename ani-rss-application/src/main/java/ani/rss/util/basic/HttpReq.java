@@ -40,8 +40,11 @@ public class HttpReq {
         req.timeout(1000 * 20)
                 .setFollowRedirects(true);
 
-        String ua = "ani-rss-yuri/{} (https://github.com/MoYuanCN/ani-rss-Yuri)";
-        ua = StrUtil.format(ua, MavenUtils.getVersion());
+        String ua = StrUtil.trimToEmpty(ConfigUtil.CONFIG.getCustomUserAgent());
+        if (StrUtil.isBlank(ua)) {
+            ua = StrUtil.format("ani-rss-yuri/{} (https://github.com/MoYuanCN/ani-rss-Yuri)",
+                    MavenUtils.getVersion());
+        }
 
         req.header(Header.USER_AGENT, ua);
     }

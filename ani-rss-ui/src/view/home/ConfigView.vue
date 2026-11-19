@@ -111,7 +111,7 @@ const tabs = [
   {name: 'proxy', label: '代理', description: '网络代理与连接配置', keywords: '代理 网络 http socks 测试'},
   {name: 'security', label: '安全', description: '账号与访问安全', keywords: '密码 账号 api key 白名单 跨域 登录'},
   {name: 'notification', label: '通知', description: '消息渠道与事件通知', keywords: 'telegram 通知 webhook json 模板 emby'},
-  {name: 'developer', label: '开发者', description: '开发者选项与自定义种子地址', keywords: '开发者 种子 info_hash 调试'},
+  {name: 'developer', label: '开发者', description: '开发者选项、请求诊断与自定义种子地址', keywords: '开发者 种子 info_hash 调试 诊断 ua 请求日志'},
   {name: 'afdian', label: '捐赠', description: '支持项目持续维护', keywords: '捐赠 爱发电'},
   {name: 'about', label: '关于', description: '版本信息与项目链接', keywords: '版本 更新 开发者 关于 日志'}
 ]
@@ -174,7 +174,7 @@ const tabKeyMap = {
     'reverseProxyTrustIpListEnabled', 'reverseProxyTrustIpList', 'apiKey'
   ]),
   notification: new Set(['notificationConfigList', 'notificationTemplateList', 'notificationTemplate']),
-  developer: new Set(['developerOptionsEnabled', 'customTorrentUrl']),
+  developer: new Set(['developerOptionsEnabled', 'customTorrentUrl', 'customUserAgent', 'devHttpTrace']),
   about: new Set(['gitInfo', 'version'])
 }
 

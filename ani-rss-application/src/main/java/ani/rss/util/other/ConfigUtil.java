@@ -188,6 +188,12 @@ public class ConfigUtil {
         if (config.getQbUsername() == null) config.setQbUsername("");
         if (config.getQbPassword() == null) config.setQbPassword("");
         if (config.getCustomTorrentUrl() == null) config.setCustomTorrentUrl("");
+        if (config.getCustomUserAgent() == null) config.setCustomUserAgent("");
+        // User-Agent 会被写入每个出站请求头，去掉控制字符并限制长度，防止请求头注入。
+        String userAgent = StrUtil.trimToEmpty(config.getCustomUserAgent())
+                .replaceAll("[\r\n\t]", "");
+        config.setCustomUserAgent(StrUtil.maxLength(userAgent, 256));
+        if (config.getDevHttpTrace() == null) config.setDevHttpTrace(false);
         if (config.getCollectionDownloadPathTemplate() == null) config.setCollectionDownloadPathTemplate("");
         if (config.getRssConcurrency() == null) config.setRssConcurrency(4);
         config.setRssConcurrency(Math.max(1, Math.min(16, config.getRssConcurrency())));

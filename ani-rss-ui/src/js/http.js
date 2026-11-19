@@ -345,3 +345,5 @@ export let aniBT = (season, bgmUrl, text) => api.post('api/aniBT', {
 export let deleteTorrent = (id, hash) => api.post(`api/deleteTorrent?id=${id}&hash=${hash}`)
 
 export let ping = () => api.get("api/ping")
+
+export let devNetworkCheck = () => api.post('api/devNetworkCheck')

@@ -19,6 +19,34 @@
         <el-alert :closable="false" show-icon type="info"
                   title="读取到 info_hash 后会请求此地址获取种子。支持 <info_hash> 或 ${info_hash}；未写占位符时会自动追加哈希。留空则使用来源站点的种子地址。"/>
       </SettingsItem>
+      <SettingsItem label="User-Agent">
+        <el-input v-model.trim="props.config.customUserAgent" clearable maxlength="256"
+                  placeholder="留空使用内置标识 ani-rss-yuri/<版本>"/>
+        <el-alert :closable="false" show-icon type="info"
+                  title="仅影响本应用发起的请求；部分站点会按 UA 返回不同内容，排查兼容性时可临时修改。"/>
+      </SettingsItem>
+      <SettingsItem label="请求日志">
+        <el-switch v-model="props.config.devHttpTrace"/>
+        <el-text size="small" type="info" class="developer-hint">
+          记录出站请求的方法、地址、状态码与耗时，不记录请求头与请求体。
+        </el-text>
+      </SettingsItem>
+      <SettingsItem label="诊断">
+        <div class="developer-actions">
+          <el-button bg text icon="Refresh" :loading="checking" @click="checkNetwork">检测网络</el-button>
+          <el-button bg text icon="Document" @click="openLogs">查看日志</el-button>
+          <el-button bg text icon="Delete" @click="clearLogs">清空日志</el-button>
+        </div>
+        <el-text v-if="networkResult" size="small" :type="networkResult.ok ? 'success' : 'danger'"
+                 class="developer-hint">
+          {{ networkResult.message }}
+        </el-text>
+      </SettingsItem>
+      <SettingsItem label="备份内容">
+        <el-text size="small" type="info">
+          导出的备份同时包含插件与插件私有数据；导入会整体替换插件目录，安装记录会按目录重建。
+        </el-text>
+      </SettingsItem>
     </template>
 
     <el-dialog v-model="dialogVisible" center title="开启开发者选项" width="420">
@@ -51,6 +79,8 @@ let props = defineProps(['config'])
 const enabled = computed(() => Boolean(props.config.developerOptionsEnabled))
 const dialogVisible = ref(false)
 const loading = ref(false)
+const checking = ref(false)
+const networkResult = ref(null)
 const credentials = reactive({username: '', password: ''})
 
 const openUnlock = () => {
@@ -59,6 +89,14 @@ const openUnlock = () => {
   dialogVisible.value = true
 }
 
+const settings = () => ({
+  username: credentials.username,
+  password: credentials.password,
+  customTorrentUrl: props.config.customTorrentUrl || '',
+  customUserAgent: props.config.customUserAgent || '',
+  devHttpTrace: Boolean(props.config.devHttpTrace)
+})
+
 const unlock = () => {
   if (!credentials.username || !credentials.password) {
     ElMessage.error('请输入当前登录账号和密码')
@@ -66,11 +104,7 @@ const unlock = () => {
   }
   loading.value = true
   http.verifyDeveloperCredentials(credentials)
-      .then(() => http.setDeveloperSettings({
-        username: credentials.username,
-        password: credentials.password,
-        customTorrentUrl: props.config.customTorrentUrl || ''
-      }))
+      .then(() => http.setDeveloperSettings(settings()))
       .then(res => {
         props.config.developerOptionsEnabled = true
         dialogVisible.value = false
@@ -85,9 +119,35 @@ const unlock = () => {
       .finally(() => { loading.value = false })
 }
 
+const checkNetwork = () => {
+  checking.value = true
+  networkResult.value = null
+  http.devNetworkCheck()
+      .then(res => {
+        networkResult.value = res.data
+      })
+      .catch(error => {
+        networkResult.value = {ok: false, message: error?.message || '检测失败'}
+      })
+      .finally(() => { checking.value = false })
+}
+
+const openLogs = () => {
+  const base = window.location.href.split('#')[0]
+  window.open(`${base}#/logs`, '_blank')
+}
+
+const clearLogs = () => {
+  ElMessageBox.confirm('清空当前会话的日志缓存？磁盘日志不会被删除。', '清空日志',
+      {type: 'warning', confirmButtonText: '清空', cancelButtonText: '取消'})
+      .then(() => http.clearLogs())
+      .then(res => ElMessage.success(res.message || '已清空'))
+      .catch(() => {})
+}
+
 // 与其他设置一样只改内存状态，点击底部“保存设置”后才会关闭并失效。
 const disable = () => {
-  ElMessageBox.confirm('关闭后自定义种子地址将不再生效，保存设置后生效，是否继续？', '关闭开发者选项', {
+  ElMessageBox.confirm('关闭后自定义种子地址与请求日志将不再生效，保存设置后生效，是否继续？', '关闭开发者选项', {
     confirmButtonText: '关闭',
     cancelButtonText: '取消',
     type: 'warning'
@@ -109,5 +169,16 @@ const disable = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.developer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.developer-hint {
+  display: block;
+  margin-top: 6px;
 }
 </style>

@@ -106,6 +106,8 @@ public class DefaultConfigFactory {
                 .setCoexist(false)
                 .setLogsMax(128)
                 .setDebug(false)
+                .setCustomUserAgent("")
+                .setDevHttpTrace(false)
                 .setProxy(false)
                 .setProxyHost("")
                 .setProxyPort(8080)
