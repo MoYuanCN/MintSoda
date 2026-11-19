@@ -577,7 +577,8 @@ public class ItemsUtil {
             return 0;
         }
 
-        Boolean downloadNew = ani.getDownloadNew();
+        // 导入或旧配置的订阅可能没有该字段，缺省按“下载全部”处理。
+        Boolean downloadNew = Boolean.TRUE.equals(ani.getDownloadNew());
         if (downloadNew) {
             return items
                     .stream()

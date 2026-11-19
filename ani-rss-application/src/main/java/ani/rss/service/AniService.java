@@ -4,6 +4,7 @@ import ani.rss.commons.ExceptionUtils;
 import ani.rss.commons.FileUtils;
 import ani.rss.commons.PinyinUtils;
 import ani.rss.comparator.WeekComparator;
+import ani.rss.config.DefaultAniFactory;
 import ani.rss.entity.*;
 import ani.rss.entity.dto.IdDTO;
 import ani.rss.entity.dto.ImportAniDataDTO;
@@ -48,6 +49,8 @@ public class AniService {
      * @param override 是否覆盖重复订阅
      */
     public void addAni(Ani ani, Boolean override) {
+        // 导入接口与旧配置可能缺少字段，统一补齐后再进入下载流程。
+        DefaultAniFactory.normalize(ani);
         Optional<Ani> first = AniUtil.ANI_LIST.stream()
                 .filter(it -> it.getId().equals(ani.getId()))
                 .findFirst();
@@ -106,6 +109,7 @@ public class AniService {
      * @param ani 订阅
      */
     public void setAni(Ani ani) {
+        DefaultAniFactory.normalize(ani);
         Optional<Ani> first = AniUtil.ANI_LIST.stream()
                 .filter(it -> !it.getId().equals(ani.getId()))
                 .filter(it -> it.getTitle().equals(ani.getTitle()) && it.getSeason().equals(ani.getSeason()))

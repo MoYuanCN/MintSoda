@@ -643,7 +643,7 @@ public class DownloadService {
                     .orElse(downloadPathTemplate);
         }
 
-        String title = ani.getTitle().trim();
+        String title = StrUtil.trimToEmpty(ani.getTitle());
 
         String letter = PinyinUtils.getPinyinInitialLetters(title);
 
