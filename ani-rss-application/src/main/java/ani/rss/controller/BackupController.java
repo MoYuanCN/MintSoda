@@ -6,6 +6,8 @@ import ani.rss.entity.Global;
 import ani.rss.entity.web.Header;
 import ani.rss.entity.web.Result;
 import ani.rss.service.BackupService;
+import ani.rss.plugin.PluginManager;
+import ani.rss.service.PluginArchive;
 import ani.rss.service.TaskService;
 import ani.rss.util.other.AniUtil;
 import ani.rss.util.other.ConfigUtil;
@@ -13,7 +15,6 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.ZipUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,7 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @RestController
@@ -39,6 +39,8 @@ public class BackupController extends BaseController {
     private BackupService backupService;
     @Resource
     private TaskService taskService;
+    @Resource
+    private PluginManager pluginManager;
 
     @Auth
     @Operation(summary = "导出备份")
@@ -70,17 +72,52 @@ public class BackupController extends BaseController {
 
         File configDir = ConfigUtil.getConfigDir();
 
-        // 删除旧的种子记录
-        FileUtil.del(configDir + "/torrents");
-
         @Cleanup
         InputStream inputStream = file.getInputStream();
 
-        ZipUtil.unzip(inputStream, configDir, StandardCharsets.UTF_8);
+        // 单遍解压：普通配置直接落盘，插件条目写入临时目录。
+        // 插件包含脚本与私有数据，路径必须逐条校验并整目录替换，不能交给通用解压。
+        java.nio.file.Path pluginStaging = PluginArchive.newStaging(configDir);
+        try {
+            try (java.util.zip.ZipInputStream zip = new java.util.zip.ZipInputStream(inputStream)) {
+                java.util.zip.ZipEntry entry;
+                while ((entry = zip.getNextEntry()) != null) {
+                    if (entry.isDirectory()) {
+                        continue;
+                    }
+                    java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                    zip.transferTo(buffer);
+                    if (PluginArchive.isPluginEntry(entry.getName())) {
+                        PluginArchive.writeEntry(pluginStaging, entry.getName(), buffer.toByteArray());
+                        continue;
+                    }
+                    java.nio.file.Path target = configDir.toPath()
+                            .resolve(entry.getName().replace('\\', '/')).normalize();
+                    Assert.isTrue(target.startsWith(configDir.toPath().toAbsolutePath().normalize()),
+                            "备份包含非法路径: " + entry.getName());
+                    java.nio.file.Files.createDirectories(target.getParent());
+                    java.nio.file.Files.write(target, buffer.toByteArray());
+                }
+            }
 
-        // 重新加载设置
+            // 删除旧的种子记录
+            FileUtil.del(new File(configDir, "torrents"));
+            int restored = PluginArchive.commit(pluginStaging, configDir);
+            if (restored > 0) {
+                log.info("已从备份恢复 {} 个插件", restored);
+            }
+        } catch (Exception e) {
+            FileUtil.del(pluginStaging.toFile());
+            if (e instanceof IOException ioException) {
+                throw ioException;
+            }
+            throw new IllegalArgumentException("备份导入失败: " + e.getMessage(), e);
+        }
+
+        // 重新加载设置与插件；插件目录可能已被整体替换。
         ConfigUtil.load();
         AniUtil.load();
+        pluginManager.rescan();
         taskService.restart();
 
         return Result.success("导入成功");
