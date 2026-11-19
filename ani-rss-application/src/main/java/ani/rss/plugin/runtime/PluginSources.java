@@ -23,7 +23,10 @@ public final class PluginSources {
      */
     public static PluginSource create(PluginDescriptor descriptor) {
         if (descriptor.script()) {
-            return new ScriptPluginSource(descriptor, PluginPaths.dir(descriptor.id()));
+            File dir = PluginPaths.dir(descriptor.id());
+            return descriptor.lua()
+                    ? new LuaPluginSource(descriptor, dir)
+                    : new ScriptPluginSource(descriptor, dir);
         }
         File jar = PluginPaths.jarFile(descriptor.id());
         if (!jar.isFile()) {

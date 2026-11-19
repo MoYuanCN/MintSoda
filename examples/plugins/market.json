@@ -13,7 +13,21 @@
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 12345,
       "apiVersion": 2,
-      "permissions": ["notification", "item-filter", "template-variable", "download-interceptor", "endpoint"],
+      "permissions": [
+        "notification",
+        "item-filter",
+        "subscription-events",
+        "scheduled-task",
+        "template-variable",
+        "download-interceptor",
+        "download-cancel",
+        "endpoint",
+        "config-read",
+        "config-write",
+        "data-read",
+        "data-write",
+        "log"
+      ],
       "updateUrl": ""
     },
     {
@@ -27,7 +41,49 @@
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 4096,
       "apiVersion": 2,
-      "permissions": ["notification", "item-filter", "template-variable", "download-interceptor", "endpoint"],
+      "permissions": [
+        "notification",
+        "item-filter",
+        "subscription-events",
+        "scheduled-task",
+        "template-variable",
+        "download-interceptor",
+        "download-cancel",
+        "endpoint",
+        "config-read",
+        "config-write",
+        "data-read",
+        "data-write",
+        "log"
+      ],
+      "updateUrl": ""
+    },
+    {
+      "id": "lua-demo-plugin",
+      "name": "Lua 示例插件",
+      "version": "1.0.0",
+      "description": "演示用 Lua 编写通知渠道、订阅过滤、模板变量、下载拦截、周期任务与自定义接口。",
+      "author": "ANI-RSS-Yuri",
+      "homepage": "",
+      "downloadUrl": "https://example.com/plugins/lua-demo-plugin-1.0.0.zip",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "size": 3072,
+      "apiVersion": 2,
+      "permissions": [
+        "notification",
+        "item-filter",
+        "subscription-events",
+        "scheduled-task",
+        "template-variable",
+        "download-interceptor",
+        "download-cancel",
+        "endpoint",
+        "config-read",
+        "config-write",
+        "data-read",
+        "data-write",
+        "log"
+      ],
       "updateUrl": ""
     }
   ]

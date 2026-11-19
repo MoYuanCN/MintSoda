@@ -1,0 +1,28 @@
+{
+  "id": "lua-demo-plugin",
+  "name": "Lua 示例插件",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "runtime": "LUA",
+  "entry": "main.lua",
+  "author": "ANI-RSS-Yuri",
+  "description": "演示用 Lua 编写通知渠道、订阅过滤、模板变量、下载拦截、周期任务与自定义接口。",
+  "homepage": "",
+  "updateUrl": "",
+  "permissions": [
+    "notification",
+    "item-filter",
+    "subscription-events",
+    "scheduled-task",
+    "template-variable",
+    "download-interceptor",
+    "download-cancel",
+    "endpoint",
+    "config-read",
+    "config-write",
+    "data-read",
+    "data-write",
+    "log"
+  ],
+  "minAppVersion": ""
+}

@@ -36,13 +36,20 @@ public record PluginDescriptor(
 ) {
     public static final String RUNTIME_JAVA = "JAVA";
     public static final String RUNTIME_JAVASCRIPT = "JAVASCRIPT";
+    public static final String RUNTIME_LUA = "LUA";
 
     public PluginDescriptor {
-        permissions = permissions == null ? List.of() : List.copyOf(permissions);
-        runtime = runtime == null || runtime.isBlank()
+        // 描述文件常用连字符与历史别名，统一成枚举的标准标识，避免权限在安装时被丢弃。
+        permissions = PluginPermission.sanitize(permissions);
+        // compact 构造器里 script() 还读不到字段，先归一化到局部变量。
+        String normalizedRuntime = runtime == null || runtime.isBlank()
                 ? RUNTIME_JAVA
                 : runtime.trim().toUpperCase(java.util.Locale.ROOT);
-        entry = entry == null || entry.isBlank() ? "main.js" : entry.trim();
+        boolean script = RUNTIME_JAVASCRIPT.equals(normalizedRuntime) || RUNTIME_LUA.equals(normalizedRuntime);
+        String defaultEntry = RUNTIME_LUA.equals(normalizedRuntime) ? "main.lua" : "main.js";
+        runtime = normalizedRuntime;
+        // Java 插件只用 mainClass，入口字段无意义。
+        entry = !script ? "" : (entry == null || entry.isBlank() ? defaultEntry : entry.trim());
     }
 
     public boolean compatible() {
@@ -50,9 +57,16 @@ public record PluginDescriptor(
     }
 
     /**
-     * 是否为脚本插件
+     * 是否为脚本插件（JavaScript 或 Lua），脚本插件以 ZIP 分发并解包到插件目录
      */
     public boolean script() {
-        return RUNTIME_JAVASCRIPT.equals(runtime);
+        return RUNTIME_JAVASCRIPT.equals(runtime) || RUNTIME_LUA.equals(runtime);
+    }
+
+    /**
+     * 是否为 Lua 插件
+     */
+    public boolean lua() {
+        return RUNTIME_LUA.equals(runtime);
     }
 }
