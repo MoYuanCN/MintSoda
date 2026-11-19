@@ -20,6 +20,12 @@ function readConfig() {
 
 function onLoad() {
     __api.log('示例脚本插件已加载：' + __descriptor.name);
+    // 私有数据：读取上次启用次数并累加，升级与重启都不会丢失。缺少权限时跳过。
+    if (__api.hasPermission('data-read') && __api.hasPermission('data-write')) {
+        const previous = Number(__api.readDataFile('state/enable-count.txt') || 0) || 0;
+        __api.writeDataFile('state/enable-count.txt', String(previous + 1));
+        __api.log('第 ' + (previous + 1) + ' 次加载，数据文件：' + __api.listDataFiles('state').join(','));
+    }
 }
 
 function onEnable() {
