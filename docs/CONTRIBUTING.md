@@ -11,13 +11,14 @@
 ## 分支与提交
 
 - 从 `main` 派生功能分支，命名体现范围，例如 `feat/reverse-match`、`fix/config-migration`、`docs/security`。
-- 使用 Conventional Commits：`<type>(<scope>): <subject>`。
+- 使用 Conventional Commits：`<type>(<scope>): <中文摘要>`。
+  - `type` 与 `scope` 保持英文小写，**摘要必须使用中文**，不要用英文动词开头。
   - 常用 type：`feat`、`fix`、`refactor`、`perf`、`build`、`ci`、`docs`、`test`、`chore`。
-  - 常用 scope：`match`、`notification`、`config`、`security`、`ui`、`download`、`release`。
-  - 示例：`feat(match): add global reverse rules`、`fix(config): keep legacy minutes field`。
+  - 常用 scope：`match`、`notification`、`config`、`security`、`ui`、`download`、`plugin`、`build`、`release`、`docs`。
+  - 示例：`feat(match): 支持全局反匹配规则`、`fix(config): 保留旧的分钟字段`、`docs(plugin): 补充 Lua 与权限说明`。
+- 摘要不超过约 72 个字符（按显示宽度计），句末不加句号；正文同样使用中文，说明动机、兼容影响与验证方式。
 - 一次提交只解决一件事；功能改动与配置迁移、格式化、依赖升级分开提交。
 - 不要提交 `.tools/`、`ani-rss-ui/node/`、`ani-rss-ui/.tools/`、`target/`、`dist/`、`node_modules/`、配置目录、日志、备份或本机交接文件。
-- 提交信息使用祈使句，主题行不超过约 72 个字符；正文说明动机与兼容影响。
 
 ## 代码风格
 
@@ -81,7 +82,7 @@ bash ./package.sh                            # JAR + Windows EXE
 1. 更新版本号：`./new_version.sh <x.y.z>`（同步 reactor 与子模块版本）。
 2. 确认 `README.md`、`docs/USER_GUIDE.md` 的行为描述与当前实现一致。
 3. 触发 `build-test` 工作流验证打包，再触发 `build` 工作流生成 Release。
-4. Release 附加 `ani-rss.jar` 与 `ani-rss.exe`，说明由 GitHub 自动生成；仓库中不维护独立的更新说明文件。
+4. Release 附加 `ani-rss-Yuri.jar` 与 `ani-rss-Yuri.exe`，说明由 GitHub 自动生成；仓库中不维护独立的更新说明文件。
 5. 旧 Release 由 `delete-old-releases` 工作流手动清理，保留策略在脚本中定义。
 
 ## 安全问题

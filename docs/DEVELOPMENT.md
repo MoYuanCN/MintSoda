@@ -20,6 +20,29 @@
 
 插件开发与市场格式见 [插件开发指南](PLUGIN_DEVELOPMENT.md)。协作与安全要求见 [贡献指南](CONTRIBUTING.md) 与 [安全说明](SECURITY.md)；面向 AI 编码代理的完整仓库约定见根目录 `AGENTS.md`。
 
+## 后端模块划分
+
+下载链路按职责拆分为若干可独立替换的单元，新增能力时优先扩展这些单元而不是继续给大服务加方法：
+
+| 单元 | 位置 | 职责 |
+| --- | --- | --- |
+| `DownloadService` | `service/` | 下载调度：判断是否需要下载、调用下载器、失败重试 |
+| `DownloadPathResolver` | `service/support/` | 下载位置模板解析（剧场版、自定义位置、季度与年份替换） |
+| `DownloadNotifier` | `service/support/` | 下载完成通知、字幕组反查与完结迁移 |
+| `DownloadPass` | `service/support/` | 单轮刷新内的目录与路径缓存，降低机械硬盘唤醒 |
+| `ItemsUtil` | `util/other/` | RSS 条目解析、过滤与订阅判断 |
+| `RssFetcher` | `util/other/` | RSS 请求、条件缓存、失败退避与旧内容兜底 |
+| `BgmUtil` | `util/other/` | Bangumi 作品与剧集查询 |
+| `BgmAuth` | `util/other/` | Bangumi 账号、Token 注入、有效期与自动刷新 |
+| `PluginManager` | `plugin/` | 插件生命周期、调度与扩展点分发 |
+| `PluginSource` | `plugin/runtime/` | 运行时抽象，Java / JavaScript / Lua 各自实现 |
+
+约定：
+
+- 大服务只做编排，具体规则放到 `support` 或独立工具类；旧入口保留为委托方法，避免一次性改动所有调用方。
+- 拆分类时不要改变公开方法签名与静态入口，先委托再逐步迁移。
+- 新增缓存要说明生命周期（单轮、进程内、跨轮次），跨线程共享必须使用并发结构。
+
 ## 环境与构建
 
 需要 Java 25。Maven 前端插件会把 Node.js 和 pnpm 下载到 `ani-rss-ui/node/`，pnpm 依赖缓存写入 `ani-rss-ui/.tools/pnpm-store/`；两处都由 `.gitignore` 排除，不需要安装到系统目录。前端依赖使用 `pnpm-lock.yaml` 锁定。
@@ -38,7 +61,7 @@ bash ./package.sh
 
 `package.sh` 使用 Maven `windows` profile 生成 EXE，并保留 JAR。CI 的 `build-test.yml` 执行相同打包脚本；`build.yml` 将 JAR 与 EXE 附加到 GitHub Release，不发布容器镜像。
 
-Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向安装目录。手动运行时可通过 `CONFIG=/path/to/config java -jar ani-rss.jar` 指定配置目录。
+Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向安装目录。手动运行时可通过 `CONFIG=/path/to/config java -jar ani-rss-Yuri.jar` 指定配置目录。
 
 ## 代码约定
 
@@ -64,6 +87,6 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 ## CI 与发布
 
 - `build-test.yml`：手动触发，运行 Java 25 Maven 打包并生成 Linux 可构建的 JAR 与 Windows EXE。
-- `build.yml`：手动触发，构建后创建 GitHub Release，发布 `ani-rss.jar` 和 `ani-rss.exe`。
+- `build.yml`：手动触发，构建后创建 GitHub Release，发布 `ani-rss-Yuri.jar` 和 `ani-rss-Yuri.exe`。
 - 变更 Maven profile 或构建工具版本时，确认 JAR 与 EXE 都仍包含前端资源；不要恢复 Docker 镜像或 macOS 打包步骤。
 - 工作流权限按实际操作设置最小范围：构建检查只需读取仓库，发布流程需要 `contents: write`。

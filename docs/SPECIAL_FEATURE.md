@@ -173,7 +173,12 @@ Body 只有两种来源，语义明确：
 
 - 新增稳定的接口模块 `ani-rss-plugin-api`，插件以独立 JAR 加载，每个插件一个类加载器；接口类与 JDK 类始终由宿主提供。
 - 支持 JavaScript 插件：`runtime` 为 `JAVASCRIPT` 的 ZIP 包由 Rhino 沙箱解释执行，无需编译；与 Java 插件共用同一套扩展点。
-- 插件来源抽象为 `PluginSource`（`JavaPluginSource` / `ScriptPluginSource`），管理器不再区分具体语言；描述文件兼容 `manifest.json`，安装时统一为 `plugin.json`。
+- 支持 Lua 插件：`runtime` 为 `LUA` 的 ZIP 包由 LuaJ 解释执行，只装载基础库，单次调用 5 秒超时。
+- 插件来源抽象为 `PluginSource`（`JavaPluginSource` / `ScriptPluginSource` / `LuaPluginSource`），管理器不再区分具体语言；描述文件兼容 `manifest.json`，安装时统一为 `plugin.json`。
+- 插件权限由 `PluginPermission` 统一枚举并按能力分组，读与写分开授权（`CONFIG_READ`/`CONFIG_WRITE`、`DATA_READ`/`DATA_WRITE`），取消下载单独用 `DOWNLOAD_CANCEL`；按插件保存在 `PluginRecord.grantedPermissions`，用户在插件页逐项开关，注册扩展点时由 `PluginContextImpl` 强制校验，保存后已启用插件立即重载。旧的整体标识 `CONFIG`、`DATA_DIR` 在保存时展开为读写两项。
+- 插件私有目录 `plugins/{id}/data` 在升级与重装时保留，卸载时删除；读写统一走 `PluginContext` 的按路径方法，路径经 `PluginPaths.dataFile` 规范化并限制在数据目录内，拒绝符号链接。
+- 设置备份包含整个 `plugins/` 目录但不含 `installed.json`；导入时逐条校验路径并在临时目录完成后整体替换，导入后 `PluginManager.rescan()` 按目录重建安装状态，插件默认停用。
+- 开发者选项新增自定义 User-Agent（拒绝控制字符并限长）、出站请求日志（只记方法、地址、状态码与耗时）与网络自检，均需先验证当前账号。
 - 插件生命周期为加载、启用、停用、重载与卸载，失败只影响该插件。
 - 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截与插件自定义接口；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后执行。
 - 模板变量由 `TemplateVariables` 统一应用，通知、重命名与下载路径共用同一批字段；插件可通过 `TemplateVariableProvider` 追加或覆盖字段。
@@ -207,12 +212,21 @@ Body 只有两种来源，语义明确：
 - `/api/publicSettings` 为新增的公开接口，只返回登录页渲染所需的外观字段。
 - `/api/file` 只允许图片；上传类接口保留原有行为，外观图片走独立白名单校验。
 
+## 标识与兼容
+
+- 出站请求的 User-Agent 为 `ani-rss-Yuri/<版本>`，可在开发者选项中覆盖。
+- 构建产物为 `ani-rss-Yuri.jar` 与 `ani-rss-Yuri.exe`；更新器为 `ani-rss-Yuri-update.exe`。
+- Windows 非 exe 运行的默认配置目录由 `ani-rss/` 改为 `ani-rss-Yuri/`，首次启动会把旧目录内容复制过去，旧目录保留为备份。
+- qBittorrent 的分类与标签改由 `ani-rss-Yuri` 写入；过滤时同时识别旧的 `ani-rss`，升级后历史任务不会消失。
+- 日志为 `logs/ani-rss-Yuri.log`，备份文件为 `ani-rss-Yuri.backup.<版本>.zip`，ICS 文件名与日历名称同步改为 `ani-rss-Yuri`。
+- Linux 服务名与系统用户改为 `ani-rss-yuri`，控制脚本为 `linux/ani-rss-yuri.sh`；旧版固定目录安装脚本更名为 `linux/install-yuri-legacy.sh`。
+
 ## 部署
 
 - 默认端口改为 **17789**，同步开发代理、安装脚本与文档。
 - 新增 `linux/install-yuri.sh`：一条命令安装到**执行命令时所在目录**（不新建子目录）并注册 systemd 服务，安装时在终端交互询问用户名与两次密码（沿用与后端一致的强度校验），也可用 `--username`、`--password` 直接传入；另有 `--port`、`--dir`、`--setup`、`--yes`。重新安装检测到已有配置时默认沿用原账号。凭据写入仅 root 可读的环境文件。
 - 新增 `linux/assyuri`：数字菜单与子命令（`status`、`version`、`update`、`log`、`start/stop/restart`、`enable/disable`、`uninstall`）；无 `unzip` 时用 Python 读取版本。
-- `linux/install-ani-rss.sh` 保留为安装到 `/opt/ani-rss` 的旧方式。
+- `linux/install-yuri-legacy.sh` 保留为安装到 `/opt/ani-rss-yuri` 的旧方式。
 - Windows EXE 使用便携配置目录：配置保存在 EXE 同目录的 `config/`，并在首次启动时复制旧用户目录配置。
 
 ## 移除的功能

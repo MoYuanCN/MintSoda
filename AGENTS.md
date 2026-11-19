@@ -37,8 +37,8 @@ mvn -B package -DskipTests --file pom.xml
 bash ./package.sh
 ```
 
-- `package.sh` 使用 Maven `windows` profile，同时产出 `ani-rss-application/target/ani-rss.jar` 与 `ani-rss-application/target/ani-rss.exe`。
-- `linux/install-yuri.sh` 是一键安装入口（安装到当前目录并注册 systemd），`linux/assyuri` 是配套的交互菜单脚本；`linux/install-ani-rss.sh` 保留为安装到 `/opt/ani-rss` 的旧方式。
+- `package.sh` 使用 Maven `windows` profile，同时产出 `ani-rss-application/target/ani-rss-Yuri.jar` 与 `ani-rss-application/target/ani-rss-Yuri.exe`。
+- `linux/install-yuri.sh` 是一键安装入口（安装到当前目录并注册 systemd），`linux/assyuri` 是配套的交互菜单脚本；`linux/install-yuri-legacy.sh` 保留为安装到 `/opt/ani-rss-yuri` 的旧方式。
 - Windows profile 的 `generate-resources` 阶段需要 `bash` 与 `curl`；CI 在 Ubuntu 上执行同一脚本。
 - 前端单独调试：在 `ani-rss-ui/` 下用 `pnpm install` 与 `pnpm dev`（可使用 Maven 下载到 `ani-rss-ui/node/` 的 pnpm），Vite 端口 37789，并将 `/api` 代理到本地后端。
 - 运行时可用的环境变量/参数：`CONFIG`/`--config=` 指定配置目录；`MCP_ENABLED`/`--mcp-enabled=` 与 `SWAGGER_ENABLED`/`--swagger-enabled=` 打开默认关闭的 MCP 与 Swagger；`--setup` 仅在尚未配置账号时强制在 WebUI 完成首次初始化（已配置时完全失效）；`ANI_RSS_USERNAME`/`ANI_RSS_PASSWORD` 覆盖登录凭据；`SERVER_PORT` 等 Spring 标准配置可覆盖端口（默认 17789）。
@@ -118,18 +118,23 @@ bash ./package.sh
 - 唯一接口模块是 `ani-rss-plugin-api`；接口破坏性变更必须提升 `PluginApi.VERSION`，不得在插件 API 中引用 `ani.rss.application` 的内部类型。
 - 插件运行时通过 `plugin/runtime/PluginSource` 抽象；新增语言只加一个 `PluginSource` 实现与 `PluginSources` 分支，不要改 `PluginManager` 的加载逻辑。
 - JavaScript 插件运行在 `ScriptSandbox`：必须保持 `ClassShutter` 全拒绝、`initSafeStandardObjects` 与调用超时，不得为兼容放开 Java 类访问；传给脚本的宿主数据必须先转成原生对象。
+- Lua 插件运行在 `LuaPlugin` 自建的安全 `Globals`：只装基础库，不装 `IoLib`/`OsLib`/`luajava`，并移除 `dofile`/`loadfile`/`require`/`package.loadlib`；新增库或加载入口前必须确认不引入文件与进程访问。
 - 扩展点由 `PluginManager` 统一加载与分发：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、插件自定义接口。新增扩展点时同步更新 `docs/PLUGIN_DEVELOPMENT.md`。
 - 模板占位符统一走 `util/other/TemplateVariables`，不要在通知、重命名、下载路径里再各写一份替换逻辑。
 - 插件自定义接口必须经 `/api/plugin/api/{pluginId}/**` 分发并保持 `@Auth`，不要为插件单独开放免鉴权路由。
 - 插件过滤器在 `MatchRuleUtil` 之后执行，不得绕过反匹配 > 全局匹配 > 排除的既有优先级；RSS 下载、预览与合集预览必须共用同一插件过滤路径。
 - 插件路径一律经 `PluginPaths` 规范化并限制在 `plugins/` 内；插件标识仅允许 `A-Z a-z 0-9 . _ -`。
 - 安装与更新必须校验 `size` 与 `sha256`，远程地址经 `commons/URLUtils#verify`；先写临时目录校验通过后再替换正式目录。
+- 插件权限由 `PluginPermission` 定义、按插件持久化在 `PluginRecord.grantedPermissions`，注册扩展点时在 `PluginContextImpl` 强制校验；新增扩展点必须同时定义对应权限，不得把校验放到插件侧。读与写权限分开（`*_READ` / `*_WRITE`），破坏性操作（取消下载、写数据）使用独立的高风险权限。
+- 插件私有数据只能经 `PluginPaths.dataFile` 访问，规范化后必须位于 `plugins/{id}/data` 内；升级与重装必须保留 `data/`，卸载才删除。备份导出排除 `installed.json`，导入必须逐条校验路径并在临时目录完成后整体替换。
+- 权限调整入口是 `PluginService#setPermissions`（`POST /api/plugin/setPermissions`），保存后对已启用插件立即重载；升级安装不得重置用户已调整的权限。
 - 插件与服务同权限运行；新增插件接口默认加 `@Auth`，新增公开插件接口需在评审中说明理由。
 - `PLUGIN` 通知类型必须保留在 `ConfigUtil.format` 的允许列表内；删除插件后引用它的通知应静默跳过而不是报错。
 - 前端插件字段只按白名单类型渲染，不得把插件提供的内容当作 HTML 注入。
 
 ## 不要做的事
 
+- 对外可见的标识统一使用 `ani-rss-Yuri`（产物名、User-Agent、日志、服务名、标签、备份与 ICS 名称），不要改回 `ani-rss`；涉及历史数据的过滤（如 qBittorrent 分类与标签）必须同时兼容旧值。
 - 不要恢复已移除的功能：邮件/QQ/Server 酱/Bark 通知、Aria2/Transmission 下载器、qBittorrent 任务进度页、内置播放与刮削、OpenList 上传、AnimeGarden、Bangumi 点格子、摸鱼检测、trackers 更新、Docker、macOS。
 - 不要把下载器默认值或配置迁移方向改为 qBittorrent 之外的类型；`ConfigUtil.format` 会强制归一化为 qBittorrent。
 - 不要重新引入 `UPDATE.md` 依赖，Release 说明由 GitHub 自动生成。
@@ -145,6 +150,6 @@ bash ./package.sh
 
 ## 提交与交付
 
-- 使用 Conventional Commits，常用 scope：`match`、`notification`、`config`、`security`、`ui`、`build`、`release`、`docs`。
+- 使用 Conventional Commits：`<type>(<scope>): <中文摘要>`；type 与 scope 保持英文小写，摘要与正文使用中文，不要在摘要里用英文祈使句。常用 scope：`match`、`notification`、`config`、`security`、`ui`、`download`、`plugin`、`build`、`release`、`docs`。
 - 一次提交只做一件事；配置迁移与功能改动尽量分开，方便回溯。
 - 交付前自检：配置字段清单是否齐全、旧配置是否仍可加载、下载/预览是否共用判定、日志是否泄露敏感值、文档是否同步、构建是否通过。
