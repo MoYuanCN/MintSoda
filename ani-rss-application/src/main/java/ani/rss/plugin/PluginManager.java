@@ -58,6 +58,8 @@ public class PluginManager {
     /**
      * 启动时加载全部已安装插件，并启用标记为启用的插件。
      */
+    // ---- 生命周期：加载 / 启用 / 停用 / 重载 / 卸载 ----
+
     public synchronized void init() {
         PluginPaths.ensure(PluginPaths.root());
         for (File dir : Objects.requireNonNullElse(PluginPaths.root().listFiles(File::isDirectory), new File[0])) {
@@ -81,6 +83,51 @@ public class PluginManager {
                     log.error("插件 {} 启用失败", id);
                     log.error(e.getMessage(), e);
                 }
+            }
+        }
+    }
+
+    /**
+     * 重新扫描插件目录。
+     * <p>
+     * 导入备份或手工放入插件后使用：先卸载内存中已不存在的插件，再加载磁盘上新增的插件，
+     * 已存在的插件保持原状态，避免重复执行生命周期。
+     */
+    public synchronized void rescan() {
+        PluginPaths.ensure(PluginPaths.root());
+        java.util.Set<String> onDisk = new java.util.HashSet<>();
+        for (File dir : Objects.requireNonNullElse(PluginPaths.root().listFiles(File::isDirectory), new File[0])) {
+            if (dir.getName().matches(PluginPaths.ID_REG)) {
+                onDisk.add(dir.getName());
+            }
+        }
+        for (String id : new ArrayList<>(loaded.keySet())) {
+            if (!onDisk.contains(id)) {
+                cancelTasks(id);
+                disable(id);
+                LoadedPlugin removed = loaded.remove(id);
+                if (removed != null) {
+                    try {
+                        removed.plugin().onUnload(removed.context());
+                        removed.source().close();
+                    } catch (Exception e) {
+                        log.warn("插件 {} 移除时资源释放失败", id);
+                    }
+                }
+            }
+        }
+        for (String id : onDisk) {
+            if (loaded.containsKey(id)) {
+                continue;
+            }
+            try {
+                load(id);
+                if (registry.get(id).map(PluginRecord::getEnable).orElse(false)) {
+                    enable(id);
+                }
+            } catch (Exception e) {
+                log.error("插件 {} 加载失败", id);
+                log.error(e.getMessage(), e);
             }
         }
     }
@@ -222,6 +269,8 @@ public class PluginManager {
         }
     }
 
+    // ---- 调度：周期任务的注册与取消 ----
+
     private void scheduleTasks(LoadedPlugin loadedPlugin) {
         PluginContextImpl context = loadedPlugin.context();
         String id = loadedPlugin.descriptor().id();
@@ -260,6 +309,8 @@ public class PluginManager {
         }
     }
 
+    // ---- 描述：插件列表与展示信息 ----
+
     public Optional<LoadedPlugin> find(String id) {
         return Optional.ofNullable(loaded.get(id));
     }
@@ -294,14 +345,17 @@ public class PluginManager {
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     sections(context.sections()), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
                     channels(context.notificationChannels()), endpoints(context.endpoints()),
-                    descriptor.runtime()
+                    descriptor.runtime(),
+                    record == null || record.getGrantedPermissions() == null
+                            ? ani.rss.plugin.api.PluginPermission.sanitize(descriptor.permissions())
+                            : record.getGrantedPermissions()
             );
         }
         File descriptorFile = PluginPaths.descriptorFile(id);
         if (!descriptorFile.isFile()) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "缺少 plugin.json", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of(), "");
+                    List.of(), "", List.of(), List.of(), "", List.of());
         }
         try {
             PluginDescriptor descriptor = GsonStatic.fromJson(FileUtil.readUtf8String(descriptorFile), PluginDescriptor.class);
@@ -315,11 +369,14 @@ public class PluginManager {
                     descriptor.updateUrl(), record == null ? "" : StrUtil.nullToEmpty(record.getLatestVersion()),
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     List.of(), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
-                    List.of(), List.of(), descriptor.runtime());
+                    List.of(), List.of(), descriptor.runtime(),
+                    record == null || record.getGrantedPermissions() == null
+                            ? ani.rss.plugin.api.PluginPermission.sanitize(descriptor.permissions())
+                            : record.getGrantedPermissions());
         } catch (Exception e) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "plugin.json 解析失败", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of(), "");
+                    List.of(), "", List.of(), List.of(), "", List.of());
         }
     }
 
@@ -363,6 +420,8 @@ public class PluginManager {
     public PluginRegistry registry() {
         return registry;
     }
+
+    // ---- 描述文件：读取 / 校验 / 入口检查 ----
 
     /**
      * 读取插件包内的描述文件，用于安装前校验。
@@ -438,6 +497,8 @@ public class PluginManager {
         }
     }
 
+    // ---- 扩展点分发：过滤 / 事件 / 通知 / 变量 / 拦截 / 接口 ----
+
     /**
      * 所有已启用插件的过滤器，按 order 排序。
      */
@@ -476,6 +537,22 @@ public class PluginManager {
                 .filter(plugin -> plugin.context().enabled())
                 .flatMap(plugin -> plugin.context().variableProviders().stream())
                 .toList();
+    }
+
+    /**
+     * 判断某个拦截器所属插件是否获得了取消下载的权限。
+     * <p>
+     * 拦截器只负责修改任务；取消是破坏性操作，需要单独的 {@code DOWNLOAD_CANCEL} 权限。
+     *
+     * @param interceptorId 拦截器标识
+     * @return 是否允许取消
+     */
+    public boolean cancelAllowed(String interceptorId) {
+        return loaded.values().stream()
+                .filter(plugin -> plugin.context().enabled())
+                .filter(plugin -> plugin.context().downloadInterceptors().stream()
+                        .anyMatch(interceptor -> interceptor.id().equals(interceptorId)))
+                .anyMatch(plugin -> plugin.context().hasPermission(ani.rss.plugin.api.PluginPermission.DOWNLOAD_CANCEL));
     }
 
     /**

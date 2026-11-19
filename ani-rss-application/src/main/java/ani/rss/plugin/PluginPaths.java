@@ -4,6 +4,7 @@ import ani.rss.util.other.ConfigUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -47,6 +48,23 @@ public final class PluginPaths {
      */
     public static File dataDir(String id) {
         return resolve(dir(id), "data");
+    }
+
+    /**
+     * 解析数据目录内的相对路径。
+     * <p>
+     * 先规范化再校验必须位于 {@code plugins/{id}/data} 内，拒绝 {@code ..} 与绝对路径。
+     *
+     * @param id       插件标识
+     * @param relative 相对路径，可为空
+     * @return 数据目录内的文件
+     */
+    public static File dataFile(String id, String relative) {
+        File base = dataDir(id).getAbsoluteFile();
+        Path basePath = base.toPath().normalize();
+        Path target = basePath.resolve(StrUtil.nullToEmpty(relative).trim()).normalize();
+        Assert.isTrue(target.startsWith(basePath), "非法的数据路径");
+        return target.toFile();
     }
 
     /**

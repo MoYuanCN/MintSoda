@@ -187,6 +187,11 @@ public class PluginHook {
             try {
                 DownloadInterceptor.DownloadCandidate result = interceptor.intercept(candidate, Map.of());
                 if (result == null) {
+                    if (!pluginManager.cancelAllowed(interceptor.id())) {
+                        // 没有取消权限时按“不做修改”处理，避免插件借返回值绕过授权。
+                        log.warn("插件拦截器 {} 未获取消权限，已忽略本次取消", interceptor.id());
+                        continue;
+                    }
                     log.debug("插件 {} 取消下载 {}", interceptor.id(), candidate.title());
                     return InterceptResult.cancel();
                 }

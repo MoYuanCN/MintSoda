@@ -160,19 +160,23 @@ public class PluginInstaller {
             }
             File target = PluginPaths.dir(id);
             PluginPaths.ensure(target);
-            if (descriptor.script()) {
-                // 脚本插件不产生 plugin.jar，先清掉旧版本残留，但保留插件私有数据目录。
-                cleanExcept(target, "data");
-            }
+            // 无论 JAVA 还是脚本插件，升级都可能删除旧入口文件；data/ 必须始终保留。
+            cleanExcept(target, "data");
             FileUtil.copyContent(staging, target, true);
         } finally {
             FileUtil.del(staging);
         }
 
-        pluginManager.updateRecord(id, record -> record
-                .setSource(StrUtil.nullToEmpty(source))
-                .setInstalledAt(System.currentTimeMillis())
-                .setSha256(actualSha256));
+        pluginManager.updateRecord(id, record -> {
+            record.setSource(StrUtil.nullToEmpty(source))
+                    .setInstalledAt(System.currentTimeMillis())
+                    .setSha256(actualSha256);
+            // 首次安装按描述文件声明初始化权限；升级时保留用户已有调整。
+            if (record.getGrantedPermissions() == null) {
+                record.setGrantedPermissions(new java.util.ArrayList<>(
+                        ani.rss.plugin.api.PluginPermission.sanitize(descriptor.permissions())));
+            }
+        });
 
         boolean enable = pluginManager.registry().get(id).map(PluginRecord::getEnable).orElse(false);
         if (enable) {

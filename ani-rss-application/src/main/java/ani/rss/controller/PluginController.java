@@ -5,6 +5,7 @@ import ani.rss.entity.web.Result;
 import ani.rss.plugin.PluginInfo;
 import ani.rss.plugin.PluginMarketIndex;
 import ani.rss.service.PluginService;
+import ani.rss.service.PluginService.PluginPermissionView;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -94,6 +95,26 @@ public class PluginController extends BaseController {
     public Result<PluginInfo> install(@RequestBody Map<String, String> body) {
         return Result.success(pluginService.installFromUrl(
                 body.get("url"), body.get("sha256"), parseSize(body.get("size"))));
+    }
+
+    @Auth
+    @Operation(summary = "可授予的插件权限")
+    @PostMapping("/plugin/permissions")
+    public Result<List<PluginPermissionView>> permissions() {
+        return Result.success(pluginService.permissionCatalog());
+    }
+
+    @Auth
+    @Operation(summary = "保存插件权限")
+    @PostMapping("/plugin/setPermissions")
+    public Result<PluginInfo> setPermissions(@RequestBody Map<String, Object> body) {
+        String id = body.get("id") == null ? "" : String.valueOf(body.get("id"));
+        List<String> permissions = new java.util.ArrayList<>();
+        Object raw = body.get("permissions");
+        if (raw instanceof List<?> list) {
+            list.forEach(item -> permissions.add(String.valueOf(item)));
+        }
+        return Result.success(pluginService.setPermissions(id, permissions));
     }
 
     @Auth

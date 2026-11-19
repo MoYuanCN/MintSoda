@@ -44,3 +44,10 @@ export const updatePlugin = (id, marketUrl) => api.post('api/plugin/update', {
 export const getPluginMarketUrl = () => api.post('api/plugin/marketUrl')
 
 export const setPluginMarketUrl = url => api.post('api/plugin/setMarketUrl', {url})
+
+export const getPluginPermissions = () => api.post('api/plugin/permissions')
+
+export const setPluginPermissions = (id, permissions) => api.post('api/plugin/setPermissions', {
+    id,
+    permissions: permissions || []
+})

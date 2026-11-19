@@ -9,6 +9,7 @@ import ani.rss.plugin.PluginManager;
 import ani.rss.plugin.PluginMarketIndex;
 import ani.rss.plugin.PluginMarketService;
 import ani.rss.plugin.PluginPaths;
+import ani.rss.plugin.api.PluginPermission;
 import ani.rss.util.other.ConfigUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
@@ -17,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -72,6 +75,47 @@ public class PluginService {
             }
         }
         pluginManager.updateRecord(id, record -> record.setConfig(StrUtil.nullToEmpty(config)));
+    }
+
+    /**
+     * 保存用户为插件授予的权限。
+     * <p>
+     * 权限变化会影响插件注册的扩展点，因此保存后立即重载插件：已启用的插件按新权限
+     * 重新注册，未启用的插件只更新记录。未知权限标识会被丢弃，避免写入脏数据。
+     *
+     * @param id          插件标识
+     * @param permissions 权限标识列表
+     * @return 更新后的插件信息
+     */
+    public PluginInfo setPermissions(String id, List<String> permissions) {
+        PluginPaths.verifyId(id);
+        Assert.isTrue(pluginManager.find(id).isPresent() || PluginPaths.descriptorFile(id).isFile(), "插件未安装");
+        List<String> granted = PluginPermission.sanitize(permissions);
+        pluginManager.updateRecord(id, record -> record.setGrantedPermissions(new ArrayList<>(granted)));
+        if (pluginManager.registry().get(id).map(record -> Boolean.TRUE.equals(record.getEnable())).orElse(false)) {
+            pluginManager.reload(id);
+        }
+        log.info("插件 {} 权限已更新为 {}", id, granted);
+        return info(id);
+    }
+
+    /**
+     * 可授予的权限清单，供前端渲染开关。
+     */
+    public List<PluginPermissionView> permissionCatalog() {
+        return Arrays.stream(PluginPermission.values())
+                .map(permission -> new PluginPermissionView(
+                        permission.id(), permission.label(), permission.description(),
+                        permission.group().name(), permission.group().label(),
+                        permission.risk().name(), permission.enforced()))
+                .toList();
+    }
+
+    /**
+     * 权限项展示模型：分组与风险等级供前端分栏与提示。
+     */
+    public record PluginPermissionView(String id, String label, String description,
+                                       String group, String groupLabel, String risk, boolean enforced) {
     }
 
     public PluginMarketIndex market(String url) {

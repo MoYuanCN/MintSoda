@@ -72,7 +72,7 @@
                       接口版本：{{ plugin.apiVersion }}
                     </el-text>
                     <el-text v-if="plugin.runtime" size="small" type="info">
-                      运行时：{{ plugin.runtime === 'JAVASCRIPT' ? 'JavaScript' : 'Java' }}
+                      运行时：{{ runtimeLabel(plugin.runtime) }}
                     </el-text>
                     <el-text v-if="plugin.channels?.length" size="small" type="info">
                       通知渠道：{{ plugin.channels.map(it => it.name || it.id).join('、') }}
@@ -81,6 +81,37 @@
                       接口：{{ plugin.endpoints.map(it => `/${it.path}`).join('、') }}
                     </el-text>
                   </div>
+
+                  <el-collapse class="plugin-sections">
+                    <el-collapse-item title="权限" name="permissions">
+                      <el-text size="small" type="info">
+                        关闭某项权限后插件将无法注册对应能力；保存后自动重载已启用的插件。
+                      </el-text>
+                      <el-checkbox-group :model-value="grantedOf(plugin)" class="plugin-permission-list"
+                                         @update:model-value="value => draftPermissions[plugin.id] = value">
+                        <div v-for="group in permissionGroups" :key="group.name" class="plugin-permission-group">
+                          <div class="plugin-permission-group-title">{{ group.label }}</div>
+                          <el-checkbox v-for="permission in group.items" :key="permission.id"
+                                       :value="permission.id" :label="permission.id">
+                            <span class="plugin-permission-label">{{ permission.label }}</span>
+                            <el-text size="small" type="info">{{ permission.description }}</el-text>
+                            <el-tag v-if="permission.risk === 'HIGH'" size="small" type="danger" effect="plain">
+                              高风险
+                            </el-tag>
+                            <el-tag v-if="!permission.enforced" size="small" type="warning" effect="plain">
+                              仅提示
+                            </el-tag>
+                          </el-checkbox>
+                        </div>
+                      </el-checkbox-group>
+                      <div class="plugin-section-actions">
+                        <el-button bg text type="primary" :loading="savingPermissions === plugin.id"
+                                   @click="savePermissions(plugin)">
+                          保存权限
+                        </el-button>
+                      </div>
+                    </el-collapse-item>
+                  </el-collapse>
 
                   <el-collapse v-if="plugin.sections?.length" class="plugin-sections">
                     <el-collapse-item v-for="section in plugin.sections" :key="section.id"
@@ -123,7 +154,12 @@
                   <el-text v-if="entry.description" size="small" class="plugin-item-desc">
                     {{ entry.description }}
                   </el-text>
-                  <el-text v-if="entry.author" size="small" type="info">作者：{{ entry.author }}</el-text>
+                  <div class="plugin-item-meta">
+                    <el-text v-if="entry.author" size="small" type="info">作者：{{ entry.author }}</el-text>
+                    <el-text v-if="entry.permissions?.length" size="small" type="info">
+                      申请权限：{{ permissionLabels(entry.permissions) }}
+                    </el-text>
+                  </div>
                 </el-card>
               </div>
             </el-tab-pane>
@@ -135,7 +171,7 @@
 </template>
 
 <script setup>
-import {defineComponent, h, onActivated, onMounted, ref, reactive} from 'vue'
+import {computed, defineComponent, h, onActivated, onMounted, ref, reactive} from 'vue'
 import {ElMessage, ElMessageBox, ElInput, ElInputNumber, ElSelect, ElOption, ElSwitch} from 'element-plus'
 import PageHeaderView from '@/view/custom/PageHeaderView.vue'
 import UploadView from '@/view/custom/UploadView.vue'
@@ -187,9 +223,60 @@ const installing = ref('')
 const updating = ref('')
 const activeTab = ref('installed')
 const plugins = ref([])
+const permissions = ref([])
+const draftPermissions = reactive({})
+const savingPermissions = ref('')
 const marketPlugins = ref([])
 const marketUrl = ref('')
 const sectionModels = reactive({})
+
+const runtimeLabel = runtime => ({
+  JAVASCRIPT: 'JavaScript',
+  LUA: 'Lua',
+  JAVA: 'Java'
+}[runtime] || runtime || 'Java')
+
+const permissionGroups = computed(() => {
+  const groups = []
+  const index = new Map()
+  permissions.value.forEach(permission => {
+    const name = permission.group || 'OTHER'
+    if (!index.has(name)) {
+      index.set(name, {name, label: permission.groupLabel || name, items: []})
+      groups.push(index.get(name))
+    }
+    index.get(name).items.push(permission)
+  })
+  return groups
+})
+
+const permissionLabels = ids => (ids || [])
+    .map(id => permissions.value.find(it => it.id === normalizePermission(id))?.label || id)
+    .join('、')
+
+const normalizePermission = id => String(id || '').trim().replaceAll('-', '_').toUpperCase()
+
+const normalizeGranted = ids => (ids || [])
+    .map(id => normalizePermission(id))
+    .flatMap(id => id === 'CONFIG' ? ['CONFIG_READ', 'CONFIG_WRITE']
+        : id === 'DATA_DIR' || id === 'DATA' ? ['DATA_READ', 'DATA_WRITE'] : [id])
+
+const grantedOf = plugin => draftPermissions[plugin.id]
+    || normalizeGranted(plugin.grantedPermissions)
+    || normalizeGranted(plugin.permissions)
+
+const savePermissions = plugin => {
+  savingPermissions.value = plugin.id
+  http.setPluginPermissions(plugin.id, grantedOf(plugin))
+      .then(res => {
+        ElMessage.success(res.message)
+        delete draftPermissions[plugin.id]
+        loadPlugins(true)
+      })
+      .finally(() => {
+        savingPermissions.value = ''
+      })
+}
 
 const stateTag = state => ({
   ENABLED: {type: 'success', label: '已启用'},
@@ -331,7 +418,10 @@ const loadMarket = () => {
 }
 
 const installFromMarket = entry => {
-  ElMessageBox.confirm(`安装插件「${entry.name || entry.id}」？插件将获得与服务相同的运行权限。`,
+  const declared = (entry.permissions || []).join('、') || '无'
+  ElMessageBox.confirm(`安装插件「${entry.name || entry.id}」？
+申请权限：${declared}。
+安装后可在插件页逐项开关。`,
       '安装插件', {type: 'warning', confirmButtonText: '安装', cancelButtonText: '取消'})
       .then(() => {
         installing.value = entry.id
@@ -360,6 +450,12 @@ const saveMarket = () => {
 }
 
 onMounted(() => {
+  http.getPluginPermissions()
+      .then(res => {
+        permissions.value = res.data || []
+      })
+      .catch(() => {
+      })
   http.getPluginMarketUrl()
       .then(res => {
         marketUrl.value = res.data || ''
@@ -375,6 +471,32 @@ onActivated(() => loadPlugins(true))
 <style scoped>
 .plugins-page {
   padding-bottom: 8px;
+}
+
+.plugin-permission-list {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.plugin-permission-list :deep(.el-checkbox) {
+  height: auto;
+  align-items: flex-start;
+  margin-right: 0;
+}
+
+.plugin-permission-label {
+  margin-right: 6px;
+}
+
+.plugin-permission-group {
+  margin-bottom: 10px;
+}
+
+.plugin-permission-group-title {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 4px;
 }
 
 .plugin-header-actions {

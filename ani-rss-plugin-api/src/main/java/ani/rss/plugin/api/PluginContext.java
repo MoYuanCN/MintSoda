@@ -13,9 +13,45 @@ public interface PluginContext {
     PluginDescriptor descriptor();
 
     /**
-     * 插件私有数据目录，已创建；插件卸载时可保留或删除。
+     * 插件私有数据目录，已创建。
+     * <p>
+     * 目录在插件升级与重装时保留；卸载时随插件目录一起删除。
+     * 需要 {@code DATA_READ} 或 {@code DATA_WRITE} 之一。直接使用该目录时请注意自行做路径校验，
+     * 更推荐使用下面的按路径读写方法，它们会把路径限制在数据目录内。
      */
     File dataDir();
+
+    /**
+     * 列出数据目录下的文件，返回相对路径。
+     *
+     * @param dir 子目录，留空表示根目录
+     * @return 相对路径列表
+     */
+    List<String> listDataFiles(String dir);
+
+    /**
+     * 读取数据目录下的文本文件。需要 {@code DATA_READ}。
+     *
+     * @param path 相对路径
+     * @return 文件内容，不存在时返回空串
+     */
+    String readDataFile(String path);
+
+    /**
+     * 写入数据目录下的文本文件，自动创建父目录。需要 {@code DATA_WRITE}。
+     *
+     * @param path    相对路径
+     * @param content 内容
+     */
+    void writeDataFile(String path, String content);
+
+    /**
+     * 删除数据目录下的文件。需要 {@code DATA_WRITE}。
+     *
+     * @param path 相对路径
+     * @return 是否删除了文件
+     */
+    boolean deleteDataFile(String path);
 
     /**
      * 宿主张版本
@@ -38,6 +74,11 @@ public interface PluginContext {
      * 以当前启用状态查询能力
      */
     boolean enabled();
+
+    /**
+     * 用户是否授予了该权限；未授予时注册对应扩展点会被拒绝。
+     */
+    boolean hasPermission(PluginPermission permission);
 
     /**
      * 注册通知渠道
