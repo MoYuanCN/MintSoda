@@ -181,6 +181,23 @@ public class ScriptPlugin implements Plugin {
         }));
         api.put("appVersion", api, function((cx1, args) -> context.appVersion()));
         api.put("dataDir", api, function((cx1, args) -> context.dataDir().getAbsolutePath()));
+        api.put("listDataFiles", api, function((cx1, args) -> context.listDataFiles(
+                args.length == 0 || args[0] == null ? "" : String.valueOf(args[0]))));
+        api.put("readDataFile", api, function((cx1, args) -> context.readDataFile(
+                args.length == 0 || args[0] == null ? "" : String.valueOf(args[0]))));
+        api.put("writeDataFile", api, function((cx1, args) -> {
+            context.writeDataFile(
+                    args.length == 0 || args[0] == null ? "" : String.valueOf(args[0]),
+                    args.length < 2 || args[1] == null ? "" : String.valueOf(args[1]));
+            return Undefined.instance;
+        }));
+        api.put("deleteDataFile", api, function((cx1, args) -> context.deleteDataFile(
+                args.length == 0 || args[0] == null ? "" : String.valueOf(args[0]))));
+        // 脚本可以按权限分支，例如缺少权限时退回内置行为。
+        api.put("hasPermission", api, function((cx1, args) -> args.length == 0 ? Boolean.FALSE
+                : ani.rss.plugin.api.PluginPermission.of(String.valueOf(args[0]))
+                .map(context::hasPermission)
+                .orElse(Boolean.FALSE)));
 
         api.put("notificationChannel", api, function((cx1, args) ->
                 register(args, value -> context.registerNotificationChannel(channel(value)))));
