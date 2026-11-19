@@ -15,6 +15,20 @@
       "apiVersion": 2,
       "permissions": ["notification", "item-filter", "template-variable", "download-interceptor", "endpoint"],
       "updateUrl": ""
+    },
+    {
+      "id": "js-demo-plugin",
+      "name": "JavaScript 示例插件",
+      "version": "1.0.0",
+      "description": "演示用 JavaScript 编写通知渠道、订阅过滤、模板变量、下载拦截、周期任务与自定义接口。",
+      "author": "ANI-RSS-Yuri",
+      "homepage": "",
+      "downloadUrl": "https://example.com/plugins/js-demo-plugin-1.0.0.zip",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "size": 4096,
+      "apiVersion": 2,
+      "permissions": ["notification", "item-filter", "template-variable", "download-interceptor", "endpoint"],
+      "updateUrl": ""
     }
   ]
 }

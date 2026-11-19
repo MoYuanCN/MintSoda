@@ -4,7 +4,7 @@
       <template #actions>
         <div class="plugin-header-actions">
           <el-button bg :loading="checking" icon="Refresh" @click="checkAll">检查更新</el-button>
-          <UploadView url="api/plugin/upload" :extensions="['jar']" :callback="uploadDone">
+          <UploadView url="api/plugin/upload" :extensions="['jar', 'zip']" :callback="uploadDone">
             <el-button type="primary" icon="Upload">安装插件</el-button>
           </UploadView>
         </div>
@@ -70,6 +70,9 @@
                     <el-text v-if="plugin.author" size="small" type="info">作者：{{ plugin.author }}</el-text>
                     <el-text v-if="plugin.apiVersion" size="small" type="info">
                       接口版本：{{ plugin.apiVersion }}
+                    </el-text>
+                    <el-text v-if="plugin.runtime" size="small" type="info">
+                      运行时：{{ plugin.runtime === 'JAVASCRIPT' ? 'JavaScript' : 'Java' }}
                     </el-text>
                     <el-text v-if="plugin.channels?.length" size="small" type="info">
                       通知渠道：{{ plugin.channels.map(it => it.name || it.id).join('、') }}

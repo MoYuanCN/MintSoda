@@ -172,6 +172,8 @@ Body 只有两种来源，语义明确：
 ## 插件系统
 
 - 新增稳定的接口模块 `ani-rss-plugin-api`，插件以独立 JAR 加载，每个插件一个类加载器；接口类与 JDK 类始终由宿主提供。
+- 支持 JavaScript 插件：`runtime` 为 `JAVASCRIPT` 的 ZIP 包由 Rhino 沙箱解释执行，无需编译；与 Java 插件共用同一套扩展点。
+- 插件来源抽象为 `PluginSource`（`JavaPluginSource` / `ScriptPluginSource`），管理器不再区分具体语言；描述文件兼容 `manifest.json`，安装时统一为 `plugin.json`。
 - 插件生命周期为加载、启用、停用、重载与卸载，失败只影响该插件。
 - 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截与插件自定义接口；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后执行。
 - 模板变量由 `TemplateVariables` 统一应用，通知、重命名与下载路径共用同一批字段；插件可通过 `TemplateVariableProvider` 追加或覆盖字段。

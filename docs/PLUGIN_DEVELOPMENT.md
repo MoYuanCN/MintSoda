@@ -1,6 +1,8 @@
 # 插件开发指南
 
-本文说明如何为 ANI-RSS-Yuri 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：第三方代码以独立 JAR 加载，通过稳定接口接入通知、订阅过滤、订阅事件、周期任务、设置界面、模板变量、下载拦截与自定义 HTTP 接口。
+本文说明如何为 ANI-RSS-Yuri 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：Java 插件以独立 JAR 加载，JavaScript 插件以脚本目录解释执行，两者共用同一套扩展点——通知、订阅过滤、订阅事件、周期任务、设置界面、模板变量、下载拦截与自定义 HTTP 接口。
+
+不熟悉 Java 时优先看 [JavaScript 插件](#javascript-插件)，它不需要编译，改完脚本重新打包即可。
 
 > 安全边界见 [安全说明](SECURITY.md)。插件与服务同权限运行，**只安装你信任的插件**。
 
@@ -8,16 +10,19 @@
 
 | 组件 | 说明 |
 | --- | --- |
-| `ani-rss-plugin-api` | 稳定的插件接口模块，插件以 `provided` 依赖编译。 |
-| `PluginManager` | 负责加载、启用、停用、重载与卸载插件。 |
+| `ani-rss-plugin-api` | 稳定的插件接口模块，Java 插件以 `provided` 依赖编译。 |
+| `PluginSource` | 插件来源抽象，`JavaPluginSource` 走类加载器，`ScriptPluginSource` 走脚本引擎。 |
+| `PluginManager` | 负责加载、启用、停用、重载与卸载插件，只依赖 `PluginSource`。 |
 | `PluginContext` | 宿主传给插件的能力入口：注册扩展点、读写插件配置与日志。 |
 | `PluginHook` | 宿主内部桥接，把匹配规则之后的条目交给插件过滤器。 |
 | 插件市场 | 可配置的 JSON 索引，支持列出、安装与更新插件。 |
 
 - 插件接口版本由 `PluginApi.VERSION` 表示，当前为 `2`。宿主只加载 `apiVersion` 不大于自身版本的插件，破坏性变更时提升该值。
 - 版本 2 新增模板变量、下载拦截与自定义接口三个扩展点；均为新增能力，不改变既有扩展点语义。
-- 插件包是**单个 JAR**，根目录包含 `plugin.json` 与编译后的类；不得打包接口模块本身。
-- 每个插件独立类加载器，`ani.rss.plugin.api.*` 与 JDK 类始终由宿主提供，避免类型不一致。
+- 描述文件统一叫 `plugin.json`；为兼容常见习惯，包内只提供 `manifest.json` 也接受，安装后会改名为 `plugin.json`。
+- `runtime` 决定插件形态：`JAVA`（默认）是单个 JAR，根目录包含 `plugin.json` 与编译后的类；`JAVASCRIPT` 是 ZIP，根目录包含 `plugin.json` 与入口脚本。
+- Java 插件每个独立类加载器，`ani.rss.plugin.api.*` 与 JDK 类始终由宿主提供，避免类型不一致。
+- JavaScript 插件运行在沙箱里：看不到任何 Java 类，单次调用超过 5 秒会被中断。
 - 插件加载、启用或运行失败只影响该插件，主程序继续运行。
 
 ## 目录布局
@@ -26,9 +31,10 @@
 <配置目录>/plugins/
 ├── installed.json          # 启用状态、来源、sha256 与插件配置
 └── <plugin-id>/
-    ├── plugin.jar          # 插件包
-    ├── plugin.json         # 接口版本、入口类等
-    └── data/               # 插件私有数据目录
+    ├── plugin.jar          # Java 插件包（脚本插件没有此文件）
+    ├── plugin.json         # 接口版本、运行时、入口等
+    ├── main.js             # 脚本插件入口（示例）
+    └── data/               # 插件私有数据目录，覆盖安装时保留
 ```
 
 所有插件路径都会被规范化并限制在 `plugins/` 之内；插件标识只允许 `A-Z a-z 0-9 . _ -`，长度 1-64。
@@ -49,7 +55,9 @@
   "homepage": "https://example.com",
   "updateUrl": "",
   "permissions": ["notification"],
-  "minAppVersion": ""
+  "minAppVersion": "",
+  "runtime": "JAVA",
+  "entry": ""
 }
 ```
 
@@ -68,6 +76,8 @@
 | `updateUrl` | 否 | 插件自身的更新索引地址 |
 | `permissions` | 否 | 声明使用的能力，仅用于展示与审计 |
 | `minAppVersion` | 否 | 最低宿主版本 |
+| `runtime` | 否 | `JAVA` 或 `JAVASCRIPT`，缺省 `JAVA` |
+| `entry` | 否 | 脚本入口文件，缺省 `main.js`；Java 插件忽略 |
 
 ### 2. 入口类
 
@@ -313,6 +323,125 @@ context.registerEndpoint(new PluginEndpoint() {
 - 返回值按字符串原样放进 `Result.data`；需要返回 JSON 时自行拼接或序列化。
 - 不要在接口里返回令牌、密码或完整配置。
 
+## JavaScript 插件
+
+不需要 Java 或 Maven，一个目录、两个文件即可：`plugin.json` 与入口脚本（默认 `main.js`），打成 ZIP 上传。
+
+### 1. `plugin.json`
+
+```json
+{
+  "id": "js-demo-plugin",
+  "name": "JavaScript 示例插件",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "runtime": "JAVASCRIPT",
+  "entry": "main.js",
+  "author": "you",
+  "description": "一句话说明插件作用",
+  "permissions": ["notification"]
+}
+```
+
+`runtime` 必须是 `JAVASCRIPT`，`entry` 指向包内脚本；安装时会校验该文件存在。
+
+### 2. 入口脚本
+
+脚本可以直接使用三个全局对象：
+
+| 全局 | 说明 |
+| --- | --- |
+| `__api` | 宿主能力：日志、配置、数据目录与全部注册方法 |
+| `__descriptor` | 插件描述：`id`、`name`、`version`、`apiVersion`、`author`、`description` |
+| `JSON` 等 | Rhino 提供 ES6 标准库；**没有** `require`、`fetch`、`setTimeout` 与任何 Java 类 |
+
+```javascript
+function onEnable() {
+    __api.notificationChannel({
+        id: 'my-channel',
+        name: '我的渠道',
+        fields: [
+            {key: 'endpoint', label: '接收地址', type: 'TEXT', required: true},
+            {key: 'token', label: '令牌', type: 'PASSWORD'}
+        ],
+        send: function (payload, options) {
+            __api.log('发送通知 ' + payload.title + ' -> ' + options.endpoint);
+        }
+    });
+}
+```
+
+生命周期函数 `onLoad`、`onEnable`、`onDisable`、`onUnload` 都是可选的；扩展点必须在 `onEnable` 里注册，停用时宿主自动清理。
+
+### 3. `__api` 参考
+
+| 方法 | 说明 |
+| --- | --- |
+| `log(message)` | 写日志，自动带插件标识 |
+| `getConfig()` / `saveConfig(json)` | 读写插件配置（JSON 字符串） |
+| `appVersion()` | 宿主版本 |
+| `dataDir()` | 插件私有数据目录的绝对路径 |
+| `notificationChannel(obj)` | 注册通知渠道 |
+| `itemFilter(obj)` | 注册订阅过滤器 |
+| `subscriptionListener(obj)` | 注册订阅事件 |
+| `scheduledTask(obj)` | 注册周期任务 |
+| `settingsSection(obj)` | 注册设置区块 |
+| `templateVariables(obj)` | 注册模板变量 |
+| `downloadInterceptor(obj)` | 注册下载拦截 |
+| `endpoint(obj)` | 注册自定义 HTTP 接口 |
+
+注册对象的字段：
+
+```javascript
+// 通知渠道
+{id, name, fields: [{key, label, type, placeholder, required, options}],
+ send(payload, options) {}}
+// payload: {status, statusLabel, title, subgroup, text, episode, coverUrl, tags}
+
+// 订阅过滤器：返回 'REJECT' / 'ACCEPT' / 'ABSTAIN'
+{id, order, decide(subscription, item, context) {}}
+// subscription: {id, title, group, season, weekLabel, currentEpisode, totalEpisode, tags}
+// item: {title, rename, subgroup, episode, master, size, magnet}
+
+// 订阅事件
+{id, onCreated(subscription) {}, onUpdated(subscription) {}, onDeleted(subscription) {}}
+
+// 周期任务：intervalMinutes 最小 1，initialDelayMinutes 可选
+{id, intervalMinutes, initialDelayMinutes, run(pluginId) {}}
+
+// 设置区块
+{id, title, description, fields: [...]}
+
+// 模板变量：返回字段名到值的映射，模板里写 ${name}
+{id, variables(subscription) { return {name: 'value'}; }}
+
+// 下载拦截：返回 {savePath, name} 修改任务，返回 null 取消下载
+{id, order, intercept(candidate, context) { return candidate; }}
+// candidate: {hash, name, title, subgroup, episode, savePath, tags, magnet, size, subscription}
+
+// 自定义接口：挂载在 /api/plugin/api/{插件id}/{path}
+{id, path, methods: ['GET', 'POST'], handle(request) { return 'JSON 字符串'; }}
+// request: {method, path, query, body, contentType}
+```
+
+### 4. 沙箱限制
+
+- 看不到任何 Java 类，也不能用 `Packages`、`java`、`Java.type` 访问宿主。
+- 单次脚本调用超过 5 秒会被中止并记录错误，避免死循环占满线程。
+- 没有网络与定时器 API；需要周期行为时用 `scheduledTask`，需要外部请求时由宿主侧能力（通知渠道、下载拦截）触发。
+- 脚本异常只影响当前调用，宿主会记录日志并继续主流程。
+
+### 5. 打包
+
+```bash
+cd examples/plugins/js-plugin
+./build.sh          # 生成 plugin.zip
+```
+
+也可以用任意工具打成 ZIP，要求 `plugin.json` 与入口脚本在压缩包根目录。安装时选择该 ZIP 即可；覆盖安装会保留 `data/` 目录。
+
+完整示例见 `examples/plugins/js-plugin/`。
+
 ## 编译与打包
 
 插件需要以 `provided` 依赖接口模块：
@@ -328,7 +457,7 @@ context.registerEndpoint(new PluginEndpoint() {
 
 打包要点：
 
-- `plugin.json` 必须位于 JAR 根目录。
+- `plugin.json` 必须位于 JAR 根目录（`manifest.json` 亦可，安装后会规范化）。
 - 不要把 `ani-rss-plugin-api` 打进插件包。
 - 示例见 `examples/plugins/hello-plugin/`，构建脚本会把 `plugin.json` 加入 JAR：
 
@@ -342,7 +471,7 @@ cd examples/plugins/hello-plugin
 
 安装方式：
 
-1. **上传安装**：插件页“安装插件”，选择 `plugin.jar`。
+1. **上传安装**：插件页“安装插件”，选择 `plugin.jar`（Java）或 `plugin.zip`（脚本）。
 2. **链接安装**：填写 JAR 地址，可同时提供 `sha256` 与字节数。
 3. **市场安装**：填写市场索引地址后，从插件市场列表安装。
 
@@ -351,6 +480,7 @@ cd examples/plugins/hello-plugin
 - 地址必须是公网 `http`/`https`，回环与内网字面地址会被拒绝。
 - 提供 `sha256` 时严格比对；提供字节数时严格比对大小。
 - 安装先写入临时目录并校验，通过后替换正式目录，避免留下半成品。
+- 脚本插件按 ZIP 解包，条目路径必须留在插件目录内；覆盖安装保留 `data/`。
 - 安装不会自动启用插件，需在插件页手动启用。
 
 ## 插件市场
@@ -380,10 +510,21 @@ cd examples/plugins/hello-plugin
 }
 ```
 
+- `downloadUrl` 指向 `plugin.jar` 或脚本 `plugin.zip`，宿主按包内描述文件的 `runtime` 自动识别。
 - 市场地址保存在配置项 `pluginMarketUrl`，可在插件页修改。
 - 检查更新时优先使用市场条目；没有市场条目时回退到插件自带的 `updateUrl`，该地址返回单个同上结构的条目。
 - 版本号不同即视为有更新；建议使用语义化版本。
 - 示例索引见 `examples/plugins/market.json`。
+
+## 选择 Java 还是 JavaScript
+
+| 场景 | 建议 |
+| --- | --- |
+| 只想改模板、加通知渠道、简单过滤 | JavaScript |
+| 需要访问宿主内部能力、复用第三方 Java 库、做复杂解析 | Java |
+| 需要长期维护、分发到市场 | 两者皆可；Java 包更小启动更快，JavaScript 无需编译 |
+
+两种运行时共享同一套扩展点与快照字段，迁移时只需把注册对象换成接口实现。
 
 ## 接口兼容策略
 

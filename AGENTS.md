@@ -116,6 +116,8 @@ bash ./package.sh
 ## 插件系统
 
 - 唯一接口模块是 `ani-rss-plugin-api`；接口破坏性变更必须提升 `PluginApi.VERSION`，不得在插件 API 中引用 `ani.rss.application` 的内部类型。
+- 插件运行时通过 `plugin/runtime/PluginSource` 抽象；新增语言只加一个 `PluginSource` 实现与 `PluginSources` 分支，不要改 `PluginManager` 的加载逻辑。
+- JavaScript 插件运行在 `ScriptSandbox`：必须保持 `ClassShutter` 全拒绝、`initSafeStandardObjects` 与调用超时，不得为兼容放开 Java 类访问；传给脚本的宿主数据必须先转成原生对象。
 - 扩展点由 `PluginManager` 统一加载与分发：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、插件自定义接口。新增扩展点时同步更新 `docs/PLUGIN_DEVELOPMENT.md`。
 - 模板占位符统一走 `util/other/TemplateVariables`，不要在通知、重命名、下载路径里再各写一份替换逻辑。
 - 插件自定义接口必须经 `/api/plugin/api/{pluginId}/**` 分发并保持 `@Auth`，不要为插件单独开放免鉴权路由。

@@ -1,0 +1,14 @@
+{
+  "id": "js-demo-plugin",
+  "name": "JavaScript 示例插件",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "runtime": "JAVASCRIPT",
+  "entry": "main.js",
+  "author": "ANI-RSS-Yuri",
+  "description": "演示用 JavaScript 编写通知渠道、订阅过滤、模板变量、下载拦截、周期任务与自定义接口。",
+  "homepage": "",
+  "updateUrl": "",
+  "permissions": ["notification", "item-filter", "template-variable", "download-interceptor", "endpoint"],
+  "minAppVersion": ""
+}
