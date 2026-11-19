@@ -21,7 +21,7 @@
       </SettingsItem>
       <SettingsItem label="User-Agent">
         <el-input v-model.trim="props.config.customUserAgent" clearable maxlength="256"
-                  placeholder="留空使用内置标识 ani-rss-yuri/<版本>"/>
+                  placeholder="留空使用内置标识 ani-rss-Yuri/<版本>"/>
         <el-alert :closable="false" show-icon type="info"
                   title="仅影响本应用发起的请求；部分站点会按 UA 返回不同内容，排查兼容性时可临时修改。"/>
       </SettingsItem>
