@@ -5,6 +5,8 @@ import ani.rss.entity.StandbyRss;
 import ani.rss.entity.torrent.TorrentsInfo;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.enums.TorrentsTagEnum;
+import ani.rss.plugin.PluginHook;
+import ani.rss.plugin.PluginHooks;
 import ani.rss.util.other.AniUtil;
 import ani.rss.util.other.ConfigUtil;
 import ani.rss.util.other.NotificationUtil;
@@ -65,6 +67,12 @@ public final class DownloadNotifier {
             text = StrFormatter.format("(备用RSS) {}", text);
         }
         NotificationUtil.send(ConfigUtil.CONFIG, ani, text, NotificationStatusEnum.DOWNLOAD_END);
+
+        PluginHooks.downloadEvent(PluginHook.DownloadEvent.COMPLETED, ani,
+                PluginHooks.downloadSnapshot(ani,
+                        StrUtil.nullToEmpty(torrentsInfo.getHash()),
+                        torrentsInfo.getName(), torrentsInfo.getName(), subgroup,
+                        null, StrUtil.nullToEmpty(torrentsInfo.getSavePath()), tags, null));
 
         try {
             AniUtil.completed(ani);

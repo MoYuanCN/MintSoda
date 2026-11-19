@@ -33,6 +33,8 @@ public enum PluginPermission {
     DOWNLOAD_INTERCEPT("DOWNLOAD_INTERCEPT", "下载拦截", "在提交下载器之前修改保存位置或名称", Group.DOWNLOAD, Risk.HIGH, true,
             "DOWNLOAD_INTERCEPTOR", "INTERCEPTOR"),
     DOWNLOAD_CANCEL("DOWNLOAD_CANCEL", "取消下载", "直接取消匹配到的下载任务", Group.DOWNLOAD, Risk.HIGH, true),
+    DOWNLOAD_EVENT("DOWNLOAD_EVENT", "下载事件", "接收任务提交、完成与失败事件及其元数据", Group.DOWNLOAD, Risk.LOW, true,
+            "DOWNLOAD_LISTENER", "DOWNLOAD_HOOK"),
 
     // ---- 任务 ----
 

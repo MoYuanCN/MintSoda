@@ -457,6 +457,7 @@ export default {
   "plugininstallationfailed": "Plugin installation failed",
   "plugininstalled": "Plugin {name} installed",
   "pluginmarketplace": "Plugin marketplace",
+  "pluginruntimeoverview": "{total} plugins · {enabled} enabled · {error} errors · {points} extension points",
   "plugins": "Plugins",
   "port": "Port",
   "preferromaji": "Prefer romaji",

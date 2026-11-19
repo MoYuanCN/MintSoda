@@ -30,6 +30,7 @@ public class PluginContextImpl implements PluginContext {
     private final List<SettingsSection> sections = new CopyOnWriteArrayList<>();
     private final List<TemplateVariableProvider> variableProviders = new CopyOnWriteArrayList<>();
     private final List<DownloadInterceptor> downloadInterceptors = new CopyOnWriteArrayList<>();
+    private final List<DownloadListener> downloadListeners = new CopyOnWriteArrayList<>();
     private final List<PluginEndpoint> endpoints = new CopyOnWriteArrayList<>();
     private volatile boolean enabled;
 
@@ -152,6 +153,30 @@ public class PluginContextImpl implements PluginContext {
     }
 
     @Override
+    public void logWarn(String message) {
+        if (!hasPermission(PluginPermission.LOG)) {
+            return;
+        }
+        log.warn("[plugin:{}] {}", descriptor.id(), message);
+    }
+
+    @Override
+    public void logError(String message) {
+        if (!hasPermission(PluginPermission.LOG)) {
+            return;
+        }
+        log.error("[plugin:{}] {}", descriptor.id(), message);
+    }
+
+    @Override
+    public void logDebug(String message) {
+        if (!hasPermission(PluginPermission.LOG)) {
+            return;
+        }
+        log.debug("[plugin:{}] {}", descriptor.id(), message);
+    }
+
+    @Override
     public boolean enabled() {
         return enabled;
     }
@@ -255,6 +280,14 @@ public class PluginContextImpl implements PluginContext {
     }
 
     @Override
+    public void registerDownloadListener(DownloadListener listener) {
+        if (!require(PluginPermission.DOWNLOAD_EVENT)) {
+            return;
+        }
+        downloadListeners.add(listener);
+    }
+
+    @Override
     public void registerEndpoint(PluginEndpoint endpoint) {
         if (!require(PluginPermission.HTTP_ENDPOINT)) {
             return;
@@ -291,6 +324,10 @@ public class PluginContextImpl implements PluginContext {
         return List.copyOf(downloadInterceptors);
     }
 
+    public List<DownloadListener> downloadListeners() {
+        return List.copyOf(downloadListeners);
+    }
+
     public List<PluginEndpoint> endpoints() {
         return List.copyOf(endpoints);
     }
@@ -306,6 +343,7 @@ public class PluginContextImpl implements PluginContext {
         sections.clear();
         variableProviders.clear();
         downloadInterceptors.clear();
+        downloadListeners.clear();
         endpoints.clear();
     }
 }

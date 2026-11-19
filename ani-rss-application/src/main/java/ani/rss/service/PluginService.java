@@ -42,6 +42,13 @@ public class PluginService {
         return pluginManager.list();
     }
 
+    /**
+     * 插件运行概览。
+     */
+    public PluginManager.PluginStats stats() {
+        return pluginManager.stats();
+    }
+
     public PluginInfo info(String id) {
         PluginPaths.verifyId(id);
         return pluginManager.describe(id);

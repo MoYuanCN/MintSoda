@@ -457,6 +457,7 @@ export default {
   "plugininstallationfailed": "无法安装插件",
   "plugininstalled": "插件 {name} 已安装",
   "pluginmarketplace": "插件市场",
+  "pluginruntimeoverview": "插件总数为 {total} · 已启用 {enabled} · 错误 {error} · 扩展点为 {points}",
   "plugins": "插件",
   "port": "端口",
   "preferromaji": "优先获取罗马音",

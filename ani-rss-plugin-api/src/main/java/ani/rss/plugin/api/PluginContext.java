@@ -71,6 +71,27 @@ public interface PluginContext {
     void log(String message);
 
     /**
+     * 记录警告日志；默认按普通日志输出，便于旧宿主保持兼容
+     */
+    default void logWarn(String message) {
+        log(message);
+    }
+
+    /**
+     * 记录错误日志；默认按普通日志输出，便于旧宿主保持兼容
+     */
+    default void logError(String message) {
+        log(message);
+    }
+
+    /**
+     * 记录调试日志；默认按普通日志输出，便于旧宿主保持兼容
+     */
+    default void logDebug(String message) {
+        log(message);
+    }
+
+    /**
      * 以当前启用状态查询能力
      */
     boolean enabled();
@@ -114,6 +135,14 @@ public interface PluginContext {
      * 注册下载拦截器，可在种子提交给下载器之前调整或取消任务
      */
     void registerDownloadInterceptor(DownloadInterceptor interceptor);
+
+    /**
+     * 注册下载生命周期监听，可观察提交成功、完成与失败；不能修改任务。
+     * <p>
+     * 默认实现为空，保证只实现旧版接口的宿主不会因新增方法而编译失败。
+     */
+    default void registerDownloadListener(DownloadListener listener) {
+    }
 
     /**
      * 注册插件自身的 HTTP 接口，路径挂载在 {@code /api/plugin/api/{pluginId}/} 下

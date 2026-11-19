@@ -3,6 +3,7 @@ package ani.rss.plugin;
 import ani.rss.entity.Ani;
 import ani.rss.entity.Item;
 import ani.rss.plugin.api.DownloadInterceptor;
+import ani.rss.plugin.api.DownloadListener;
 import ani.rss.plugin.api.ItemFilter;
 import ani.rss.plugin.api.TemplateVariableProvider;
 import cn.hutool.core.util.StrUtil;
@@ -33,7 +34,13 @@ public class PluginHook {
      * 有效期很短，配置变更后能立刻生效。
      */
     private static final long VARIABLE_CACHE_TTL = 5_000L;
+    private static final int VARIABLE_CACHE_MAX = 1_024;
     private final Map<String, CachedVariables> variableCache = new ConcurrentHashMap<>();
+    /**
+     * 模板变量的合并结果会随有效期过期，但插件本身很少变化；
+     * 记下扩展点集合的标识，配置或插件变化时直接丢弃旧缓存。
+     */
+    private volatile int providerSignature;
 
     private record CachedVariables(Map<String, String> values, long expireAt) {
     }
@@ -111,12 +118,22 @@ public class PluginHook {
                 StrUtil.nullToEmpty(ani.getSubgroup()),
                 String.valueOf(ani.getSeason()));
         long now = System.currentTimeMillis();
+        // 扩展点集合变化（启用/停用/重载插件）时先失效，避免继续命中旧值。
+        int signature = providers.stream().mapToInt(provider -> System.identityHashCode(provider)).sum();
+        if (signature != providerSignature) {
+            providerSignature = signature;
+            variableCache.clear();
+        }
         CachedVariables cached = variableCache.get(cacheKey);
         if (cached != null && cached.expireAt() > now) {
             return cached.values();
         }
-        if (variableCache.size() > 1024) {
-            variableCache.clear();
+        if (variableCache.size() > VARIABLE_CACHE_MAX) {
+            // 先清理过期项，全部未过期时再整体清空，避免缓存无限增长。
+            variableCache.entrySet().removeIf(entry -> entry.getValue().expireAt() <= now);
+            if (variableCache.size() > VARIABLE_CACHE_MAX) {
+                variableCache.clear();
+            }
         }
 
         ItemFilter.SubscriptionSnapshot subscription = subscription(ani);
@@ -204,6 +221,72 @@ public class PluginHook {
         return InterceptResult.allow(
                 StrUtil.blankToDefault(candidate.savePath(), savePath),
                 StrUtil.blankToDefault(candidate.name(), name));
+    }
+
+    /**
+     * 下载生命周期事件，供插件观察任务结果。
+     */
+    public enum DownloadEvent {
+        ADDED, COMPLETED, FAILED
+    }
+
+    /**
+     * 通知所有下载监听器。
+     * <p>
+     * 监听器不能修改任务，单个监听器异常只记录日志，不影响下载主流程。
+     *
+     * @param event  事件类型
+     * @param ani    订阅
+     * @param task   任务快照
+     * @param context 额外上下文
+     */
+    public void downloadEvent(DownloadEvent event, Ani ani, DownloadListener.DownloadSnapshot task,
+                              Map<String, Object> context) {
+        List<DownloadListener> listeners = pluginManager.downloadListeners();
+        if (listeners.isEmpty()) {
+            return;
+        }
+        for (DownloadListener listener : listeners) {
+            try {
+                switch (event) {
+                    case ADDED -> listener.onAdded(task, context);
+                    case COMPLETED -> listener.onCompleted(task, context);
+                    case FAILED -> listener.onFailed(task, context);
+                }
+            } catch (Exception e) {
+                log.error("插件下载事件处理失败 {}", listener.id());
+                log.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * 构造下载事件所需的快照，缺省字段统一为空值。
+     *
+     * @param ani      订阅
+     * @param hash     种子哈希
+     * @param name     名称
+     * @param title    原始标题
+     * @param subgroup 字幕组
+     * @param episode  集数
+     * @param savePath 保存目录
+     * @param tags     标签
+     * @param size     体积
+     */
+    public DownloadListener.DownloadSnapshot downloadSnapshot(Ani ani, String hash, String name, String title,
+                                                              String subgroup, Double episode, String savePath,
+                                                              List<String> tags, Long size) {
+        return new DownloadListener.DownloadSnapshot(
+                StrUtil.nullToEmpty(hash),
+                StrUtil.nullToEmpty(name),
+                StrUtil.nullToEmpty(title),
+                StrUtil.blankToDefault(subgroup, "未知字幕组"),
+                episode,
+                StrUtil.nullToEmpty(savePath),
+                tags == null ? List.of() : tags,
+                size,
+                ani == null ? null : subscription(ani)
+        );
     }
 
     public ItemFilter.SubscriptionSnapshot subscription(Ani ani) {

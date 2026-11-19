@@ -2,6 +2,7 @@ package ani.rss.plugin.runtime;
 
 import ani.rss.plugin.api.ConfigField;
 import ani.rss.plugin.api.DownloadInterceptor;
+import ani.rss.plugin.api.DownloadListener;
 import ani.rss.plugin.api.ItemFilter;
 import ani.rss.plugin.api.NotificationChannel;
 import ani.rss.plugin.api.NotificationPayload;
@@ -171,7 +172,19 @@ public class ScriptPlugin implements Plugin {
         Scriptable api = cx.newObject(scope);
 
         api.put("log", api, function((cx1, args) -> {
-            context.log(args.length == 0 ? "" : String.valueOf(args[0]));
+            context.log(text(args));
+            return Undefined.instance;
+        }));
+        api.put("logWarn", api, function((cx1, args) -> {
+            context.logWarn(text(args));
+            return Undefined.instance;
+        }));
+        api.put("logError", api, function((cx1, args) -> {
+            context.logError(text(args));
+            return Undefined.instance;
+        }));
+        api.put("logDebug", api, function((cx1, args) -> {
+            context.logDebug(text(args));
             return Undefined.instance;
         }));
         api.put("getConfig", api, function((cx1, args) -> context.getConfig()));
@@ -213,9 +226,18 @@ public class ScriptPlugin implements Plugin {
                 register(args, value -> context.registerTemplateVariableProvider(provider(value)))));
         api.put("downloadInterceptor", api, function((cx1, args) ->
                 register(args, value -> context.registerDownloadInterceptor(interceptor(value)))));
+        api.put("downloadListener", api, function((cx1, args) ->
+                register(args, value -> context.registerDownloadListener(downloadListener(value)))));
         api.put("endpoint", api, function((cx1, args) ->
                 register(args, value -> context.registerEndpoint(endpoint(value)))));
         return api;
+    }
+
+    private static String text(Object[] args) {
+        if (args.length == 0 || args[0] == null || args[0] == Undefined.instance) {
+            return "";
+        }
+        return String.valueOf(args[0]);
     }
 
     private static Object register(Object[] args, java.util.function.Consumer<Object> consumer) {
@@ -564,6 +586,45 @@ public class ScriptPlugin implements Plugin {
                         .withName(StrUtil.blankToDefault(str(changed, "name"), candidate.name()));
             }
         };
+    }
+
+    private DownloadListener downloadListener(Object value) {
+        Map<String, Object> map = asMap(value);
+        return new DownloadListener() {
+            @Override
+            public String id() {
+                return str(map, "id");
+            }
+
+            @Override
+            public void onAdded(DownloadSnapshot task, Map<String, Object> context) {
+                callVoid(map.get("onAdded"), List.of(downloadSnapshotMap(task), context));
+            }
+
+            @Override
+            public void onCompleted(DownloadSnapshot task, Map<String, Object> context) {
+                callVoid(map.get("onCompleted"), List.of(downloadSnapshotMap(task), context));
+            }
+
+            @Override
+            public void onFailed(DownloadSnapshot task, Map<String, Object> context) {
+                callVoid(map.get("onFailed"), List.of(downloadSnapshotMap(task), context));
+            }
+        };
+    }
+
+    private Map<String, Object> downloadSnapshotMap(DownloadListener.DownloadSnapshot task) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("hash", task.hash());
+        snapshot.put("name", task.name());
+        snapshot.put("title", task.title());
+        snapshot.put("subgroup", task.subgroup());
+        snapshot.put("episode", task.episode());
+        snapshot.put("savePath", task.savePath());
+        snapshot.put("tags", task.tags());
+        snapshot.put("size", task.size());
+        snapshot.put("subscription", task.subscription() == null ? null : subscriptionMap(task.subscription()));
+        return snapshot;
     }
 
     private PluginEndpoint endpoint(Object value) {

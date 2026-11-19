@@ -88,6 +88,45 @@ public final class PluginHooks {
         }
     }
 
+    /**
+     * 下载生命周期事件，异常时忽略，避免影响下载主流程。
+     */
+    public static void downloadEvent(PluginHook.DownloadEvent event, Ani ani,
+                                     ani.rss.plugin.api.DownloadListener.DownloadSnapshot task) {
+        PluginHook current = hook();
+        if (current == null) {
+            return;
+        }
+        try {
+            current.downloadEvent(event, ani, task, java.util.Map.of());
+        } catch (Exception e) {
+            log.error("插件下载事件执行失败");
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 构造下载事件快照，供静态工具类在不持有 {@link PluginHook} 时使用。
+     */
+    public static ani.rss.plugin.api.DownloadListener.DownloadSnapshot downloadSnapshot(
+            Ani ani, String hash, String name, String title, String subgroup, Double episode,
+            String savePath, java.util.List<String> tags, Long size) {
+        PluginHook current = hook();
+        if (current != null) {
+            return current.downloadSnapshot(ani, hash, name, title, subgroup, episode, savePath, tags, size);
+        }
+        return new ani.rss.plugin.api.DownloadListener.DownloadSnapshot(
+                cn.hutool.core.util.StrUtil.nullToEmpty(hash),
+                cn.hutool.core.util.StrUtil.nullToEmpty(name),
+                cn.hutool.core.util.StrUtil.nullToEmpty(title),
+                cn.hutool.core.util.StrUtil.blankToDefault(subgroup, "未知字幕组"),
+                episode,
+                cn.hutool.core.util.StrUtil.nullToEmpty(savePath),
+                tags == null ? java.util.List.of() : tags,
+                size,
+                null);
+    }
+
     public static boolean accepts(Ani ani, String title, String subgroup) {
         PluginHook current = hook();
         if (current == null) {

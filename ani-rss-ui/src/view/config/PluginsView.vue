@@ -28,6 +28,18 @@
             </el-text>
           </el-card>
 
+          <el-card v-if="stats" shadow="never" class="plugin-card">
+            <el-text size="small" type="info">
+              {{ $t('pluginruntimeoverview', {
+                total: stats.total,
+                enabled: stats.enabled,
+                error: stats.error,
+                points: stats.filters + stats.listeners + stats.downloadInterceptors
+                    + stats.downloadListeners + stats.channels + stats.variableProviders + stats.endpoints
+              }) }}
+            </el-text>
+          </el-card>
+
           <el-tabs v-model="activeTab" class="segmented-tabs plugin-tabs">
             <el-tab-pane :label="$t('installed')" name="installed">
               <div v-loading="loading" class="plugin-list">
@@ -224,6 +236,7 @@ const installing = ref('')
 const updating = ref('')
 const activeTab = ref('installed')
 const plugins = ref([])
+const stats = ref(null)
 const permissions = ref([])
 const draftPermissions = reactive({})
 const savingPermissions = ref('')
@@ -290,6 +303,9 @@ const installedVersion = id => plugins.value.find(plugin => plugin.id === id)?.v
 
 const loadPlugins = (silent = false) => {
   if (!silent) loading.value = true
+  http.pluginStats()
+      .then(res => { stats.value = res.data || null })
+      .catch(() => { stats.value = null })
   return http.listPlugins()
       .then(res => {
         plugins.value = res.data || []

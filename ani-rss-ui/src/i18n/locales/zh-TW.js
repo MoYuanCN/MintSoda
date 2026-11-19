@@ -457,6 +457,7 @@ export default {
   "plugininstallationfailed": "外掛安裝失敗",
   "plugininstalled": "外掛 {name} 已安裝",
   "pluginmarketplace": "外掛市場",
+  "pluginruntimeoverview": "共 {total} 個外掛 · 已啟用 {enabled} · 錯誤 {error} · 擴充點 {points}",
   "plugins": "外掛",
   "port": "埠",
   "preferromaji": "優先獲取羅馬音",

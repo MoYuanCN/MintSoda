@@ -1,6 +1,6 @@
 # 插件开发指南
 
-本文说明如何为 ANI-RSS-Yuri 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：Java 插件以独立 JAR 加载，JavaScript 与 Lua 插件以脚本目录解释执行，三者共用同一套扩展点——通知、订阅过滤、订阅事件、周期任务、设置界面、模板变量、下载拦截与自定义 HTTP 接口。
+本文说明如何为 ANI-RSS-Yuri 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：Java 插件以独立 JAR 加载，JavaScript 与 Lua 插件以脚本目录解释执行，三者共用同一套扩展点——通知、订阅过滤、订阅事件、周期任务、设置界面、模板变量、下载拦截、下载事件与自定义 HTTP 接口。
 
 不熟悉 Java 时优先看 [JavaScript 插件](#javascript-插件) 或 [Lua 插件](#lua-插件)：两者都不需要编译，改完脚本重新打包即可。
 
@@ -19,6 +19,7 @@
 
 - 插件接口版本由 `PluginApi.VERSION` 表示，当前为 `2`。宿主只加载 `apiVersion` 不大于自身版本的插件，破坏性变更时提升该值。
 - 版本 2 新增模板变量、下载拦截与自定义接口三个扩展点；均为新增能力，不改变既有扩展点语义。
+- 下载事件（`registerDownloadListener`）是在版本 2 之上追加的可选能力：接口方法与注册入口都提供默认实现，未升级的插件无需改动即可继续使用。
 - 描述文件统一叫 `plugin.json`；为兼容常见习惯，包内只提供 `manifest.json` 也接受，安装后会改名为 `plugin.json`。
 - `runtime` 决定插件形态：`JAVA`（默认）是单个 JAR，根目录包含 `plugin.json` 与编译后的类；`JAVASCRIPT` 是 ZIP，根目录包含 `plugin.json` 与入口脚本。
 - Java 插件每个独立类加载器，`ani.rss.plugin.api.*` 与 JDK 类始终由宿主提供，避免类型不一致。
@@ -294,6 +295,36 @@ context.registerDownloadInterceptor(new DownloadInterceptor() {
 - 任一拦截器异常只记录日志并继续，不会中断下载流程。
 - 拦截发生在订阅过滤之后、提交给下载器之前。
 
+### 下载事件
+
+只观察结果、不修改任务：
+
+```java
+context.registerDownloadListener(new DownloadListener() {
+    @Override
+    public String id() {
+        return "my-download-events";
+    }
+
+    @Override
+    public void onAdded(DownloadSnapshot task, Map<String, Object> ctx) {
+    }
+
+    @Override
+    public void onCompleted(DownloadSnapshot task, Map<String, Object> ctx) {
+    }
+
+    @Override
+    public void onFailed(DownloadSnapshot task, Map<String, Object> ctx) {
+    }
+});
+```
+
+- `onAdded` 在种子成功提交给下载器后触发，`onFailed` 在重试用尽后触发，`onCompleted` 在下载器报告完成并发出完成通知后触发。
+- `DownloadSnapshot` 字段：`hash`、`name`、`title`、`subgroup`、`episode`、`savePath`、`tags`、`size`、`subscription`。
+- 与下载拦截不同，监听器拿到的是最终任务，不能修改任何字段；需要改动请使用 `DownloadInterceptor`。
+- 单个监听器异常只记录日志，不影响下载与后续监听器。
+
 ### 自定义 HTTP 接口
 
 插件可以对外提供接口，宿主负责鉴权与分发：
@@ -423,6 +454,10 @@ function onEnable() {
 {id, order, intercept(candidate, context) { return candidate; }}
 // candidate: {hash, name, title, subgroup, episode, savePath, tags, magnet, size, subscription}
 
+// 下载事件：只观察结果，不能修改任务
+{id, onAdded(task, context) {}, onCompleted(task, context) {}, onFailed(task, context) {}}
+// task: {hash, name, title, subgroup, episode, savePath, tags, size, subscription}
+
 // 自定义接口：挂载在 /api/plugin/api/{插件id}/{path}
 {id, path, methods: ['GET', 'POST'], handle(request) { return 'JSON 字符串'; }}
 // request: {method, path, query, body, contentType}
@@ -461,6 +496,7 @@ cd examples/plugins/js-plugin
 | 下载 | `NOTIFICATION` | 发送通知 | 注册通知渠道并投递 | 中 | 是 |
 | 下载 | `DOWNLOAD_INTERCEPT` | 下载拦截 | 修改保存位置或名称 | 高 | 是 |
 | 下载 | `DOWNLOAD_CANCEL` | 取消下载 | 直接取消下载任务 | 高 | 是 |
+| 下载 | `DOWNLOAD_EVENT` | 下载事件 | 接收任务提交、完成与失败事件 | 低 | 是 |
 | 任务 | `SCHEDULED_TASK` | 周期任务 | 后台定时执行 | 低 | 是 |
 | 接口 | `HTTP_ENDPOINT` | 自定义接口 | 提供 `/api/plugin/api/{id}/**` | 中 | 是 |
 | 配置 | `CONFIG_READ` | 读取配置 | 读取插件设置 | 低 | 是 |
@@ -597,6 +633,7 @@ end
 | 方法 | 说明 |
 | --- | --- |
 | `api.log(message)` | 写日志 |
+| `api.logDebug(message)` / `api.logWarn(message)` / `api.logError(message)` | 按级别写日志，Lua 版对应 `api.log_debug` / `api.log_warn` / `api.log_error` |
 | `api.get_config()` / `api.save_config(json)` | 读写插件配置 |
 | `api.app_version()` | 宿主版本 |
 | `api.data_dir()` | 插件私有数据目录 |
@@ -610,6 +647,7 @@ end
 | `api.register_settings_section(table)` | 注册设置区块 |
 | `api.register_template_variables(table)` | 注册模板变量 |
 | `api.register_download_interceptor(table)` | 注册下载拦截 |
+| `api.register_download_listener(table)` | 注册下载事件 |
 | `api.register_endpoint(table)` | 注册自定义 HTTP 接口 |
 
 注册表字段与 JavaScript 版一致，命名改用下划线：
@@ -643,6 +681,14 @@ api.register_download_interceptor({
     intercept = function(candidate)
         return {name = candidate.name, savePath = candidate.savePath .. "/lua"}
     end
+})
+
+-- 下载事件：只观察结果，不能修改任务
+api.register_download_listener({
+    id = "demo-events",
+    onAdded = function(task) end,
+    onCompleted = function(task) end,
+    onFailed = function(task) end
 })
 
 -- 自定义接口

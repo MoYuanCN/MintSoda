@@ -455,6 +455,12 @@ public class DownloadService {
             try {
                 if (TorrentUtil.download(ani, item, savePath, torrentFile)) {
                     trackAddedTorrent(item, savePath, torrentFile);
+                    PluginHooks.downloadEvent(PluginHook.DownloadEvent.ADDED, ani,
+                            PluginHooks.downloadSnapshot(ani,
+                                    FileUtil.mainName(torrentFile).trim().toLowerCase(),
+                                    item.getReName(), item.getTitle(), item.getSubgroup(),
+                                    item.getEpisode(), savePath, List.of(item.getSubgroup()),
+                                    item.getLength()));
                     return;
                 }
             } catch (Exception e) {
@@ -471,6 +477,11 @@ public class DownloadService {
         NotificationUtil.send(CONFIG, ani,
                 StrFormatter.format("{} 添加失败，疑似为坏种", name),
                 NotificationStatusEnum.ERROR);
+        PluginHooks.downloadEvent(PluginHook.DownloadEvent.FAILED, ani,
+                PluginHooks.downloadSnapshot(ani,
+                        FileUtil.mainName(torrentFile).trim().toLowerCase(),
+                        name, item.getTitle(), item.getSubgroup(), item.getEpisode(),
+                        savePath, List.of(item.getSubgroup()), item.getLength()));
     }
 
     /**

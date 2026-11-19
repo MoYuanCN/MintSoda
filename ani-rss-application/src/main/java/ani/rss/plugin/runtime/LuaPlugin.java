@@ -2,6 +2,7 @@ package ani.rss.plugin.runtime;
 
 import ani.rss.plugin.api.ConfigField;
 import ani.rss.plugin.api.DownloadInterceptor;
+import ani.rss.plugin.api.DownloadListener;
 import ani.rss.plugin.api.ItemFilter;
 import ani.rss.plugin.api.NotificationChannel;
 import ani.rss.plugin.api.NotificationPayload;
@@ -200,6 +201,27 @@ public class LuaPlugin implements Plugin {
                 return LuaValue.NIL;
             }
         });
+        api.set("log_warn", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg) {
+                context.logWarn(arg.tojstring());
+                return LuaValue.NIL;
+            }
+        });
+        api.set("log_error", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg) {
+                context.logError(arg.tojstring());
+                return LuaValue.NIL;
+            }
+        });
+        api.set("log_debug", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg) {
+                context.logDebug(arg.tojstring());
+                return LuaValue.NIL;
+            }
+        });
         api.set("get_config", new org.luaj.vm2.lib.ZeroArgFunction() {
             @Override
             public LuaValue call() {
@@ -274,6 +296,8 @@ public class LuaPlugin implements Plugin {
                 value -> context.registerTemplateVariableProvider(provider(value))));
         api.set("register_download_interceptor", registrar(
                 value -> context.registerDownloadInterceptor(interceptor(value))));
+        api.set("register_download_listener", registrar(
+                value -> context.registerDownloadListener(downloadListener(value))));
         api.set("register_endpoint", registrar(
                 value -> context.registerEndpoint(endpoint(value))));
         return api;
@@ -675,6 +699,45 @@ public class LuaPlugin implements Plugin {
                         .withName(StrUtil.blankToDefault(str(changed, "name"), candidate.name()));
             }
         };
+    }
+
+    private DownloadListener downloadListener(LuaValue value) {
+        LuaTable table = value.checktable();
+        return new DownloadListener() {
+            @Override
+            public String id() {
+                return table.get("id").tojstring();
+            }
+
+            @Override
+            public void onAdded(DownloadSnapshot task, Map<String, Object> context) {
+                callFn(table, "onAdded", fromJava(downloadSnapshotMap(task)), fromJava(context));
+            }
+
+            @Override
+            public void onCompleted(DownloadSnapshot task, Map<String, Object> context) {
+                callFn(table, "onCompleted", fromJava(downloadSnapshotMap(task)), fromJava(context));
+            }
+
+            @Override
+            public void onFailed(DownloadSnapshot task, Map<String, Object> context) {
+                callFn(table, "onFailed", fromJava(downloadSnapshotMap(task)), fromJava(context));
+            }
+        };
+    }
+
+    private static Map<String, Object> downloadSnapshotMap(DownloadListener.DownloadSnapshot task) {
+        Map<String, Object> snapshot = new LinkedHashMap<>();
+        snapshot.put("hash", task.hash());
+        snapshot.put("name", task.name());
+        snapshot.put("title", task.title());
+        snapshot.put("subgroup", task.subgroup());
+        snapshot.put("episode", task.episode());
+        snapshot.put("savePath", task.savePath());
+        snapshot.put("tags", task.tags());
+        snapshot.put("size", task.size());
+        snapshot.put("subscription", task.subscription() == null ? null : subscriptionMap(task.subscription()));
+        return snapshot;
     }
 
     private PluginEndpoint endpoint(LuaValue value) {

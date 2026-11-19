@@ -16,11 +16,14 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,6 +48,32 @@ public class PluginManager {
      */
     private final Map<String, List<ScheduledFuture<?>>> scheduledTasks = new ConcurrentHashMap<>();
     private final PluginRegistry registry = PluginRegistry.load();
+    /**
+     * 扩展点索引。注册表在启用期间变化很少，按需重建即可避免每次分发都遍历全部插件。
+     */
+    private volatile Extensions extensions;
+    /**
+     * 描述文件解析缓存，避免每次 list()/describe() 都读取并解析 plugin.json。
+     */
+    private final Map<String, CachedDescriptor> descriptorCache = new ConcurrentHashMap<>();
+
+    private record CachedDescriptor(long lastModified, long length, PluginDescriptor descriptor, String error) {
+    }
+
+    /**
+     * 一次构建的扩展点快照，所有列表均已排序且不可变。
+     */
+    private record Extensions(
+            List<ItemFilter> filters,
+            List<SubscriptionListener> listeners,
+            Map<String, NotificationChannel> channels,
+            List<TemplateVariableProvider> variableProviders,
+            List<DownloadInterceptor> interceptors,
+            List<DownloadListener> downloadListeners,
+            Map<String, Boolean> cancelAllowed,
+            Map<String, Map<String, PluginEndpoint>> endpoints
+    ) {
+    }
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "plugin-scheduler");
         thread.setDaemon(true);
@@ -105,6 +134,7 @@ public class PluginManager {
             if (!onDisk.contains(id)) {
                 cancelTasks(id);
                 disable(id);
+                descriptorCache.remove(id);
                 LoadedPlugin removed = loaded.remove(id);
                 if (removed != null) {
                     try {
@@ -147,6 +177,7 @@ public class PluginManager {
             plugin.onLoad(context);
             LoadedPlugin loadedPlugin = new LoadedPlugin(descriptor, plugin, context, source);
             loaded.put(id, loadedPlugin);
+            invalidateExtensions();
             PluginRecord record = registry.getOrCreate(id);
             if (!descriptor.script()) {
                 record.setSha256(SecureUtil.sha256(PluginPaths.jarFile(id)));
@@ -200,6 +231,7 @@ public class PluginManager {
         }
         context.markEnabled(true);
         loadedPlugin.plugin().onEnable(context);
+        invalidateExtensions();
         scheduleTasks(loadedPlugin);
         PluginRecord record = registry.getOrCreate(id);
         record.setEnable(true);
@@ -221,6 +253,7 @@ public class PluginManager {
             log.error(e.getMessage(), e);
         }
         context.clearRegistrations();
+        invalidateExtensions();
         PluginRecord record = registry.getOrCreate(id);
         record.setEnable(false);
         registry.sync();
@@ -242,6 +275,8 @@ public class PluginManager {
             }
         }
         cancelTasks(id);
+        invalidateExtensions();
+        descriptorCache.remove(id);
         registry.remove(id);
         registry.sync();
         FileUtil.del(PluginPaths.dir(id));
@@ -263,10 +298,12 @@ public class PluginManager {
                 log.warn("插件 {} 重载时资源释放失败", id);
             }
         }
+        descriptorCache.remove(id);
         load(id);
         if (enabled) {
             enable(id);
         }
+        invalidateExtensions();
     }
 
     // ---- 调度：周期任务的注册与取消 ----
@@ -327,6 +364,41 @@ public class PluginManager {
         return result;
     }
 
+    /**
+     * 插件运行概览，供诊断接口与前端状态区展示。
+     */
+    public record PluginStats(int total, int enabled, int disabled, int error, int incompatible,
+                              int filters, int listeners, int downloadInterceptors, int downloadListeners,
+                              int channels, int variableProviders, int endpoints, int scheduledTasks) {
+    }
+
+    /**
+     * 汇总插件数量与已注册的扩展点；只读快照，不触发插件代码。
+     */
+    public PluginStats stats() {
+        int enabled = 0;
+        int disabled = 0;
+        int error = 0;
+        int incompatible = 0;
+        List<PluginInfo> infos = list();
+        for (PluginInfo info : infos) {
+            switch (info.state()) {
+                case ENABLED -> enabled++;
+                case ERROR -> error++;
+                case INCOMPATIBLE -> incompatible++;
+                default -> disabled++;
+            }
+        }
+        Extensions current = extensions();
+        int endpoints = current.endpoints().values().stream().mapToInt(value -> value.size()).sum();
+        int taskCount = this.scheduledTasks.values().stream().mapToInt(List::size).sum();
+        return new PluginStats(infos.size(), enabled, disabled, error, incompatible,
+                current.filters().size(), current.listeners().size(),
+                current.interceptors().size(), current.downloadListeners().size(),
+                current.channels().size(), current.variableProviders().size(),
+                endpoints, taskCount);
+    }
+
     public PluginInfo describe(String id) {
         PluginRecord record = registry.get(id).orElse(null);
         LoadedPlugin loadedPlugin = loaded.get(id);
@@ -353,12 +425,13 @@ public class PluginManager {
         }
         File descriptorFile = PluginPaths.descriptorFile(id);
         if (!descriptorFile.isFile()) {
+            descriptorCache.remove(id);
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "缺少 plugin.json", "", 0L, "", "", false,
                     List.of(), "", List.of(), List.of(), "", List.of());
         }
         try {
-            PluginDescriptor descriptor = GsonStatic.fromJson(FileUtil.readUtf8String(descriptorFile), PluginDescriptor.class);
+            PluginDescriptor descriptor = cachedDescriptor(id, descriptorFile);
             PluginInfo base = PluginInfo.from(descriptor);
             return new PluginInfo(base.id(), base.name(), base.version(), base.apiVersion(),
                     base.author(), base.description(), base.homepage(), base.permissions(),
@@ -377,6 +450,33 @@ public class PluginManager {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "plugin.json 解析失败", "", 0L, "", "", false,
                     List.of(), "", List.of(), List.of(), "", List.of());
+        }
+    }
+
+    /**
+     * 读取未加载插件的描述文件，按修改时间与大小缓存解析结果。
+     * <p>
+     * 插件页会反复拉取列表，磁盘上的 plugin.json 通常在安装后就固定不变。
+     */
+    private PluginDescriptor cachedDescriptor(String id, File descriptorFile) {
+        long lastModified = descriptorFile.lastModified();
+        long length = descriptorFile.length();
+        CachedDescriptor cached = descriptorCache.get(id);
+        if (cached != null && cached.lastModified() == lastModified && cached.length() == length) {
+            if (cached.error() != null) {
+                throw new IllegalArgumentException(cached.error());
+            }
+            return cached.descriptor();
+        }
+        try {
+            PluginDescriptor descriptor = GsonStatic.fromJson(
+                    FileUtil.readUtf8String(descriptorFile), PluginDescriptor.class);
+            descriptorCache.put(id, new CachedDescriptor(lastModified, length, descriptor, null));
+            return descriptor;
+        } catch (Exception e) {
+            String message = StrUtil.blankToDefault(e.getMessage(), "plugin.json 解析失败");
+            descriptorCache.put(id, new CachedDescriptor(lastModified, length, null, message));
+            throw new IllegalArgumentException(message, e);
         }
     }
 
@@ -500,43 +600,100 @@ public class PluginManager {
     // ---- 扩展点分发：过滤 / 事件 / 通知 / 变量 / 拦截 / 接口 ----
 
     /**
+     * 当前扩展点快照。启用状态变化时整体重建，分发路径只做一次 volatile 读取。
+     */
+    private Extensions extensions() {
+        Extensions current = extensions;
+        if (current != null) {
+            return current;
+        }
+        return rebuildExtensions();
+    }
+
+    private synchronized Extensions rebuildExtensions() {
+        Extensions current = extensions;
+        if (current != null) {
+            return current;
+        }
+        List<ItemFilter> filters = new ArrayList<>();
+        List<SubscriptionListener> listeners = new ArrayList<>();
+        Map<String, NotificationChannel> channels = new LinkedHashMap<>();
+        List<TemplateVariableProvider> variableProviders = new ArrayList<>();
+        List<DownloadInterceptor> interceptors = new ArrayList<>();
+        List<DownloadListener> downloadListeners = new ArrayList<>();
+        Map<String, Boolean> cancelAllowed = new HashMap<>();
+        Map<String, Map<String, PluginEndpoint>> endpoints = new HashMap<>();
+
+        for (LoadedPlugin plugin : loaded.values()) {
+            PluginContextImpl context = plugin.context();
+            if (!context.enabled()) {
+                continue;
+            }
+            filters.addAll(context.filters());
+            listeners.addAll(context.listeners());
+            context.notificationChannels().forEach(channel -> channels.put(channel.id(), channel));
+            variableProviders.addAll(context.variableProviders());
+            List<DownloadInterceptor> pluginInterceptors = context.downloadInterceptors();
+            interceptors.addAll(pluginInterceptors);
+            downloadListeners.addAll(context.downloadListeners());
+            // 取消下载是破坏性操作，权限按插件维度记录，分发时不再回查插件集合。
+            boolean cancel = context.hasPermission(ani.rss.plugin.api.PluginPermission.DOWNLOAD_CANCEL);
+            for (DownloadInterceptor interceptor : pluginInterceptors) {
+                cancelAllowed.merge(interceptor.id(), cancel, Boolean::logicalOr);
+            }
+            Map<String, PluginEndpoint> pluginEndpoints = new LinkedHashMap<>();
+            for (PluginEndpoint endpoint : context.endpoints()) {
+                pluginEndpoints.put(StrUtil.strip(endpoint.path(), "/"), endpoint);
+            }
+            if (!pluginEndpoints.isEmpty()) {
+                endpoints.put(plugin.descriptor().id(), Map.copyOf(pluginEndpoints));
+            }
+        }
+
+        filters.sort(Comparator.comparingInt(ItemFilter::order));
+        interceptors.sort(Comparator.comparingInt(DownloadInterceptor::order));
+
+        Extensions snapshot = new Extensions(
+                List.copyOf(filters),
+                List.copyOf(listeners),
+                Map.copyOf(channels),
+                List.copyOf(variableProviders),
+                List.copyOf(interceptors),
+                List.copyOf(downloadListeners),
+                Map.copyOf(cancelAllowed),
+                Map.copyOf(endpoints)
+        );
+        extensions = snapshot;
+        return snapshot;
+    }
+
+    private void invalidateExtensions() {
+        extensions = null;
+    }
+
+    /**
      * 所有已启用插件的过滤器，按 order 排序。
      */
     public List<ItemFilter> itemFilters() {
-        return loaded.values().stream()
-                .filter(plugin -> plugin.context().enabled())
-                .flatMap(plugin -> plugin.context().filters().stream())
-                .sorted(Comparator.comparingInt(ItemFilter::order))
-                .toList();
+        return extensions().filters();
     }
 
     public List<SubscriptionListener> listeners() {
-        return loaded.values().stream()
-                .filter(plugin -> plugin.context().enabled())
-                .flatMap(plugin -> plugin.context().listeners().stream())
-                .toList();
+        return extensions().listeners();
     }
 
     /**
      * 插件通知渠道，key 为渠道 id。
      */
     public Map<String, NotificationChannel> notificationChannels() {
-        Map<String, NotificationChannel> result = new LinkedHashMap<>();
-        loaded.values().stream()
-                .filter(plugin -> plugin.context().enabled())
-                .forEach(plugin -> plugin.context().notificationChannels()
-                        .forEach(channel -> result.put(channel.id(), channel)));
-        return result;
+        return extensions().channels();
     }
 
     /**
      * 所有已启用插件的模板变量提供方。
      */
     public List<TemplateVariableProvider> variableProviders() {
-        return loaded.values().stream()
-                .filter(plugin -> plugin.context().enabled())
-                .flatMap(plugin -> plugin.context().variableProviders().stream())
-                .toList();
+        return extensions().variableProviders();
     }
 
     /**
@@ -548,22 +705,21 @@ public class PluginManager {
      * @return 是否允许取消
      */
     public boolean cancelAllowed(String interceptorId) {
-        return loaded.values().stream()
-                .filter(plugin -> plugin.context().enabled())
-                .filter(plugin -> plugin.context().downloadInterceptors().stream()
-                        .anyMatch(interceptor -> interceptor.id().equals(interceptorId)))
-                .anyMatch(plugin -> plugin.context().hasPermission(ani.rss.plugin.api.PluginPermission.DOWNLOAD_CANCEL));
+        return Boolean.TRUE.equals(extensions().cancelAllowed().get(interceptorId));
     }
 
     /**
      * 所有已启用插件的下载拦截器，按 order 排序。
      */
     public List<DownloadInterceptor> downloadInterceptors() {
-        return loaded.values().stream()
-                .filter(plugin -> plugin.context().enabled())
-                .flatMap(plugin -> plugin.context().downloadInterceptors().stream())
-                .sorted(Comparator.comparingInt(DownloadInterceptor::order))
-                .toList();
+        return extensions().interceptors();
+    }
+
+    /**
+     * 所有已启用插件的下载生命周期监听。
+     */
+    public List<DownloadListener> downloadListeners() {
+        return extensions().downloadListeners();
     }
 
     /**
@@ -573,14 +729,11 @@ public class PluginManager {
      * @param path     相对路径
      */
     public Optional<PluginEndpoint> endpoint(String pluginId, String path) {
-        LoadedPlugin loadedPlugin = loaded.get(pluginId);
-        if (loadedPlugin == null || !loadedPlugin.context().enabled()) {
+        Map<String, PluginEndpoint> endpoints = extensions().endpoints().get(pluginId);
+        if (endpoints == null) {
             return Optional.empty();
         }
-        String target = StrUtil.strip(path, "/");
-        return loadedPlugin.context().endpoints().stream()
-                .filter(endpoint -> StrUtil.strip(endpoint.path(), "/").equals(target))
-                .findFirst();
+        return Optional.ofNullable(endpoints.get(StrUtil.strip(path, "/")));
     }
 
     /**

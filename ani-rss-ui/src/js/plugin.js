@@ -5,6 +5,8 @@ import api from './api.js'
 
 export const listPlugins = () => api.post('api/plugin/list')
 
+export const pluginStats = () => api.post('api/plugin/stats')
+
 export const pluginInfo = id => api.post('api/plugin/info', {id})
 
 export const enablePlugin = id => api.post('api/plugin/enable', {id})

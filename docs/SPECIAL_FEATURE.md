@@ -183,9 +183,11 @@ Body 只有两种来源，语义明确：
 - 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截与插件自定义接口；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后执行。
 - 模板变量由 `TemplateVariables` 统一应用，通知、重命名与下载路径共用同一批字段；插件可通过 `TemplateVariableProvider` 追加或覆盖字段。
 - 下载拦截在种子提交给下载器之前执行，可改写保存位置与名称，或返回 `null` 取消任务。
+- 新增下载事件扩展点：`DownloadListener` 在任务提交成功、下载完成与提交失败时回调，只读快照不可修改任务；对应权限 `DOWNLOAD_EVENT`（低风险）。
 - 插件自定义接口挂在 `/api/plugin/api/{pluginId}/{path}`，由 `PluginEndpointController` 统一鉴权与分发，请求体上限 256KB。
 - 新增通知类型 `PLUGIN`，插件渠道的字段与值保存在 `NotificationConfig` 的 `pluginChannelId` 与 `pluginOptions`。
-- 新增 `/api/plugin/*` 接口：列表、详情、启用/停用/重载/卸载、配置读写、上传与链接安装、市场获取、市场安装、单条与全部更新检查、更新与市场地址管理。全部接口都要求登录。
+- 新增 `/api/plugin/*` 接口：列表、运行概览、详情、启用/停用/重载/卸载、配置读写、上传与链接安装、市场获取、市场安装、单条与全部更新检查、更新与市场地址管理。全部接口都要求登录；请求体使用 `entity/dto` 下带类型的 DTO。
+- 插件运行概览（`/api/plugin/stats`）汇总插件数量、启用/错误数量与各类扩展点数量，插件页顶部展示一行摘要。
 - 插件状态保存在配置目录的 `plugins/installed.json`；插件目录为 `plugins/{id}`，内含 `plugin.jar`、`plugin.json` 与 `data/`。
 - 安装与更新同时校验 `size` 与 `sha256`，下载地址经 `URLUtils#verify` 校验；先写临时目录校验通过后再替换，避免半成品。
 - 新增配置项 `pluginMarketUrl`（默认空）。市场为 JSON 索引，插件也可通过 `updateUrl` 提供自身更新条目。
@@ -204,9 +206,14 @@ Body 只有两种来源，语义明确：
 - 路由页面改为按需加载；新增 `icons.js` 只登记模板中以名称使用的图标，不再全量导入 `@element-plus/icons-vue`，图标分包由约 168KB 降至约 33KB。
 - 设置页改为“编辑副本 + 逐键比较”：显示保存状态、逐页改动标记，支持 `Ctrl + S` 保存、撤销修改与离开确认；保存前校验间隔、并发与 JSON 模板。
 - 日志等级统计改为单次遍历。
+- 进程内缓存 `CacheUtils` 改为无锁并发实现：命中路径不再全表加锁，按写入顺序淘汰，读取时清理过期项；同时移除每次读写都输出的 debug 日志。
+- 插件扩展点改为索引快照：启用状态变化时一次性重建过滤器、拦截器、下载监听、通知渠道、模板变量与接口的索引，分发路径只做一次 volatile 读取；`plugin.json` 按修改时间与大小缓存解析结果。
+- RSS 预取改为复用固定大小的共享线程池，单轮并发仍由信号量限制，不再每轮创建并销毁线程池。
+- 插件模板变量缓存按提供方集合变化失效，容量超限时先清理过期项，避免整表清空后重复计算。
 
 ## 数据与接口
 
+- 新增 `/api/system/status`：返回版本、运行时长、订阅数量、堆内存与线程数等聚合数据，均要求登录，不包含路径与凭据。
 - 新增 `/api/setupStatus`、`/api/setup`、`/api/verifyDeveloperCredentials`、`/api/setDeveloperSettings`、`/api/collectionDownloadPath`、`/api/uiAsset` 与 `/api/uiAsset/upload`。
 - 删除 `/api/trackersUpdate`、`/api/verifyNo`（捐赠）、`/api/embyWebHook`、`/api/rate`、`/api/setRate`，以及播放、刮削、AnimeGarden、任务进度相关的控制器。
 - `/api/publicSettings` 为新增的公开接口，只返回登录页渲染所需的外观字段。

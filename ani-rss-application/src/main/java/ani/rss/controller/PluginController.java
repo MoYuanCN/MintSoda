@@ -1,8 +1,15 @@
 package ani.rss.controller;
 
 import ani.rss.annotation.Auth;
+import ani.rss.entity.dto.IdDTO;
+import ani.rss.entity.dto.PluginConfigDTO;
+import ani.rss.entity.dto.PluginInstallDTO;
+import ani.rss.entity.dto.PluginPermissionsDTO;
+import ani.rss.entity.dto.PluginUpdateDTO;
+import ani.rss.entity.dto.PluginUrlDTO;
 import ani.rss.entity.web.Result;
 import ani.rss.plugin.PluginInfo;
+import ani.rss.plugin.PluginManager;
 import ani.rss.plugin.PluginMarketIndex;
 import ani.rss.service.PluginService;
 import ani.rss.service.PluginService.PluginPermissionView;
@@ -16,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 插件管理接口。所有接口都要求登录，安装与更新会写入可执行代码，属高权限操作。
@@ -35,49 +41,56 @@ public class PluginController extends BaseController {
     }
 
     @Auth
+    @Operation(summary = "插件运行概览")
+    @PostMapping("/plugin/stats")
+    public Result<PluginManager.PluginStats> stats() {
+        return Result.success(pluginService.stats());
+    }
+
+    @Auth
     @Operation(summary = "插件详情")
     @PostMapping("/plugin/info")
-    public Result<PluginInfo> info(@RequestBody Map<String, String> body) {
-        return Result.success(pluginService.info(body.get("id")));
+    public Result<PluginInfo> info(@RequestBody IdDTO dto) {
+        return Result.success(pluginService.info(dto.getId()));
     }
 
     @Auth
     @Operation(summary = "启用插件")
     @PostMapping("/plugin/enable")
-    public Result<Void> enable(@RequestBody Map<String, String> body) {
-        pluginService.enable(body.get("id"));
+    public Result<Void> enable(@RequestBody IdDTO dto) {
+        pluginService.enable(dto.getId());
         return Result.success("插件已启用");
     }
 
     @Auth
     @Operation(summary = "停用插件")
     @PostMapping("/plugin/disable")
-    public Result<Void> disable(@RequestBody Map<String, String> body) {
-        pluginService.disable(body.get("id"));
+    public Result<Void> disable(@RequestBody IdDTO dto) {
+        pluginService.disable(dto.getId());
         return Result.success("插件已停用");
     }
 
     @Auth
     @Operation(summary = "重新加载插件")
     @PostMapping("/plugin/reload")
-    public Result<Void> reload(@RequestBody Map<String, String> body) {
-        pluginService.reload(body.get("id"));
+    public Result<Void> reload(@RequestBody IdDTO dto) {
+        pluginService.reload(dto.getId());
         return Result.success("插件已重新加载");
     }
 
     @Auth
     @Operation(summary = "卸载插件")
     @PostMapping("/plugin/uninstall")
-    public Result<Void> uninstall(@RequestBody Map<String, String> body) {
-        pluginService.uninstall(body.get("id"));
+    public Result<Void> uninstall(@RequestBody IdDTO dto) {
+        pluginService.uninstall(dto.getId());
         return Result.success("插件已卸载");
     }
 
     @Auth
     @Operation(summary = "保存插件配置")
     @PostMapping("/plugin/saveConfig")
-    public Result<Void> saveConfig(@RequestBody Map<String, String> body) {
-        pluginService.saveConfig(body.get("id"), body.get("config"));
+    public Result<Void> saveConfig(@RequestBody PluginConfigDTO dto) {
+        pluginService.saveConfig(dto.getId(), dto.getConfig());
         return Result.success("插件配置已保存");
     }
 
@@ -92,9 +105,9 @@ public class PluginController extends BaseController {
     @Auth
     @Operation(summary = "从链接安装插件")
     @PostMapping("/plugin/install")
-    public Result<PluginInfo> install(@RequestBody Map<String, String> body) {
+    public Result<PluginInfo> install(@RequestBody PluginInstallDTO dto) {
         return Result.success(pluginService.installFromUrl(
-                body.get("url"), body.get("sha256"), parseSize(body.get("size"))));
+                dto.getUrl(), dto.getSha256(), parseSize(dto.getSize())));
     }
 
     @Auth
@@ -107,22 +120,15 @@ public class PluginController extends BaseController {
     @Auth
     @Operation(summary = "保存插件权限")
     @PostMapping("/plugin/setPermissions")
-    public Result<PluginInfo> setPermissions(@RequestBody Map<String, Object> body) {
-        String id = body.get("id") == null ? "" : String.valueOf(body.get("id"));
-        List<String> permissions = new java.util.ArrayList<>();
-        Object raw = body.get("permissions");
-        if (raw instanceof List<?> list) {
-            list.forEach(item -> permissions.add(String.valueOf(item)));
-        }
-        return Result.success(pluginService.setPermissions(id, permissions));
+    public Result<PluginInfo> setPermissions(@RequestBody PluginPermissionsDTO dto) {
+        return Result.success(pluginService.setPermissions(dto.getId(), dto.getPermissions()));
     }
 
     @Auth
     @Operation(summary = "获取插件市场")
     @PostMapping("/plugin/market")
-    public Result<PluginMarketIndex> market(@RequestBody(required = false) Map<String, String> body) {
-        String url = body == null ? null : body.get("url");
-        return Result.success(pluginService.market(url));
+    public Result<PluginMarketIndex> market(@RequestBody(required = false) PluginUrlDTO dto) {
+        return Result.success(pluginService.market(dto == null ? null : dto.getUrl()));
     }
 
     @Auth
@@ -135,23 +141,22 @@ public class PluginController extends BaseController {
     @Auth
     @Operation(summary = "检查插件更新")
     @PostMapping("/plugin/checkUpdate")
-    public Result<PluginInfo> checkUpdate(@RequestBody Map<String, String> body) {
-        return Result.success(pluginService.checkUpdate(body.get("id"), body.get("marketUrl")));
+    public Result<PluginInfo> checkUpdate(@RequestBody PluginUpdateDTO dto) {
+        return Result.success(pluginService.checkUpdate(dto.getId(), dto.getMarketUrl()));
     }
 
     @Auth
     @Operation(summary = "检查全部插件更新")
     @PostMapping("/plugin/checkAll")
-    public Result<List<PluginInfo>> checkAll(@RequestBody(required = false) Map<String, String> body) {
-        String url = body == null ? null : body.get("marketUrl");
-        return Result.success(pluginService.checkAll(url));
+    public Result<List<PluginInfo>> checkAll(@RequestBody(required = false) PluginUpdateDTO dto) {
+        return Result.success(pluginService.checkAll(dto == null ? null : dto.getMarketUrl()));
     }
 
     @Auth
     @Operation(summary = "更新插件")
     @PostMapping("/plugin/update")
-    public Result<PluginInfo> update(@RequestBody Map<String, String> body) {
-        return Result.success(pluginService.update(body.get("id"), body.get("marketUrl")));
+    public Result<PluginInfo> update(@RequestBody PluginUpdateDTO dto) {
+        return Result.success(pluginService.update(dto.getId(), dto.getMarketUrl()));
     }
 
     @Auth
@@ -164,8 +169,8 @@ public class PluginController extends BaseController {
     @Auth
     @Operation(summary = "保存插件市场地址")
     @PostMapping("/plugin/setMarketUrl")
-    public Result<Void> setMarketUrl(@RequestBody Map<String, String> body) {
-        pluginService.setMarketUrl(body.get("url"));
+    public Result<Void> setMarketUrl(@RequestBody PluginUrlDTO dto) {
+        pluginService.setMarketUrl(dto.getUrl());
         return Result.success("插件市场地址已保存");
     }
 
