@@ -33,14 +33,14 @@
         </div>
       </div>
     </SettingsItem>
-    <SettingsItem label="话题ID">
+    <SettingsItem :label="$t('topicid')">
       <el-input-number v-model="notificationConfig['telegramTopicId']"
                        :min="-1" class="notification-input-width"/>
     </SettingsItem>
-    <SettingsItem label="图片">
+    <SettingsItem :label="$t('image')">
       <el-switch v-model="notificationConfig['telegramImage']"/>
     </SettingsItem>
-    <SettingsItem label="格式">
+    <SettingsItem :label="$t('format')">
       <div class="notification-input-width">
         <el-select v-model="notificationConfig['telegramFormat']" placeholder="None">
           <el-option label="None" value=""/>
@@ -53,18 +53,19 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {ElMessage} from "element-plus";
 import {ref} from "vue";
 import * as http from "@/js/http.js";
-
+const {t} = useI18n()
 let chatList = ref([])
 let chatId = ref('')
 let getUpdatesLoading = ref(false)
 
 let getUpdates = () => {
   if (!props.notificationConfig.telegramBotToken.length) {
-    ElMessage.error('Token 不能为空')
+    ElMessage.error(t('tokenisrequired'))
     return
   }
 

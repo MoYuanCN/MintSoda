@@ -21,43 +21,46 @@
           <el-icon>
             <House/>
           </el-icon>
-          <span>首页</span>
+          <span>{{ $t('home') }}</span>
         </el-menu-item>
         <el-menu-item index="/subscriptions">
           <el-icon>
             <Collection/>
           </el-icon>
-          <span>订阅</span>
+          <span>{{ $t('subscriptions') }}</span>
         </el-menu-item>
         <el-menu-item index="/logs">
           <el-icon>
             <Tickets/>
           </el-icon>
-          <span>日志</span>
+          <span>{{ $t('logs') }}</span>
         </el-menu-item>
         <el-menu-item index="/plugins">
           <el-icon>
             <Grid/>
           </el-icon>
-          <span>插件</span>
+          <span>{{ $t('plugins') }}</span>
         </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon>
             <Setting/>
           </el-icon>
-          <span>设置</span>
+          <span>{{ $t('settings') }}</span>
         </el-menu-item>
       </el-menu>
+      <div class="app-locale">
+        <LocaleSwitcher class="app-locale-inner" show-label/>
+      </div>
     </aside>
   </div>
 </template>
 
 <script setup>
-import {onMounted} from "vue";
+import {computed, onMounted} from "vue";
 import {RouterView, useRoute} from "vue-router";
 import {Collection, Grid, House, Setting, Tickets} from "@element-plus/icons-vue";
+import LocaleSwitcher from "@/view/custom/LocaleSwitcher.vue";
 import {initLayout, uiCustomization, uiAssetUrl} from "@/js/global.js";
-import {computed} from "vue";
 
 const route = useRoute()
 const appLogo = computed(() => uiCustomization.value.appLogoImage
@@ -129,16 +132,33 @@ onMounted(() => {
   flex-direction: column;
   justify-content: center;
   gap: 6px;
-  line-height: 1.2;
-  padding: 0 8px !important;
+  line-height: 1.25;
+  padding: 6px 8px !important;
+  text-align: center;
 }
 
 .app-menu :deep(.el-menu-item .el-icon) {
   margin: 0;
 }
 
+/* 英文等较长文案在窄侧栏内换行，避免撑破布局。 */
+.app-menu :deep(.el-menu-item span) {
+  white-space: normal;
+  word-break: break-word;
+  font-size: 13px;
+}
+
 .app-menu :deep(.el-menu-item.is-active) {
   background-color: var(--el-menu-hover-bg-color);
+}
+
+.app-locale {
+  flex-shrink: 0;
+  padding: 8px 12px 12px;
+}
+
+.app-locale-inner {
+  width: 100%;
 }
 
 .app-main {
@@ -200,7 +220,25 @@ onMounted(() => {
   }
 
   .app-menu :deep(.el-menu-item span) {
-    font-size: 12px;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-locale {
+    position: fixed;
+    right: 12px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    z-index: 11;
+    padding: 0;
+  }
+
+  .app-locale-inner {
+    width: auto;
+    border-radius: 50%;
+    background: var(--el-bg-color-overlay);
+    box-shadow: var(--el-box-shadow-light);
   }
 
   .app-main {

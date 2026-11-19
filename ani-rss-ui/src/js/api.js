@@ -1,6 +1,7 @@
 import {ElMessage} from "element-plus";
 import {authorization} from "@/js/global.js";
 
+import {t} from "@/i18n/index.js"
 let post = async (url, body, options = {}) => {
     return await fetch_(url, 'POST', body, options);
 }
@@ -32,10 +33,10 @@ let fetch_ = async (url, method, body, options = {}) => {
     })
         .then(res => res.json())
         .then(res => {
-            let {code, message, t} = res
+            let {code, message, t: serverTime} = res
 
-            if (!checkTimestampRange(t, true)) {
-                console.warn('与服务端时差超过30分钟')
+            if (!checkTimestampRange(serverTime, true)) {
+                console.warn(t('clockdiffersfromtheserverbymorethan30minutes'))
             }
 
             if (code >= 200 && code < 300) {

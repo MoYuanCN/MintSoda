@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="dialogVisible" align-center center title="剧集组" width="400">
+  <el-dialog v-model="dialogVisible" align-center center :title="$t('episodegroup')" width="400">
     <el-scrollbar v-loading="loading" class="tmdb-scrollbar">
       <el-card v-for="group in groupList" shadow="never" class="tmdb-card">
         <template #header>
@@ -10,7 +10,7 @@
                 {{ group.name }}
               </el-link>
               <el-badge v-if="props.ani.tmdb['tmdbGroupId'] === group.id" class="item tmdb-badge"
-                        type="primary" value="已选择"/>
+                        type="primary" :value="$t('selected')"/>
             </div>
             <el-button icon="Select" text @click="select(group)"/>
           </div>
@@ -22,10 +22,10 @@
             </el-tag>
             <div>
               <el-tag class="tmdb-tag-spacer">
-                {{ group['groupCount'] }} 组
+                {{ $t('ngroups', {n: group['groupCount']}) }}
               </el-tag>
               <el-tag>
-                {{ group['episodeCount'] }} 集
+                {{ $t('nepisodes', {n: group['episodeCount']}) }}
               </el-tag>
             </div>
           </div>

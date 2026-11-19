@@ -3,7 +3,7 @@
       v-model="dialogVisible"
       center
       class="el-dialog-auto-width"
-      title="预览"
+      :title="$t('preview')"
       @closed="resetPreview">
     <div class="items-content" v-loading="loading">
       <div class="items-select-container">
@@ -17,9 +17,9 @@
         <el-input v-model="previewData.downloadPath" readonly/>
       </div>
       <div class="items-button-container">
-        <el-button :disabled="!selectedItems.length" icon="Check" type="primary" @click="allowDownload">允许下载
+        <el-button :disabled="!selectedItems.length" icon="Check" type="primary" @click="allowDownload">{{ $t('allowdownload') }}
         </el-button>
-        <el-button :disabled="!selectedItems.length" icon="Close" @click="forbidDownload">禁止下载</el-button>
+        <el-button :disabled="!selectedItems.length" icon="Close" @click="forbidDownload">{{ $t('forbiddownload') }}</el-button>
         <PopconfirmView :title="deleteConfirmTitle" @confirm="deleteTorrentCache">
           <template #reference>
             <el-button
@@ -27,7 +27,7 @@
                 :loading="deleteLoading"
                 icon="Remove"
                 type="danger">
-              删除种子
+              {{ $t('deletetorrent') }}
             </el-button>
           </template>
         </PopconfirmView>
@@ -42,46 +42,46 @@
             stripe
             @selection-change="selectedItems = $event">
           <el-table-column type="selection" width="55" fixed/>
-          <el-table-column label="是否下载" min-width="100">
+          <el-table-column :label="$t('download-2')" min-width="100">
             <template #default="{row}">
-              <el-tag v-if="notDownloadEpisodes.has(row.episode)" type="info">否</el-tag>
-              <el-tag v-else>是</el-tag>
+              <el-tag v-if="notDownloadEpisodes.has(row.episode)" type="info">{{ $t('no') }}</el-tag>
+              <el-tag v-else>{{ $t('yes') }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="已下载" min-width="100">
+          <el-table-column :label="$t('downloaded')" min-width="100">
             <template #default="{row}">
-              <el-tag v-if="!row.hasDownloaded" type="info">否</el-tag>
-              <el-tag v-else>是</el-tag>
+              <el-tag v-if="!row.hasDownloaded" type="info">{{ $t('no') }}</el-tag>
+              <el-tag v-else>{{ $t('yes') }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="主RSS" min-width="80">
+          <el-table-column :label="$t('mainrss')" min-width="80">
             <template #default="{row}">
-              <el-tag v-if="!row.master" type="info">否</el-tag>
-              <el-tag v-else>是</el-tag>
+              <el-tag v-if="!row.master" type="info">{{ $t('no') }}</el-tag>
+              <el-tag v-else>{{ $t('yes') }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="字幕组" min-width="100">
+          <el-table-column :label="$t('subgroup')" min-width="100">
             <template #default="{row}">
               <el-text size="small" truncated>
                 {{ row.subgroup }}
               </el-text>
             </template>
           </el-table-column>
-          <el-table-column label="标题" min-width="400">
+          <el-table-column :label="$t('title')" min-width="400">
             <template #default="{row}">
               <el-text size="small">
                 {{ row.title }}
               </el-text>
             </template>
           </el-table-column>
-          <el-table-column label="重命名" min-width="280">
+          <el-table-column :label="$t('rename')" min-width="280">
             <template #default="{row}">
               <el-text size="small">
                 {{ row.reName }}
               </el-text>
             </template>
           </el-table-column>
-          <el-table-column label="发布时间" min-width="120">
+          <el-table-column :label="$t('publishedat')" min-width="120">
             <template #default="{row}">
               <el-text size="small">
                 {{ row.pubDate }}
@@ -95,12 +95,12 @@
               </el-text>
             </template>
           </el-table-column>
-          <el-table-column prop="formatSize" label="大小" width="120"/>
-          <el-table-column label="种子" width="150">
+          <el-table-column prop="formatSize" :label="$t('size')" width="120"/>
+          <el-table-column :label="$t('torrent')" width="150">
             <template #default="{row}">
-              <el-button bg size="small" text @click="copyTorrent(row.torrent)">复制</el-button>
+              <el-button bg size="small" text @click="copyTorrent(row.torrent)">{{ $t('copy') }}</el-button>
               <el-button bg icon="FolderOpened" size="small" text @click="showTorrentPath(row.torrentPath)">
-                位置
+                {{ $t('location') }}
               </el-button>
             </template>
           </el-table-column>
@@ -114,18 +114,19 @@
       </div>
     </div>
     <div class="flex items-footer">
-      <span>共 {{ visibleItems.length }} 项</span>
-      <el-button bg icon="Close" text @click="dialogVisible = false">关闭</el-button>
+      <span>{{ $t('nitems', {n: visibleItems.length}) }}</span>
+      <el-button bg icon="Close" text @click="dialogVisible = false">{{ $t('close') }}</el-button>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import PopconfirmView from "@/view/custom/PopconfirmView.vue";
 import * as http from "@/js/http.js";
-
+const {t} = useI18n()
 const props = defineProps({
   ani: {
     type: Object,
@@ -135,15 +136,15 @@ const props = defineProps({
 
 const filters = [
   {
-    label: '全部',
+    label: t('all'),
     predicate: () => true
   },
   {
-    label: '已下载',
+    label: t('downloaded'),
     predicate: item => item.hasDownloaded
   },
   {
-    label: '未下载',
+    label: t('notdownloaded'),
     predicate: item => !item.hasDownloaded
   }
 ]
@@ -169,10 +170,10 @@ const activeFilter = computed(() =>
 const visibleItems = computed(() => previewData.value.items.filter(activeFilter.value.predicate))
 const selectedDownloadedItems = computed(() => selectedItems.value.filter(item => item.hasDownloaded))
 const notDownloadEpisodes = computed(() => new Set(props.ani.notDownload ?? []))
-const deleteConfirmTitle = computed(() => `删除${selectedDownloadedItems.value.length}个种子缓存?`)
+const deleteConfirmTitle = computed(() => t('deletentorrentcaches', {n: selectedDownloadedItems.value.length}))
 const omitAlertTitle = computed(() => {
   const omitList = previewData.value.omitList
-  return omitList.length ? `缺少集数: ${omitList.slice(0, 10).join('、')}` : ''
+  return omitList.length ? t('missingepisodes', {list: omitList.slice(0, 10).join(', ')}) : ''
 })
 
 const fallbackCopy = value => {
@@ -198,16 +199,16 @@ const copyTorrent = async value => {
   }
 
   if (copied) {
-    ElMessage.success('已复制')
+    ElMessage.success(t('copied'))
   } else {
-    ElMessage.error('复制失败')
+    ElMessage.error(t('copyfailed'))
   }
 }
 
 // 通过弹窗展示当前种子文件的完整路径，避免长路径挤占表格列宽。
 const showTorrentPath = path => {
-  ElMessageBox.alert(path || '暂无种子文件', '种子位置', {
-    confirmButtonText: '关闭',
+  ElMessageBox.alert(path || t('notorrentfiles'), t('torrentlocation'), {
+    confirmButtonText: t('close'),
     center: true
   })
 }

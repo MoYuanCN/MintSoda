@@ -6,7 +6,7 @@
     <template #actions="{ confirm, cancel }">
       <div class="flex action">
         <div>
-          <el-button size="small" @click="cancel" bg text icon="Close">取消</el-button>
+          <el-button size="small" @click="cancel" bg text icon="Close">{{ $t('cancel') }}</el-button>
         </div>
         <div>
           <el-button
@@ -16,7 +16,7 @@
               bg text
               icon="Check"
           >
-            确定
+            {{ $t('ok') }}
           </el-button>
         </div>
       </div>

@@ -5,10 +5,10 @@
   <TmdbGroupView ref="tmdbGroupRef" :ani="props.ani"/>
   <div style="padding: 0 12px;">
     <el-tabs v-model="activeName" class="tabs-center">
-      <el-tab-pane label="基本" name="base" :lazy="true">
+      <el-tab-pane :label="$t('basic')" name="base" :lazy="true">
         <el-scrollbar height="500" ref="scrollbarRef">
           <el-form @submit.prevent label-width="auto">
-            <el-form-item label="标题">
+            <el-form-item :label="$t('title')">
               <div class="full-width">
                 <div>
                   <el-input v-model.trim="props.ani.title" class="full-width"/>
@@ -17,12 +17,12 @@
                   <el-button :loading="getBgmNameLoading"
                              bg
                              icon="DocumentAdd" text @click="getBgmName">
-                    使用Bangumi
+                    {{ $t('usebangumi') }}
                   </el-button>
                   <el-button @click="props.ani.title = ani.themoviedbName"
                              icon="DocumentAdd"
                              :disabled="props.ani.title === ani.themoviedbName || !ani.themoviedbName.length" bg text>
-                    使用TMDB
+                    {{ $t('usetmdb') }}
                   </el-button>
                 </div>
               </div>
@@ -45,9 +45,9 @@
                 <el-button icon="Refresh" bg text @click="getThemoviedbName" :loading="getThemoviedbNameLoading"/>
               </div>
             </el-form-item>
-            <el-form-item v-if="!props.ani.ova && props.ani.tmdb" label="剧集组">
+            <el-form-item v-if="!props.ani.ova && props.ani.tmdb" :label="$t('episodegroup')">
               <div class="tmdb-group">
-                <el-input v-model="props.ani.tmdb['tmdbGroupId']" placeholder="留空不使用剧集组"/>
+                <el-input v-model="props.ani.tmdb['tmdbGroupId']" :placeholder="$t('leaveblankfornoepisodegroup')"/>
                 <el-button bg text icon="Menu" @click="tmdbGroupRef?.show"/>
               </div>
             </el-form-item>
@@ -57,10 +57,10 @@
                 <el-button bg text :icon="Link" @click="openUrl(props.ani.bgmUrl)"/>
               </div>
             </el-form-item>
-            <el-form-item label="主 RSS">
+            <el-form-item :label="$t('mainrss-2')">
               <div class="full-width">
                 <div class="flex full-width">
-                  <el-input v-model:model-value="props.ani.subgroup" style="width: 140px" placeholder="字幕组"/>
+                  <el-input v-model:model-value="props.ani.subgroup" style="width: 140px" :placeholder="$t('subgroup')"/>
                   <div style="width: 6px;"></div>
                   <el-input v-model:model-value="props.ani.url" placeholder="https://xxx.xxx"/>
                 </div>
@@ -80,7 +80,7 @@
                 </div>
               </div>
             </el-form-item>
-            <el-form-item label="日期">
+            <el-form-item :label="$t('date')">
               <div class="form-item-flex">
                 <el-date-picker
                     style="max-width: 150px;"
@@ -90,7 +90,7 @@
                 />
               </div>
             </el-form-item>
-            <el-form-item label="季">
+            <el-form-item :label="$t('season')">
               <div class="form-item-flex">
                 <el-input-number style="max-width: 200px"
                                  :min="0"
@@ -98,53 +98,53 @@
                                  :disabled="props.ani.ova"/>
               </div>
             </el-form-item>
-            <el-form-item label="集数偏移">
+            <el-form-item :label="$t('episodeoffset')">
               <div class="form-item-flex">
                 <el-input-number v-model:model-value="props.ani.offset" :disabled="props.ani.ova"/>
               </div>
             </el-form-item>
-            <el-form-item label="总集数">
+            <el-form-item :label="$t('totalepisodes')">
               <div class="form-item-flex">
                 <el-input-number v-model:model-value="props.ani.totalEpisodeNumber"/>
               </div>
             </el-form-item>
-            <el-form-item label="匹配">
+            <el-form-item :label="$t('match')">
               <ExcludeView v-model:exclude="props.ani.match" :import-exclude="false"/>
             </el-form-item>
-            <el-form-item label="排除">
+            <el-form-item :label="$t('exclude')">
               <ExcludeView v-model:exclude="props.ani.exclude" :import-exclude="true"/>
             </el-form-item>
-            <el-form-item label="全局排除">
+            <el-form-item :label="$t('globalexclude')">
               <el-switch v-model:model-value="props.ani['globalExclude']"/>
             </el-form-item>
-            <el-form-item label="全局匹配">
+            <el-form-item :label="$t('globalmatch')">
               <el-switch v-model="props.ani.globalMatch"/>
             </el-form-item>
-            <el-form-item label="剧场版">
+            <el-form-item :label="$t('movie')">
               <el-switch v-model:model-value="props.ani.ova"/>
             </el-form-item>
-            <el-form-item label="启用">
+            <el-form-item :label="$t('enable-3')">
               <el-switch v-model:model-value="props.ani.enable"/>
             </el-form-item>
           </el-form>
         </el-scrollbar>
       </el-tab-pane>
-      <el-tab-pane label="反匹配" name="reverse-match" :lazy="true">
+      <el-tab-pane :label="$t('reversematch')" name="reverse-match" :lazy="true">
         <el-scrollbar height="500">
           <div class="reverse-match-panel">
             <el-alert :closable="false" show-icon type="info"
-                      title="从聚合 RSS 中按标题筛选条目。命中条目会归入当前订阅并使用当前字幕组。"/>
+                      :title="$t('filteritemsfromanaggregatedrssbytitlematches')"/>
             <ReverseMatchView :ani="props.ani"/>
           </div>
         </el-scrollbar>
       </el-tab-pane>
-      <el-tab-pane label="备用 RSS" name="standby-rss" :lazy="true">
+      <el-tab-pane :label="$t('standbyrss-2')" name="standby-rss" :lazy="true">
         <StandbyRssView ref="standbyRssRef" :ani="props.ani"/>
       </el-tab-pane>
-      <el-tab-pane label="自定义" name="custom" :lazy="true">
+      <el-tab-pane :label="$t('custom')" name="custom" :lazy="true">
         <el-scrollbar height="500">
           <el-form @submit.prevent label-width="auto">
-            <el-form-item label="自定义集数规则">
+            <el-form-item :label="$t('customepisoderules')">
               <div class="full-width">
                 <div>
                   <el-switch v-model:model-value="props.ani.customEpisode"/>
@@ -159,7 +159,7 @@
                 </div>
               </div>
             </el-form-item>
-            <el-form-item label="自定义路径">
+            <el-form-item :label="$t('custompath')">
               <div class="full-width">
                 <div>
                   <el-switch v-model:model-value="props.ani.customDownloadPath"/>
@@ -174,12 +174,12 @@
                              text
                              @click="downloadPath"/>
                   <el-text class="mx-1" size="small">
-                    最终下载位置以 <strong>预览</strong> 为准
+                    {{ $t('thefinaldownloadlocationisdeterminedby') }} <strong>{{ $t('preview') }}</strong>
                   </el-text>
                 </div>
               </div>
             </el-form-item>
-            <el-form-item label="自定义完结迁移">
+            <el-form-item :label="$t('customcompletionmigration')">
               <div class="full-width">
                 <div>
                   <el-switch v-model="props.ani.customCompleted"/>
@@ -191,7 +191,7 @@
                 </div>
               </div>
             </el-form-item>
-            <el-form-item label="重命名模版">
+            <el-form-item :label="$t('renametemplate')">
               <div class="full-width">
                 <el-switch v-model="props.ani['customRenameTemplateEnable']"/>
                 <br>
@@ -204,11 +204,11 @@
                     type="primary"
                     href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
                     target="_blank">
-                  详细说明
+                  {{ $t('details') }}
                 </el-link>
               </div>
             </el-form-item>
-            <el-form-item label="自定义标签">
+            <el-form-item :label="$t('customtags')">
               <div>
                 <el-switch v-model="props.ani.customTagsEnable"/>
                 <DisableView v-model="props.ani.customTagsEnable">
@@ -216,7 +216,7 @@
                 </DisableView>
               </div>
             </el-form-item>
-            <el-form-item label="优先保留">
+            <el-form-item :label="$t('prioritykeep')">
               <div class="full-width">
                 <el-switch v-model="props.ani.customPriorityKeywordsEnable"/>
                 <br>
@@ -229,11 +229,11 @@
                 </DisableView>
               </div>
             </el-form-item>
-            <el-form-item label="其它">
-              <el-checkbox v-model="props.ani.omit" label="遗漏检测"/>
-              <el-checkbox v-model="props.ani.downloadNew" label="只下载最新集"/>
-              <el-checkbox v-model="props.ani['message']" label="通知"/>
-              <el-checkbox v-model="props.ani['completed']" label="完结迁移"/>
+            <el-form-item :label="$t('other-2')">
+              <el-checkbox v-model="props.ani.omit" :label="$t('missingepisodedetection')"/>
+              <el-checkbox v-model="props.ani.downloadNew" :label="$t('onlydownloadthelatestepisode')"/>
+              <el-checkbox v-model="props.ani['message']" :label="$t('notifications')"/>
+              <el-checkbox v-model="props.ani['completed']" :label="$t('completedmigration')"/>
             </el-form-item>
           </el-form>
         </el-scrollbar>
@@ -244,7 +244,7 @@
     <div>
       <el-dropdown v-if="props.editMode" trigger="click">
         <el-button bg text icon="MoreFilled">
-          其他
+          {{ $t('other') }}
         </el-button>
         <template #dropdown>
           <el-dropdown-menu>
@@ -253,7 +253,7 @@
                 <el-icon>
                   <RefreshRight/>
                 </el-icon>
-                刷新
+                {{ $t('refresh') }}
               </el-text>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -261,18 +261,19 @@
       </el-dropdown>
     </div>
     <div>
-      <el-button @click="previewRef.show()" bg text icon="Grid">预览</el-button>
+      <el-button @click="previewRef.show()" bg text icon="Grid">{{ $t('preview') }}</el-button>
       <el-button icon="Check" type="primary" :loading="okLoading" @click="async ()=>{
         standbyRssRef?.normalize()
         okLoading = true
         emit('callback',()=>okLoading = false)
-      }" text bg>确定
+      }" text bg>{{ $t('ok') }}
       </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 
 import ExcludeView from "@/view/config/ExcludeView.vue";
 import ReverseMatchView from "@/view/config/ReverseMatchView.vue";
@@ -289,7 +290,7 @@ import * as http from "@/js/http.js";
 import {getBgmTitle} from "@/js/http.js";
 import AniBTView from "@/view/home/AniBTView.vue";
 import DisableView from "@/view/custom/DisableView.vue";
-
+const {t} = useI18n()
 const activeName = ref('base')
 
 const aniBTRef = ref()
@@ -323,7 +324,7 @@ let getThemoviedbName = () => {
 }
 
 let searchThemoviedb = () => {
-  ElMessageBox.prompt('输入 TmdbId', {
+  ElMessageBox.prompt(t('entertmdbid'), {
     confirmButtonText: 'OK',
     confirmButtonClass: 'is-text is-has-bg el-button--primary',
     cancelButtonText: 'Cancel',

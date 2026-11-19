@@ -3,10 +3,10 @@
     <EditAniView ref="editAniRef"/>
     <CoverView ref="coverRef"/>
     <DelAniView ref="delAniRef" @callback="reloadAfterDelete"/>
-    <PageHeaderView title="首页" :subtitle="`${todayLabel} · ${todayText}`">
+    <PageHeaderView :title="$t('home')" :subtitle="`${todayLabel} · ${todayText}`">
       <template #actions>
         <el-button :loading="refreshLoading" icon="Refresh" @click="loadAll" class="auto-button">
-          刷新
+          {{ $t('refresh') }}
         </el-button>
       </template>
     </PageHeaderView>
@@ -22,7 +22,7 @@
                 </el-icon>
               </div>
               <div>
-                <el-text size="small" type="info">订阅数量</el-text>
+                <el-text size="small" type="info">{{ $t('subscriptions') }}</el-text>
                 <div class="metric-value">{{ subscriptionTotal }}</div>
               </div>
             </div>
@@ -33,7 +33,7 @@
                 </el-icon>
               </div>
               <div>
-                <el-text size="small" type="info">已启用</el-text>
+                <el-text size="small" type="info">{{ $t('enabled') }}</el-text>
                 <div class="metric-value">{{ enabledTotal }}</div>
               </div>
             </div>
@@ -42,16 +42,16 @@
           <section class="dashboard-section today-section">
             <div class="today-section-content">
               <div class="section-title">
-                <h3>今天的订阅</h3>
+                <h3>{{ $t('todayssubscriptions') }}</h3>
                 <div class="today-heading-actions">
                   <el-tag type="info">{{ todayAnis.length }}</el-tag>
                   <div v-if="todayAnis.length" class="today-scroll-actions">
-                    <el-button aria-label="向左滚动" bg circle text @click="scrollToday(-1)">
+                    <el-button :aria-label="$t('scrollleft')" bg circle text @click="scrollToday(-1)">
                       <el-icon>
                         <ArrowLeft/>
                       </el-icon>
                     </el-button>
-                    <el-button aria-label="向右滚动" bg circle text @click="scrollToday(1)">
+                    <el-button :aria-label="$t('scrollright')" bg circle text @click="scrollToday(1)">
                       <el-icon>
                         <ArrowRight/>
                       </el-icon>
@@ -59,7 +59,7 @@
                   </div>
                 </div>
               </div>
-              <el-empty v-if="!todayAnis.length" description="今天没有订阅"/>
+              <el-empty v-if="!todayAnis.length" :description="$t('nosubscriptionstoday')"/>
               <div v-else ref="todayTrack" class="today-track">
                 <div v-for="ani in todayAnis"
                      :key="ani.id"
@@ -82,6 +82,7 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, onActivated, ref} from "vue";
 import {ArrowLeft, ArrowRight, CircleCheck, List} from "@element-plus/icons-vue";
 import * as http from "@/js/http.js";
@@ -90,8 +91,8 @@ import EditAniView from "@/view/home/EditAniView.vue";
 import CoverView from "@/view/home/CoverView.vue";
 import DelAniView from "@/view/home/DelAniView.vue";
 import PageHeaderView from "@/view/custom/PageHeaderView.vue";
-
-const weekLabels = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+const {t} = useI18n()
+const weekLabels = [t('sunday'), t('monday'), t('tuesday'), t('wednesday'), t('thursday'), t('friday'), t('saturday')]
 
 const refreshLoading = ref(false)
 const weekList = ref([])
@@ -110,7 +111,7 @@ const todayAnis = computed(() => {
   const today = weekList.value.find(week => week.weekLabel === todayLabel.value)
   return today ? (today.items || []).filter(item => item.enable) : []
 })
-const todayText = computed(() => todayAnis.value.length ? `${todayAnis.value.length} 个订阅` : '没有订阅')
+const todayText = computed(() => todayAnis.value.length ? t('nsubscriptions', {n: todayAnis.value.length}) : t('nosubscriptions'))
 const scrollToday = direction => {
   const track = todayTrack.value
   if (!track) {

@@ -2,7 +2,7 @@
   <BatchAdditionView ref="batchAdditionRef" v-model="batchAdditionDialogVisible" :items="batchAdditionItems"
                      type="ani-bt"
                      @done="batchDone"/>
-  <el-dialog v-model="matchDialogVisible" align-center center title="匹配" width="auto" @close="cancelBatchMatch">
+  <el-dialog v-model="matchDialogVisible" align-center center :title="$t('match')" width="auto" @close="cancelBatchMatch">
     <div class="match-content">
       <el-radio-group v-model="addAni.match">
         <div v-for="regexItems in regexList" class="match-item">
@@ -11,13 +11,13 @@
             <el-tag v-if="regexItems.length" v-for="regexItem in regexItems" class="tag-margin">
               {{ regexItem.label }}
             </el-tag>
-            <el-tag v-else type="success">全部</el-tag>
+            <el-tag v-else type="success">{{ $t('all') }}</el-tag>
           </el-radio>
         </div>
       </el-radio-group>
     </div>
     <div class="dialog-footer">
-      <el-button icon="Check" @click="confirmMatch" text bg>确定
+      <el-button icon="Check" @click="confirmMatch" text bg>{{ $t('ok') }}
       </el-button>
     </div>
   </el-dialog>
@@ -26,14 +26,14 @@
       <div class="content-wrapper">
         <div class="search-section">
           <div class="search-header">
-            <el-input v-model:model-value="title" clearable placeholder="请输入搜索标题"
+            <el-input v-model:model-value="title" clearable :placeholder="$t('enteratitletosearch')"
                       prefix-icon="Search"
                       @clear="()=>{
                         title = ''
                         search()
                       }"
                       @keyup.enter="search()"/>
-            <el-button :loading="searchLoading" bg icon="Search" text @click="search()">搜索</el-button>
+            <el-button :loading="searchLoading" bg icon="Search" text @click="search()">{{ $t('search') }}</el-button>
           </div>
           <div class="flex season-selector">
             <el-select v-model="season" class="season-select"
@@ -43,7 +43,7 @@
                          :label="itemSeason" :value="itemSeason">
               </el-option>
             </el-select>
-            <el-button :disabled="rssList.length < 1" bg icon="Plus" text @click="batchAddition">批量添加</el-button>
+            <el-button :disabled="rssList.length < 1" bg icon="Plus" text @click="batchAddition">{{ $t('batchadd') }}</el-button>
           </div>
         </div>
         <div v-loading="loading" class="scroll-container">
@@ -70,7 +70,7 @@
                             </h4>
                           </div>
                           <el-badge v-if="anime['exists']" class="item badge-margin" type="primary"
-                                    value="已订阅"/>
+                                    :value="$t('subscribed')"/>
                         </div>
                       </template>
                       <div v-if="selectName === anime.bgmId" v-loading="groupLoading"
@@ -98,7 +98,7 @@
                                 </div>
                                 <div class="group-action">
                                   <el-button bg @click.stop="callback(group)" icon="Plus">
-                                    添加
+                                    {{ $t('add') }}
                                   </el-button>
                                 </div>
                               </div>
@@ -139,6 +139,7 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {ref} from "vue";
 import {ElMessage, ElText} from "element-plus";
 import {DocumentCopy} from "@element-plus/icons-vue";
@@ -146,7 +147,7 @@ import * as http from "@/js/http.js";
 import BatchAdditionView from './BatchAdditionView.vue'
 import {formatDate, fromNow} from "@/js/format.js";
 import {proxyImage} from "@/js/global.js";
-
+const {t} = useI18n()
 // 回填模式由编辑订阅和备用 RSS 场景显式启用，默认保持新增订阅流程。
 const props = defineProps({
   fillMode: {type: Boolean, default: false}
@@ -331,7 +332,7 @@ let copy = (v) => {
   input.select();
   document.execCommand('copy');
   document.body.removeChild(input);
-  ElMessage.success('已复制')
+  ElMessage.success(t('copied'))
 }
 
 </script>

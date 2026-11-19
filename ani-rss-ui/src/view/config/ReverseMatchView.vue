@@ -2,50 +2,50 @@
   <div class="reverse-match full-width">
     <div class="reverse-match-toggle">
       <el-switch v-model="props.ani.reverseMatchEnabled"/>
-      <el-text size="small" type="info">使用本订阅的反匹配规则</el-text>
+      <el-text size="small" type="info">{{ $t('usethissubscriptionsreversematchrules') }}</el-text>
     </div>
     <div class="reverse-match-toggle">
       <el-switch v-model="props.ani.globalReverseMatch"/>
-      <el-text size="small" type="info">同时使用设置中的全局反匹配规则</el-text>
+      <el-text size="small" type="info">{{ $t('alsouseglobalreversematchrulesfromsettings') }}</el-text>
     </div>
     <div v-if="props.ani.reverseMatchEnabled || props.ani.globalReverseMatch" class="reverse-match-miss">
-      <el-text size="small">反匹配未命中时</el-text>
+      <el-text size="small">{{ $t('whenreversematchdoesnothit') }}</el-text>
       <el-select v-model="props.ani.reverseMatchMissBehavior" size="small" class="miss-select">
-        <el-option value="SKIP" label="跳过，不下载"/>
-        <el-option value="NORMAL" label="继续普通匹配规则"/>
-        <el-option value="ALLOW" label="直接放行"/>
+        <el-option value="SKIP" :label="$t('skipdonotdownload')"/>
+        <el-option value="NORMAL" :label="$t('continuewithnormalrules')"/>
+        <el-option value="ALLOW" :label="$t('allowasis')"/>
       </el-select>
     </div>
     <template v-if="props.ani.reverseMatchEnabled">
       <el-alert :closable="false" show-icon type="info"
-                title="每条规则由正则和目标字幕组组成。标题命中后，条目会归入该字幕组；多条命中时按列表顺序采用第一条。"/>
+                :title="$t('eachrulehasaregexandatargetsubgroupwhenatitl')"/>
       <div class="reverse-rule-list">
         <el-card v-for="(rule, index) in rules" :key="rule.id || index" shadow="never" class="reverse-rule-card">
           <div class="reverse-rule-fields">
-            <el-input v-model="rule.pattern" placeholder="标题正则，例如：\[字幕组A\].*作品名"/>
-            <el-input v-model="rule.subgroup" placeholder="命中后归入的字幕组"/>
+            <el-input v-model="rule.pattern" :placeholder="$t('titleregexeggroupashowname')"/>
+            <el-input v-model="rule.subgroup" :placeholder="$t('subgroupassignedonmatch')"/>
           </div>
           <div class="reverse-rule-actions">
-            <el-button text bg circle icon="Top" :disabled="index === 0" aria-label="上移规则"
+            <el-button text bg circle icon="Top" :disabled="index === 0" :aria-label="$t('moveruleup')"
                        @click="moveRule(index, -1)"/>
-            <el-button text bg circle icon="Bottom" :disabled="index === rules.length - 1" aria-label="下移规则"
+            <el-button text bg circle icon="Bottom" :disabled="index === rules.length - 1" :aria-label="$t('moveruledown')"
                        @click="moveRule(index, 1)"/>
-            <el-button text bg circle type="danger" icon="Delete" aria-label="删除规则"
+            <el-button text bg circle type="danger" icon="Delete" :aria-label="$t('deleterule')"
                        @click="removeRule(index)"/>
           </div>
         </el-card>
-        <el-empty v-if="!rules.length" description="尚未添加反匹配规则"/>
-        <el-button class="add-rule" bg text type="primary" icon="Plus" @click="addRule">添加规则</el-button>
+        <el-empty v-if="!rules.length" :description="$t('noreversematchrulesyet')"/>
+        <el-button class="add-rule" bg text type="primary" icon="Plus" @click="addRule">{{ $t('addrule') }}</el-button>
       </div>
       <el-input v-model="testTitles" class="reverse-match-test-input" :autosize="{ minRows: 3, maxRows: 7 }"
-                placeholder="粘贴 RSS 标题，每行一条，用于测试规则和目标字幕组" type="textarea"/>
+                :placeholder="$t('pastersstitlesoneperlinetotestrulesandtarget')" type="textarea"/>
       <div class="reverse-match-test-actions">
-        <el-button bg text icon="CircleCheck" type="primary" @click="runTest">测试标题</el-button>
+        <el-button bg text icon="CircleCheck" type="primary" @click="runTest">{{ $t('testtitles') }}</el-button>
       </div>
       <div v-if="testResults.length" class="reverse-match-results">
         <div v-for="result in testResults" :key="`${result.title}-${result.index}`" class="reverse-match-result">
           <el-tag :type="result.subgroup ? 'success' : 'info'" size="small">
-            {{ result.subgroup ? `归入：${result.subgroup}` : '未命中' }}
+            {{ result.subgroup ? $t('assignedto', {subgroup: result.subgroup}) : $t('nomatch') }}
           </el-tag>
           <el-text class="reverse-match-result-title" :title="result.title">{{ result.title }}</el-text>
         </div>
@@ -55,9 +55,10 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, ref} from 'vue'
 import {ElMessage} from 'element-plus'
-
+const {t} = useI18n()
 const props = defineProps({ani: {type: Object, required: true}})
 if (!Array.isArray(props.ani.reverseMatchRules)) props.ani.reverseMatchRules = []
 if (!props.ani.reverseMatchMissBehavior) props.ani.reverseMatchMissBehavior = 'SKIP'
@@ -89,14 +90,14 @@ const moveRule = (index, offset) => {
 
 const runTest = () => {
   if (!rules.value.length || rules.value.some(rule => !rule.pattern?.trim() || !rule.subgroup?.trim())) {
-    ElMessage.warning('请为每条规则填写正则表达式和目标字幕组')
+    ElMessage.warning(t('fillinaregexandtargetsubgroupforeveryrule'))
     return
   }
   let patterns
   try {
     patterns = rules.value.map(rule => ({rule, pattern: new RegExp(rule.pattern)}))
   } catch {
-    ElMessage.error('规则中包含无效的正则表达式，请修正后再测试')
+    ElMessage.error(t('arulecontainsaninvalidregularexpressionfixit'))
     return
   }
   testResults.value = testTitles.value.split(/\r?\n/).map(title => title.trim()).filter(Boolean)
@@ -108,7 +109,7 @@ const runTest = () => {
           return pattern.test(title)
         })?.rule.subgroup || ''
       }))
-  if (!testResults.value.length) ElMessage.info('请先输入用于测试的 RSS 标题')
+  if (!testResults.value.length) ElMessage.info(t('enterrsstitlestotestfirst'))
 }
 </script>
 

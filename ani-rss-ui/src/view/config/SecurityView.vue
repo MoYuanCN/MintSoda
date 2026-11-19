@@ -1,5 +1,5 @@
 <template>
-  <SettingsItem label="用户名">
+  <SettingsItem :label="$t('username')">
     <el-input v-model:model-value="props.config.login.username" autocomplete="new-password">
       <template #prefix>
         <el-icon class="el-input__icon">
@@ -8,10 +8,10 @@
       </template>
     </el-input>
   </SettingsItem>
-  <SettingsItem label="密码">
+  <SettingsItem :label="$t('password')">
     <div class="full-width">
       <el-input v-model:model-value="props.config.login.password" type="password" show-password
-                placeholder="留空表示不修改当前密码" autocomplete="new-password">
+                :placeholder="$t('leaveblanktokeepthecurrentpassword')" autocomplete="new-password">
         <template #prefix>
           <el-icon class="el-input__icon">
             <Key/>
@@ -19,29 +19,29 @@
         </template>
       </el-input>
       <el-text class="mx-1" size="small">
-        修改用户名或密码后，所有已登录会话都会失效，需要重新登录
+        {{ $t('changingtheusernameorpasswordsignsoutallsess') }}
       </el-text>
       <br>
       <el-text class="mx-1" size="small" type="info">
-        用户名需为 3-32 位字母、数字、下划线或连字符；密码至少 8 位，且包含大写字母、小写字母、数字、符号中的至少两类。
+        {{ $t('usernamemustbe332lettersdigitsunderscoresorh-2') }}
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="登录有效">
+  <SettingsItem :label="$t('sessionvalidity')">
     <el-input-number v-model:model-value="props.config.loginEffectiveHours" :min="0">
       <template #suffix>
-        <span>小时</span>
+        <span>{{ $t('hours') }}</span>
       </template>
     </el-input-number>
   </SettingsItem>
-  <SettingsItem label="其他">
-    <el-checkbox v-model="props.config['multiLoginForbidden']" label="禁止多端登录"/>
-    <el-checkbox v-model="props.config.innerIP" label="禁止公网访问"/>
-    <el-checkbox v-model="props.config.verifyLoginIp" label="如果IP发生改变登录将失效"/>
-    <el-checkbox v-model="props.config.limitLoginAttempts" label="限制尝试次数"/>
-    <el-checkbox v-model="props.config.allowCors" label="允许跨域"/>
+  <SettingsItem :label="$t('other')">
+    <el-checkbox v-model="props.config['multiLoginForbidden']" :label="$t('forbidconcurrentsessions')"/>
+    <el-checkbox v-model="props.config.innerIP" :label="$t('blockpublicaccess')"/>
+    <el-checkbox v-model="props.config.verifyLoginIp" :label="$t('invalidatesessioniftheipchanges')"/>
+    <el-checkbox v-model="props.config.limitLoginAttempts" :label="$t('limitloginattempts')"/>
+    <el-checkbox v-model="props.config.allowCors" :label="$t('allowcors')"/>
   </SettingsItem>
-  <SettingsItem label="IP白名单">
+  <SettingsItem :label="$t('ipallowlist')">
     <div class="full-width">
       <div>
         <el-switch v-model:model-value="config['ipWhitelist']"/>
@@ -53,14 +53,14 @@
                   :placeholder="'127.0.0.1\n192.168.1.0/24'" v-model:model-value="config['ipWhitelistStr']"/>
         <br>
         <el-text class="mx-1" size="small">
-          对IP白名单跳过身份验证, 换行可填写多个
+          {{ $t('skipauthenticationfortheseipsoneperline') }}
         </el-text>
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="信任的反代IP">
+  <SettingsItem :label="$t('trustedreverseproxyips')">
     <div class="full-width">
-      <el-checkbox label="启用" v-model="config.reverseProxyTrustIpListEnabled"/>
+      <el-checkbox :label="$t('enable-3')" v-model="config.reverseProxyTrustIpListEnabled"/>
       <br>
       <el-input-tag v-model="config.reverseProxyTrustIpList"/>
     </div>
@@ -69,18 +69,19 @@
     <div class="flex full-width">
       <el-input v-model:model-value="props.config.apiKey" readonly/>
       <div class="login-api-key-buttons flex">
-        <el-button bg text @click="createApiKey">生成</el-button>
-        <el-button bg text @click="copy(props.config.apiKey)">复制</el-button>
+        <el-button bg text @click="createApiKey">{{ $t('generate') }}</el-button>
+        <el-button bg text @click="copy(props.config.apiKey)">{{ $t('copy') }}</el-button>
       </div>
     </div>
   </SettingsItem>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {ElMessage, ElText} from "element-plus";
 import {Key, User} from "@element-plus/icons-vue";
-
+const {t} = useI18n()
 let generateRandomString = (length) => {
   const charset = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let randomString = '';
@@ -102,7 +103,7 @@ let copy = (v) => {
   input.select();
   document.execCommand('copy');
   document.body.removeChild(input);
-  ElMessage.success('已复制')
+  ElMessage.success(t('copied'))
 }
 
 let props = defineProps(['config'])

@@ -16,7 +16,7 @@
         <span>{{ scoreText }}</span>
       </div>
       <div v-if="!item.enable" class="cover-disabled-label">
-        未启用
+        {{ $t('notenabled') }}
       </div>
       <div class="cover-overlay">
         <el-text class="cover-title" line-clamp="2" @click.stop="openBgmUrl(item)">
@@ -45,7 +45,7 @@
                   <el-icon>
                     <Picture/>
                   </el-icon>
-                  封面
+                  {{ $t('cover') }}
                 </el-text>
               </el-dropdown-item>
               <el-dropdown-item @click="refreshAni" divided>
@@ -53,7 +53,7 @@
                   <el-icon>
                     <RefreshRight/>
                   </el-icon>
-                  刷新
+                  {{ $t('refresh') }}
                 </el-text>
               </el-dropdown-item>
               <el-dropdown-item @click="emit('edit', item)" divided>
@@ -61,7 +61,7 @@
                   <el-icon>
                     <EditIcon/>
                   </el-icon>
-                  编辑
+                  {{ $t('edit') }}
                 </el-text>
               </el-dropdown-item>
               <el-dropdown-item @click="emit('del', [item])">
@@ -69,7 +69,7 @@
                   <el-icon>
                     <Delete/>
                   </el-icon>
-                  删除
+                  {{ $t('delete') }}
                 </el-text>
               </el-dropdown-item>
             </el-dropdown-menu>
@@ -86,7 +86,7 @@
       </el-tag>
       <el-tag v-if="hasStandbyRss"
               size="small" type="primary">
-        备用RSS
+        {{ $t('standbyrss') }}
       </el-tag>
       <el-tag v-if="showLastDownloadTime"
               size="small" type="info">
@@ -97,20 +97,21 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, ref} from "vue";
 import {Delete, Edit as EditIcon, Fold, Picture, RefreshRight} from "@element-plus/icons-vue";
 import {ElMessage, ElText} from "element-plus";
 import {coverClickAction, showLastDownloadTime, showScore, toApiFile} from "@/js/global.js";
 import {fromNow} from "@/js/format.js";
 import * as http from "@/js/http.js";
-
+const {t} = useI18n()
 const actionsVisible = ref(false)
 const props = defineProps(["item"])
 
 const hasStandbyRss = computed(() => (props.item.standbyRssList || []).length > 0)
-const subgroupText = computed(() => props.item.subgroup || '未知字幕组')
+const subgroupText = computed(() => props.item.subgroup || t('unknownsubgroup'))
 // 封面底部主信息展示当前订阅的季数。
-const seasonText = computed(() => `第 ${props.item.season || 1} 季`)
+const seasonText = computed(() => t('seasonn', {n: props.item.season || 1}))
 const scoreText = computed(() => {
   if (!showScore.value) {
     return ''
@@ -132,7 +133,7 @@ const updateText = computed(() => {
   if (releaseDate) {
     return fromNow(releaseDate)
   }
-  return '未更新'
+  return t('notupdated')
 })
 
 // 从封面菜单直接刷新当前订阅。

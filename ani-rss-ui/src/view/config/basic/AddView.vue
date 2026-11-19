@@ -1,20 +1,20 @@
 <template>
-  <SettingsItem label="只下载最新集">
+  <SettingsItem :label="$t('onlydownloadthelatestepisode')">
     <el-switch v-model:model-value="props.config.downloadNew"/>
   </SettingsItem>
-  <SettingsItem label="标题添加年份">
+  <SettingsItem :label="$t('appendyeartotitle')">
     <el-switch v-model:model-value="props.config.titleYear"/>
   </SettingsItem>
-  <SettingsItem label="自动剧集偏移">
+  <SettingsItem :label="$t('autoepisodeoffset')">
     <el-switch v-model:model-value="props.config.offset"/>
   </SettingsItem>
-  <SettingsItem label="自动偏移类型">
+  <SettingsItem :label="$t('autooffsettype')">
     <el-select v-model="props.config['offsetType']" class="width-150">
       <el-option value="AUTO_OFFSET" label="Auto"/>
       <el-option value="BGM_OFFSET" label="Bangumi"/>
     </el-select>
   </SettingsItem>
-  <SettingsItem label="BGM日语标题">
+  <SettingsItem :label="$t('bangumijapanesetitle')">
     <el-switch v-model:model-value="props.config['bgmJpName']"/>
   </SettingsItem>
   <SettingsItem label="TMDB ID">
@@ -28,24 +28,24 @@
       />
       <br>
       <el-text class="mx-1" size="small">
-        自动获取tmdbId, 如: 女仆冥土小姐。 [tmdbid=242143]
+        {{ $t('fetchtmdbidautomaticallyegtmdbid242143') }}
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="TMDB标题">
+  <SettingsItem :label="$t('tmdbtitle')">
     <div>
       <el-switch v-model:model-value="props.config.tmdb"/>
       <br>
       <el-text class="mx-1" size="small">
-        自动使用TMDB的标题
+        {{ $t('usethetmdbtitleautomatically') }}
       </el-text>
       <br>
-      <el-checkbox v-model="props.config['tmdbAnime']" label="仅获取动漫"/>
-      <el-checkbox v-model="props.config['tmdbOriginalName']" label="使用原标题"/>
-      <el-checkbox v-model="props.config['tmdbRomaji']" label="优先获取罗马音"/>
+      <el-checkbox v-model="props.config['tmdbAnime']" :label="$t('animeonly')"/>
+      <el-checkbox v-model="props.config['tmdbOriginalName']" :label="$t('useoriginaltitle')"/>
+      <el-checkbox v-model="props.config['tmdbRomaji']" :label="$t('preferromaji')"/>
     </div>
   </SettingsItem>
-  <SettingsItem label="TMDB语言">
+  <SettingsItem :label="$t('tmdblanguage')">
     <el-select v-model:model-value="props.config['tmdbLanguage']" class="width-150">
       <el-option v-for="item in tmdb_i18n" :value="item.i18n_tag"
                  :label="`${item.native_name} (${item.i18n_tag})`"
@@ -59,31 +59,31 @@
       </el-option>
     </el-select>
   </SettingsItem>
-  <SettingsItem label="开启全局排除">
+  <SettingsItem :label="$t('enableglobalexclude')">
     <el-switch v-model:model-value="props.config.enabledExclude" :disabled="props.config.importExclude"/>
   </SettingsItem>
-  <SettingsItem label="导入全局排除">
+  <SettingsItem :label="$t('importglobalexclude')">
     <el-switch v-model:model-value="props.config.importExclude" :disabled="props.config.enabledExclude"/>
   </SettingsItem>
-  <SettingsItem label="默认启用全局匹配">
+  <SettingsItem :label="$t('enableglobalmatchbydefault')">
     <el-switch v-model="props.config.enabledGlobalMatch" :disabled="props.config.importGlobalMatch"/>
   </SettingsItem>
-  <SettingsItem label="默认导入全局匹配">
+  <SettingsItem :label="$t('importglobalmatchbydefault')">
     <el-switch v-model="props.config.importGlobalMatch" :disabled="props.config.enabledGlobalMatch"/>
   </SettingsItem>
-  <SettingsItem label="默认启用全局反匹配">
+  <SettingsItem :label="$t('enableglobalreversematchbydefault')">
     <el-switch v-model="props.config.enabledGlobalReverseMatch" :disabled="props.config.importGlobalReverseMatch"/>
   </SettingsItem>
-  <SettingsItem label="默认导入全局反匹配">
+  <SettingsItem :label="$t('importglobalreversematchbydefault')">
     <el-switch v-model="props.config.importGlobalReverseMatch" :disabled="props.config.enabledGlobalReverseMatch"/>
   </SettingsItem>
-  <SettingsItem label="封面质量">
+  <SettingsItem :label="$t('coverquality')">
     <el-select v-model="props.config['bgmImageSize']" class="width-150">
       <el-option v-for="item in ['large','medium','common']" :key="item"
                  :value="item"/>
     </el-select>
   </SettingsItem>
-  <SettingsItem label="自定义集数规则">
+  <SettingsItem :label="$t('customepisoderules')">
     <div class="full-width">
       <div>
         <el-switch v-model="props.config.customEpisode"/>

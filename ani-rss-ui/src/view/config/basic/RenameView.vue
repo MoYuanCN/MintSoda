@@ -1,20 +1,20 @@
 <template>
-  <SettingsItem label="自动重命名">
+  <SettingsItem :label="$t('autorename')">
     <el-switch v-model:model-value="props.config.rename"/>
   </SettingsItem>
-  <SettingsItem label="重命名间隔">
+  <SettingsItem :label="$t('renameinterval')">
     <el-input-number v-model:model-value="props.config['renameSleepSeconds']"
                      :disabled="!config.rename"
                      :min="5">
       <template #suffix>
-        <span>秒</span>
+        <span>{{ $t('seconds') }}</span>
       </template>
     </el-input-number>
   </SettingsItem>
-  <SettingsItem label="最大文件名长度">
+  <SettingsItem :label="$t('maxfilenamelength')">
     <el-input-number v-model:model-value="props.config.maxFileNameLength" :min="0"/>
   </SettingsItem>
-  <SettingsItem label="重命名模版">
+  <SettingsItem :label="$t('renametemplate')">
     <div class="full-width">
       <div>
         <el-input v-model:model-value="props.config.renameTemplate"
@@ -29,7 +29,7 @@
             :closable="false"
         >
           <template #title>
-            模板内至少需要保留 S${seasonFormat}E${episodeFormat} or S${season}E${episode} 否则会导致无法正常重命名
+            {{ $t('keepsseasonformateepisodeformatorsseasoneepi') }}
           </template>
         </el-alert>
       </div>
@@ -38,37 +38,37 @@
             class="text-extra-small"
             type="primary"
             href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
-            target="_blank">详细说明
+            target="_blank">{{ $t('details') }}
         </el-link>
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="剔除年份">
+  <SettingsItem :label="$t('removeyear')">
     <div>
       <el-switch v-model:model-value="props.config.renameDelYear"/>
       <br>
       <el-text class="mx-1" size="small">
-        重命名时剔除 年份, 如 (2024)
+        {{ $t('removetheyearwhenrenamingeg2024') }}
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="剔除TMDB ID">
+  <SettingsItem :label="$t('removetmdbid')">
     <div>
       <el-switch v-model:model-value="props.config.renameDelTmdbId"/>
       <br>
       <el-text class="mx-1" size="small">
-        重命名时剔除 tmdbid, 如 [tmdbid=242143]
+        {{ $t('removetmdbidwhenrenamingegtmdbid242143') }}
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="字幕独立文件夹">
+  <SettingsItem :label="$t('separatesubtitlefolder')">
     <div>
       <el-switch v-model:model-value="props.config.subtitleIndependentFolderEnabled"/>
       <br>
       <el-input v-model="config.subtitleIndependentFolderName"/>
       <br>
       <el-text class="mx-1" size="small">
-        仅支持 qBittorrent
+        {{ $t('qbittorrentonly') }}
       </el-text>
     </div>
   </SettingsItem>

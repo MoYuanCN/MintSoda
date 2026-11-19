@@ -4,21 +4,21 @@
       <div>
         <div class="bgm-search-container">
           <div class="bgm-search-input-wrapper">
-            <el-input v-model:model-value="name" @keyup.enter="search" placeholder="请输入搜索标题" clearable/>
+            <el-input v-model:model-value="name" @keyup.enter="search" :placeholder="$t('enteratitletosearch')" clearable/>
           </div>
           <div class="bgm-search-spacer"></div>
-          <el-button @click="search" :loading="searchLoading" text bg icon="Search" :disabled="!name">搜索</el-button>
+          <el-button @click="search" :loading="searchLoading" text bg icon="Search" :disabled="!name">{{ $t('search') }}</el-button>
         </div>
       </div>
       <el-table size="small" v-model:data="list" height="500px">
         <el-table-column prop="id" label="id" width="80"/>
-        <el-table-column label="封面" width="120">
+        <el-table-column :label="$t('cover')" width="120">
           <template #default="it">
             <img :alt="list[it.$index]['name']" :src="proxyImage(list[it.$index]['images']['large'])" height="100px"
                  width="78px">
           </template>
         </el-table-column>
-        <el-table-column label="名称" width="200">
+        <el-table-column :label="$t('name')" width="200">
           <template #default="it">
             <span>{{ list[it.$index]['nameCn'] ? list[it.$index]['nameCn'] : list[it.$index]['name'] }}</span>
           </template>
@@ -27,7 +27,7 @@
         <el-table-column>
           <template #default="it">
             <div class="flex flex-center full-width">
-              <el-button bg text @click="ok(list[it.$index])">选择</el-button>
+              <el-button bg text @click="ok(list[it.$index])">{{ $t('select') }}</el-button>
             </div>
           </template>
         </el-table-column>

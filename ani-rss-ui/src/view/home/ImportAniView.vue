@@ -1,7 +1,7 @@
 <template>
   <el-dialog
       v-model="dialogVisible"
-      title="导入数据"
+      :title="$t('importdata')"
       width="500px"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
@@ -13,7 +13,7 @@
           <el-icon>
             <document/>
           </el-icon>
-          <span>选择文件</span>
+          <span>{{ $t('choosefile') }}</span>
         </div>
         <div v-if="data.filename" class="file-selected">
           <el-tag
@@ -30,14 +30,14 @@
           </el-tag>
           <div class="file-info">
             <el-text type="info" size="small">
-              已选择文件，共 {{ data.aniList.length }} 条数据
+              {{ $t('fileselectednentries', {n: data.aniList.length}) }}
             </el-text>
           </div>
         </div>
         <UploadView url="api/uploadAndRead"
                     :extensions="['json']"
                     :callback="uploadCallback">
-          <el-button bg icon="Upload">选择并上传文件</el-button>
+          <el-button bg icon="Upload">{{ $t('chooseanduploadfile') }}</el-button>
         </UploadView>
       </div>
 
@@ -47,20 +47,20 @@
           <el-icon>
             <setting/>
           </el-icon>
-          <span>冲突处理</span>
+          <span>{{ $t('conflicthandling') }}</span>
         </div>
         <div class="conflict-content">
           <el-radio-group v-model="data.conflict" class="conflict-options">
             <el-radio value="REPLACE" class="conflict-option">
               <div class="option-content">
-                <div class="option-title">替换现有数据</div>
-                <div class="option-desc">用新数据覆盖同名的现有数据</div>
+                <div class="option-title">{{ $t('replaceexistingdata') }}</div>
+                <div class="option-desc">{{ $t('overwriteexistingentrieswiththesamename') }}</div>
               </div>
             </el-radio>
             <el-radio value="SKIP" class="conflict-option">
               <div class="option-content">
-                <div class="option-title">跳过冲突数据</div>
-                <div class="option-desc">保留现有数据，跳过重复项</div>
+                <div class="option-title">{{ $t('skipconflictingdata') }}</div>
+                <div class="option-desc">{{ $t('keepexistingdataandskipduplicates') }}</div>
               </div>
             </el-radio>
           </el-radio-group>
@@ -74,7 +74,7 @@
             size="large"
             icon="Close"
         >
-          取消
+          {{ $t('cancel') }}
         </el-button>
         <el-button
             type="primary"
@@ -84,7 +84,7 @@
             size="large"
             icon="Upload"
         >
-          开始导入
+          {{ $t('startimport') }}
         </el-button>
       </div>
     </div>

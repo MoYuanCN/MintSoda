@@ -1,75 +1,75 @@
 <template>
-  <SettingsItem label="RSS开关">
+  <SettingsItem :label="$t('rssswitch')">
     <el-switch v-model:model-value="props.config.rss"/>
   </SettingsItem>
-  <SettingsItem label="RSS间隔">
+  <SettingsItem :label="$t('rssinterval')">
     <el-input-number v-model:model-value="props.config.rssSleepSeconds" :disabled="!props.config.rss" :min="1">
       <template #suffix>
-        <span>秒</span>
+        <span>{{ $t('seconds') }}</span>
       </template>
     </el-input-number>
   </SettingsItem>
-  <SettingsItem label="RSS超时">
+  <SettingsItem :label="$t('rsstimeout')">
     <div>
       <el-input-number v-model:model-value="props.config['rssTimeout']"
                        :max="120" :min="1">
         <template #suffix>
-          <span>秒</span>
+          <span>{{ $t('seconds') }}</span>
         </template>
       </el-input-number>
       <br>
       <el-text class="mx-1" size="small">
-        单个 RSS 请求的最长等待时间；超时后若已有成功内容会继续沿用旧内容
+        {{ $t('maximumwaitperrssrequestontimeoutthelastsucc') }}
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="RSS并发">
+  <SettingsItem :label="$t('rssconcurrency')">
     <div>
       <el-input-number v-model:model-value="props.config['rssConcurrency']"
                        :max="16" :min="1">
         <template #suffix>
-          <span>个</span>
+          <span>{{ $t('items') }}</span>
         </template>
       </el-input-number>
       <br>
       <el-text class="mx-1" size="small">
-        每轮刷新同时拉取的 RSS 数量。间隔很短时建议保持 2-4，避免给 RSS 站点造成压力
+        {{ $t('numberofrssfeedsfetchedperroundkeep24withsho') }}
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="刷新方式">
+  <SettingsItem :label="$t('refreshmode')">
     <el-text class="mx-1" size="small">
-      每轮以固定间隔开始：间隔从上轮开始时计算，处理耗时不会叠加到等待时间。相同 RSS 地址在同一轮只请求一次，并按 ETag 复用未变化的内容。
+      {{ $t('eachroundstartsatafixedintervalmeasuredfromt') }}
     </el-text>
   </SettingsItem>
-  <SettingsItem label="自动跳过">
+  <SettingsItem :label="$t('autoskip')">
     <div class="full-width">
       <el-switch v-model:model-value="props.config.fileExist" :disabled="!config.rename"/>
       <br>
       <el-text class="mx-1" size="small">
-        文件已下载自动跳过，此选项必须启用自动重命名。确保下载器路径与本程序配置的保存路径一致。
+        {{ $t('skipalreadydownloadedfilesthisrequiresautore') }}
         &nbsp;
         <el-link
             class="text-extra-small"
             type="primary"
             href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
             target="_blank">
-          详细说明
+          {{ $t('details') }}
         </el-link>
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="自动禁用订阅">
+  <SettingsItem :label="$t('autodisablesubscription')">
     <div class="full-width">
       <el-switch v-model:model-value="props.config.autoDisabled"/>
       <br>
       <el-text class="mx-1" size="small">
-        根据 Bangumi 获取总集数 当所有集数都已下载时自动禁用该订阅
+        {{ $t('fetchthetotalepisodecountfrombangumianddisab') }}
       </el-text>
       <div>
         <el-checkbox v-model="props.config['completed']"
                      :disabled="!props.config.autoDisabled"
-                     label="订阅完结迁移"/>
+                     :label="$t('completedsubscriptionmigration')"/>
       </div>
       <div>
         <el-input v-model="props.config['completedPathTemplate']"
@@ -77,45 +77,45 @@
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="自动更新总集数">
+  <SettingsItem :label="$t('autoupdatetotalepisodes')">
     <div class="full-width">
       <el-switch v-model="props.config.updateTotalEpisodeNumber"/>
       <div>
         <el-checkbox v-model="props.config.forceUpdateTotalEpisodeNumber"
                      :disabled="!props.config.updateTotalEpisodeNumber"
                      class="el-checkbox-danger"
-                     label="强制更新"/>
+                     :label="$t('forceupdate')"/>
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="自动跳过X.5集">
+  <SettingsItem :label="$t('autoskipx5episodes')">
     <el-switch v-model:model-value="props.config.skip5"/>
   </SettingsItem>
-  <SettingsItem label="遗漏检测">
+  <SettingsItem :label="$t('missingepisodedetection')">
     <div>
       <div>
         <el-switch v-model:model-value="props.config.omit"/>
       </div>
       <el-text class="mx-1" size="small">
-        总开关 若检测到RSS中集数出现遗漏会发送通知
+        {{ $t('masterswitchsendsanotificationwhenepisodesar') }}
       </el-text>
     </div>
   </SettingsItem>
-  <SettingsItem label="备用RSS">
+  <SettingsItem :label="$t('standbyrss')">
     <div class="full-width">
       <div>
         <el-switch v-model:model-value="props.config.standbyRss"/>
       </div>
       <div>
         <el-checkbox v-model="props.config['coexist']" :disabled="!props.config.standbyRss"
-                     label="多字幕组共存模式"/>
+                     :label="$t('multisubgroupmode')"/>
       </div>
       <div class="flex full-width justify-end">
         <el-link
             type="primary"
             href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
             target="_blank">
-          详细说明
+          {{ $t('details') }}
         </el-link>
       </div>
     </div>

@@ -23,10 +23,11 @@
 </style>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 
 import {computed, ref} from "vue";
 import {authorization} from "@/js/global.js";
-
+const {t} = useI18n()
 const props = defineProps({
   url: String,
   extensions: {
@@ -52,12 +53,12 @@ let selectAndUpload = () => {
 
 let uploadFile = async (file) => {
   if (!file) {
-    return Promise.reject(new Error('文件为空'))
+    return Promise.reject(new Error(t('fileisempty')))
   }
 
   const extension = file.name.match(/\.([^.]+)$/)?.[1]?.toLowerCase()
   if (acceptedExtensions.value.length && !acceptedExtensions.value.includes(extension)) {
-    return Promise.reject(new Error('文件格式错误'))
+    return Promise.reject(new Error(t('invalidfileformat')))
   }
 
   const formData = new FormData();

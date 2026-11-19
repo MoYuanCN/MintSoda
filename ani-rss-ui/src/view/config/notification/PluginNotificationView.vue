@@ -1,7 +1,7 @@
 <template>
   <div v-if="notificationConfig.notificationType === 'PLUGIN'">
-    <SettingsItem label="插件渠道">
-      <el-select v-model="notificationConfig.pluginChannelId" clearable placeholder="选择插件提供的通知渠道"
+    <SettingsItem :label="$t('pluginchannel')">
+      <el-select v-model="notificationConfig.pluginChannelId" clearable :placeholder="$t('selectachannelprovidedbyaplugin')"
                  class="plugin-channel-select">
         <el-option v-for="channel in channels" :key="channel.id"
                    :label="channel.name || channel.id" :value="channel.id"/>
@@ -23,7 +23,7 @@
       </el-select>
     </SettingsItem>
     <el-text v-if="!channels.length" size="small" type="info">
-      尚未启用任何提供通知渠道的插件，请先在“插件”页启用插件。
+      {{ $t('nopluginprovidesnotificationchannelsyetenabl') }}
     </el-text>
   </div>
 </template>

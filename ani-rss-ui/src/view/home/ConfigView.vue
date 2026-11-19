@@ -1,11 +1,11 @@
 <template>
   <div v-loading="loading" class="config-page app-page-layout">
-    <PageHeaderView title="设置" :subtitle="activeDescription">
+    <PageHeaderView :title="$t('settings')" :subtitle="activeDescription">
       <template #actions>
         <el-tag v-if="dirty" class="config-header-status" type="warning" effect="light">
-          {{ changedKeys.length }} 处未保存
+          {{ $t('nunsavedchanges', {n: changedKeys.length}) }}
         </el-tag>
-        <el-tag v-else class="config-header-status" type="success" effect="plain">已保存</el-tag>
+        <el-tag v-else class="config-header-status" type="success" effect="plain">{{ $t('saved') }}</el-tag>
       </template>
     </PageHeaderView>
     <div class="config-content app-page-content app-page-padding">
@@ -14,10 +14,10 @@
             v-model="searchText"
             class="config-search"
             clearable
-            placeholder="搜索设置页，例如 间隔、通知、代理"
+            :placeholder="$t('searchsettingsegintervalnotificationproxy')"
             prefix-icon="Search"/>
         <el-text v-if="searchText && !filteredTabs.length" size="small" type="warning">
-          没有匹配的设置页
+          {{ $t('nomatchingsettingspage') }}
         </el-text>
       </div>
       <el-tabs v-if="filteredTabs.length" v-model="activeName" class="segmented-tabs config-tabs">
@@ -29,7 +29,7 @@
           <template #label>
             <span class="config-tab-label">
               {{ tab.label }}
-              <span v-if="isTabDirty(tab.name)" class="config-tab-dot" title="该页有未保存的修改"/>
+              <span v-if="isTabDirty(tab.name)" class="config-tab-dot" :title="$t('thispagehasunsavedchanges')"/>
             </span>
           </template>
           <el-scrollbar class="config-scrollbar">
@@ -42,7 +42,7 @@
                   :show-text="true"/>
               <div v-else-if="tab.name === 'match'" class="global-match-content">
                 <el-alert :closable="false" show-icon type="info"
-                          title="全局匹配规则要求每条规则都命中；匹配成功时优先于排除规则。反匹配命中优先级最高。"/>
+                          :title="$t('everyglobalmatchrulemusthitamatchtakespreced')"/>
                 <ExcludeView v-model:exclude="config.globalMatch" :show-text="true"/>
               </div>
               <ReverseMatchSettingsView v-else-if="tab.name === 'reverse-match'" :config="config"/>
@@ -57,23 +57,24 @@
         </el-tab-pane>
       </el-tabs>
       <div v-else class="config-empty">
-        <el-empty description="没有匹配的设置页"/>
+        <el-empty :description="$t('nomatchingsettingspage')"/>
       </div>
     </div>
     <div class="config-savebar" :class="{'is-dirty': dirty}">
       <el-text class="config-savebar-text" size="small">
-        {{ dirty ? `有 ${changedKeys.length} 处修改未保存` : '所有修改已保存' }}
-        <span class="config-savebar-tip">Ctrl + S 可保存</span>
+        {{ dirty ? $t('nunsavedchanges', {n: changedKeys.length}) : $t('allchangessaved') }}
+        <span class="config-savebar-tip">{{ $t('ctrlstosave') }}</span>
       </el-text>
       <div class="config-savebar-actions">
-        <el-button bg text :disabled="!dirty || saving" @click="discardChanges">撤销修改</el-button>
-        <el-button type="primary" :disabled="!dirty" :loading="saving" @click="saveConfig">保存设置</el-button>
+        <el-button bg text :disabled="!dirty || saving" @click="discardChanges">{{ $t('discardchanges') }}</el-button>
+        <el-button type="primary" :disabled="!dirty" :loading="saving" @click="saveConfig">{{ $t('savesettings') }}</el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, onActivated, onMounted, ref, watch} from "vue";
 import {onBeforeRouteLeave} from "vue-router";
 import {ElMessage, ElMessageBox} from "element-plus";
@@ -93,7 +94,7 @@ import PageHeaderView from "@/view/custom/PageHeaderView.vue";
 import {configData} from "@/js/config.js";
 import {applyUiCustomization} from "@/js/global.js";
 import * as http from "@/js/http.js";
-
+const {t} = useI18n()
 const saving = ref(false)
 const loading = ref(true)
 const searchText = ref('')
@@ -103,17 +104,17 @@ const config = ref(configData)
 const baseline = ref('')
 
 const tabs = [
-  {name: 'download', label: '下载设置', description: '下载器、目录与任务行为', keywords: 'qbittorrent 种子 保存 路径 下载 限速 标签'},
-  {name: 'basic', label: '基本设置', description: '订阅、命名与备份', keywords: '外观 主题 重命名 rss 间隔 bangumi token 备份 自启'},
-  {name: 'exclude', label: '全局排除', description: '统一排除不需要的资源', keywords: '正则 排除 过滤'},
-  {name: 'match', label: '全局匹配', description: '统一限定 RSS 标题必须符合的条件', keywords: '正则 匹配 标题'},
-  {name: 'reverse-match', label: '反匹配', description: '管理全局与订阅反匹配规则并测试标题', keywords: '反匹配 字幕组 测试 正则'},
-  {name: 'proxy', label: '代理', description: '网络代理与连接配置', keywords: '代理 网络 http socks 测试'},
-  {name: 'security', label: '安全', description: '账号与访问安全', keywords: '密码 账号 api key 白名单 跨域 登录'},
-  {name: 'notification', label: '通知', description: '消息渠道与事件通知', keywords: 'telegram 通知 webhook json 模板 emby'},
-  {name: 'developer', label: '开发者', description: '开发者选项、请求诊断与自定义种子地址', keywords: '开发者 种子 info_hash 调试 诊断 ua 请求日志'},
-  {name: 'afdian', label: '捐赠', description: '支持项目持续维护', keywords: '捐赠 爱发电'},
-  {name: 'about', label: '关于', description: '版本信息与项目链接', keywords: '版本 更新 开发者 关于 日志'}
+  {name: 'download', label: t('downloadsettings'), description: t('downloaderfoldersandtaskbehavior'), keywords: 'qbittorrent 种子 保存 路径 下载 限速 标签 ' + t('qbittorrenttorrentsavepathdownloadlimittags')},
+  {name: 'basic', label: t('basicsettings'), description: t('subscriptionsnamingandbackup'), keywords: '外观 主题 重命名 rss 间隔 bangumi token 备份 自启 ' + t('appearancethemerenamerssintervalbangumitoken')},
+  {name: 'exclude', label: t('globalexclude'), description: t('excludeunwantedreleasesinoneplace'), keywords: '正则 排除 过滤 ' + t('regexexcludefilter')},
+  {name: 'match', label: t('globalmatch'), description: t('requireeveryrsstitletomatchtheserules'), keywords: '正则 匹配 标题 ' + t('regexmatchtitle')},
+  {name: 'reverse-match', label: t('reversematch'), description: t('manageglobalandpersubscriptionreversematchru'), keywords: '反匹配 字幕组 测试 正则 ' + t('reversematchsubgrouptestregex')},
+  {name: 'proxy', label: t('proxy'), description: t('networkproxyandconnectionsettings'), keywords: '代理 网络 http socks 测试 ' + t('proxynetworkhttpsockstest')},
+  {name: 'security', label: t('security'), description: t('accountandaccesssecurity'), keywords: '密码 账号 api key 白名单 跨域 登录 ' + t('passwordaccountapikeyallowlistcorslogin')},
+  {name: 'notification', label: t('notifications'), description: t('channelsandeventnotifications'), keywords: 'telegram 通知 webhook json 模板 emby ' + t('telegramnotificationwebhookjsontemplateemby')},
+  {name: 'developer', label: t('developer'), description: t('developeroptionsrequestdiagnosticsandcustomt'), keywords: '开发者 种子 info_hash 调试 诊断 ua 请求日志 ' + t('developertorrentinfohashdebugdiagnosticsuare')},
+  {name: 'afdian', label: t('donate'), description: t('supportongoingmaintenance'), keywords: '捐赠 爱发电 ' + t('donateafdian')},
+  {name: 'about', label: t('about'), description: t('versionandprojectlinks'), keywords: '版本 更新 开发者 关于 日志 ' + t('versionupdatedeveloperaboutlogs')}
 ]
 
 const activeDescription = computed(() => tabs.find(tab => tab.name === activeName.value)?.description || '')
@@ -206,7 +207,7 @@ const PASSWORD_MIN_LENGTH = 8
 const checkPasswordStrength = password => {
   if (!password) return ''
   if (password.length < PASSWORD_MIN_LENGTH) {
-    return `密码至少需要 ${PASSWORD_MIN_LENGTH} 位`
+    return t('passwordmustbeatleastncharacters', {n: PASSWORD_MIN_LENGTH})
   }
   let types = 0
   if (/[a-z]/.test(password)) types++
@@ -214,7 +215,7 @@ const checkPasswordStrength = password => {
   if (/\d/.test(password)) types++
   if (/[^A-Za-z0-9]/.test(password)) types++
   if (types < 2) {
-    return '密码需包含大写字母、小写字母、数字、符号中的至少两类'
+    return t('passwordmustcontainatleasttwoofuppercaselett')
   }
   return ''
 }
@@ -224,28 +225,28 @@ const validateConfig = value => {
   // 只校验新用户名，历史配置中的用户名不阻止保存其他设置。
   const savedUsername = baseline.value ? (JSON.parse(baseline.value).login?.username || '').trim() : username
   if (username !== savedUsername && !/^[A-Za-z0-9_-]{3,32}$/.test(username)) {
-    return '用户名需为 3-32 位字母、数字、下划线或连字符'
+    return t('usernamemustbe332lettersdigitsunderscoresorh')
   }
   const passwordError = checkPasswordStrength((value.login?.password || '').trim())
   if (passwordError) return passwordError
   const interval = Number(value.rssSleepSeconds)
   if (!Number.isFinite(interval) || interval < 1) {
-    return 'RSS 刷新间隔必须至少为 1 秒'
+    return t('rssrefreshintervalmustbeatleastonesecond')
   }
   const renameInterval = Number(value.renameSleepSeconds)
   if (!Number.isFinite(renameInterval) || renameInterval < 1) {
-    return '重命名间隔必须至少为 1 秒'
+    return t('renameintervalmustbeatleastonesecond')
   }
   // 旧配置可能还没有并发字段，缺省时交给服务端补默认值。
   if (value.rssConcurrency !== undefined && value.rssConcurrency !== null) {
     const concurrency = Number(value.rssConcurrency)
     if (!Number.isFinite(concurrency) || concurrency < 1 || concurrency > 16) {
-      return 'RSS 并发数需在 1 到 16 之间'
+      return t('rssconcurrencymustbebetweenand')
     }
   }
   const timeout = Number(value.rssTimeout)
   if (!Number.isFinite(timeout) || timeout < 1) {
-    return 'RSS 超时时间必须至少为 1 秒'
+    return t('rsstimeoutmustbeatleastonesecond')
   }
   for (const template of value.notificationTemplateList || []) {
     if (template?.type !== 'JSON') continue
@@ -254,7 +255,7 @@ const validateConfig = value => {
     try {
       JSON.parse(body)
     } catch {
-      return `JSON 模板「${template.name || '未命名'}」不是有效 JSON，请先修正`
+      return t('jsontemplateisnotvalidjson', {name: template.name || t('untitled')})
     }
   }
   return ''
@@ -297,15 +298,15 @@ const saveConfig = () => {
 
 const discardChanges = () => {
   if (!dirty.value) return
-  ElMessageBox.confirm('将放弃所有未保存的修改，恢复为上次保存的设置。', '撤销修改', {
-    confirmButtonText: '放弃修改',
-    cancelButtonText: '继续编辑',
+  ElMessageBox.confirm(t('unsavedchangeswillbediscardedandthelastsaved'), t('discardchanges'), {
+    confirmButtonText: t('discardchanges-2'),
+    cancelButtonText: t('keepediting'),
     type: 'warning'
   })
       .then(() => {
         config.value = JSON.parse(baseline.value)
         applyUiCustomization(config.value)
-        ElMessage.info('已恢复为上次保存的设置')
+        ElMessage.info(t('restoredthelastsavedsettings'))
       })
       .catch(() => {
       })
@@ -324,9 +325,9 @@ const restoreBaseline = () => {
 onBeforeRouteLeave(async () => {
   if (!dirty.value || window.$skipUnsavedGuard) return true
   try {
-    await ElMessageBox.confirm('设置尚未保存，离开将丢失这些修改。', '未保存的修改', {
-      confirmButtonText: '放弃并离开',
-      cancelButtonText: '留在此页',
+    await ElMessageBox.confirm(t('settingsarenotsavedleavingwilldiscardthesech'), t('unsavedchanges'), {
+      confirmButtonText: t('discardandleave'),
+      cancelButtonText: t('stayonthispage'),
       type: 'warning'
     })
     restoreBaseline()

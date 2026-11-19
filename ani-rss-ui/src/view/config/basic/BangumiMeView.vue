@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="dialogVisible" align-center center class="dialog-max-width" title="查看授权状态">
+  <el-dialog v-model="dialogVisible" align-center center class="dialog-max-width" :title="$t('viewauthorization')">
     <div class="content" v-loading="loading">
       <el-text v-if="errorMessage" type="danger">{{ errorMessage }}</el-text>
       <el-scrollbar v-if="me.username">
@@ -10,12 +10,12 @@
           <el-descriptions-item
               :rowspan="2"
               :width="140"
-              label="头像"
+              :label="$t('avatar')"
               align="center"
           >
             <el-avatar :src="me['avatar']['large']" size="large"/>
           </el-descriptions-item>
-          <el-descriptions-item label="用户名">
+          <el-descriptions-item :label="$t('username')">
             <el-text v-if="me['username']">
               {{ me['username'] }}
             </el-text>
@@ -23,7 +23,7 @@
               {{ me['id'] }}
             </el-text>
           </el-descriptions-item>
-          <el-descriptions-item label="主页">
+          <el-descriptions-item :label="$t('homepage')">
             <el-link
                 type="primary"
                 class="text-extra-small"
@@ -32,28 +32,28 @@
               {{ me['url'] }}
             </el-link>
           </el-descriptions-item>
-          <el-descriptions-item label="邮箱">
+          <el-descriptions-item :label="$t('email')">
             {{ me['email'] }}
           </el-descriptions-item>
-          <el-descriptions-item label="注册日期">
+          <el-descriptions-item :label="$t('registered')">
             <el-text>
               {{ me['regTime'] }}
             </el-text>
           </el-descriptions-item>
-          <el-descriptions-item label="授权剩余过期时间">
+          <el-descriptions-item :label="$t('authorizationexpiresin')">
             <el-tag type="success" v-if="me['expiresDays'] > 3">
-              {{ me['expiresDays'] }} 天
+              {{ $t('ndays', {n: me['expiresDays']}) }}
             </el-tag>
             <el-tag type="danger" v-else>
-              {{ me['expiresDays'] }} 天
+              {{ $t('ndays', {n: me['expiresDays']}) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="签名">
+          <el-descriptions-item :label="$t('signature')">
             <el-text v-if="me['sign']">
               {{ me['sign'] }}
             </el-text>
             <el-text v-else>
-              无
+              {{ $t('none') }}
             </el-text>
           </el-descriptions-item>
         </el-descriptions>

@@ -2,11 +2,11 @@
   <el-alert
       :closable="false"
       show-icon
-      title="ANI-RSS-Yuri 的本地功能已全部解锁，无需填写捐赠订单号。"
+      :title="$t('alllocalfeaturesareunlockednodonationorderis')"
       type="success"
   />
   <el-text class="donation-note" type="info">
-    捐赠不会改变本地功能状态。此页面不再连接原项目的捐赠验证服务。
+    {{ $t('donationsdonotaffectlocalfeaturesthispagenol') }}
   </el-text>
 </template>
 

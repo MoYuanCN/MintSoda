@@ -8,7 +8,7 @@
             :content="`${props.config.gitInfo.branch} ${props.config.gitInfo.shortCommitId}`"
             placement="right">
           <el-text class="mx-1 cursor-pointer" size="small" role="button" tabindex="0"
-                    title="连续点击七次打开开发者选项" @click.stop="developerTap"
+                    :title="$t('tapseventimestoopendeveloperoptions')" @click.stop="developerTap"
                     @keydown.enter.stop="developerTap" @keydown.space.prevent.stop="developerTap">
             &nbsp;v{{ props.config.version }}
           </el-text>
@@ -21,68 +21,68 @@
       </el-button>
     </div>
     <div v-loading.fullscreen.lock="actionLoading" class="button-list">
-      <PopconfirmView title="你确定要退出吗?" @confirm="logout">
+      <PopconfirmView :title="$t('signout')" @confirm="logout">
         <template #reference>
           <el-button type="danger" bg text icon="Back">
-            退出
+            {{ $t('signout-2') }}
           </el-button>
         </template>
       </PopconfirmView>
-      <PopconfirmView title="你确定重启吗?" @confirm="stop(0)">
+      <PopconfirmView :title="$t('restart')" @confirm="stop(0)">
         <template #reference>
-          <el-button bg icon="RefreshRight" text type="warning">重启</el-button>
+          <el-button bg icon="RefreshRight" text type="warning">{{ $t('restart-2') }}</el-button>
         </template>
       </PopconfirmView>
-      <PopconfirmView title="你确定关闭吗?" @confirm="stop(1)">
+      <PopconfirmView :title="$t('shutdown')" @confirm="stop(1)">
         <template #reference>
-          <el-button bg icon="SwitchButton" text type="danger">关闭</el-button>
+          <el-button bg icon="SwitchButton" text type="danger">{{ $t('close') }}</el-button>
         </template>
       </PopconfirmView>
       <el-badge :hidden="!about.update" class="item" value="new">
         <el-button :loading="about.version.length < 1" bg icon="Top" text type="success" @click="dialogVisible = true">
-          更新
+          {{ $t('update') }}
         </el-button>
       </el-badge>
     </div>
   </div>
-  <el-dialog v-model="developerDialogVisible" center title="开启开发者选项" width="520">
+  <el-dialog v-model="developerDialogVisible" center :title="$t('enabledeveloperoptions')" width="520">
     <el-form label-position="top" @submit.prevent>
-      <el-form-item label="登录账号">
+      <el-form-item :label="$t('account')">
         <el-input v-model="developerCredentials.username" autocomplete="username"/>
       </el-form-item>
-      <el-form-item label="登录密码">
+      <el-form-item :label="$t('loginpassword')">
         <el-input v-model="developerCredentials.password" type="password" show-password
                   autocomplete="current-password" @keyup.enter="unlockDeveloperMode"/>
       </el-form-item>
       <div class="developer-dialog-actions">
-        <el-button type="primary" :loading="developerLoading" @click="unlockDeveloperMode">验证并开启</el-button>
+        <el-button type="primary" :loading="developerLoading" @click="unlockDeveloperMode">{{ $t('verifyandenable') }}</el-button>
       </div>
     </el-form>
   </el-dialog>
-  <el-dialog v-if="dialogVisible" v-model="dialogVisible" align-center center title="版本更新"
+  <el-dialog v-if="dialogVisible" v-model="dialogVisible" align-center center :title="$t('versionupdate')"
              class="about-dialog">
     <div v-if="about.update">
       <div>
-        <SettingsItem label="版本号">
+        <SettingsItem :label="$t('version')">
           <el-link type="default" :href="`https://github.com/MoYuanCN/ani-rss-Yuri/releases/tag/v${about.latest}`"
                    target="_blank">
             {{ about.latest }}
           </el-link>
         </SettingsItem>
-        <SettingsItem label="发布时间">
+        <SettingsItem :label="$t('publishedat')">
           {{ about.date }}
         </SettingsItem>
-        <SettingsItem label="大小">
+        <SettingsItem :label="$t('size')">
           {{ about['formatSize'] }}
         </SettingsItem>
-        <SettingsItem label="更新内容">
+        <SettingsItem :label="$t('releasenotes')">
           <el-scrollbar class="about-scrollbar" :always="true">
             <div class="markdown-body about-markdown" v-html="md.render(about.markdownBody)"></div>
             <el-alert
                 show-icon
                 :closable="false"
                 class="about-alert"
-                title="更新依赖于Github, 需要网络环境支持"
+                :title="$t('updatesrelyongithubandrequirenetworkaccess')"
                 type="info"
             />
           </el-scrollbar>
@@ -90,26 +90,27 @@
       </div>
     </div>
     <div v-else>
-      <el-empty description="无更新"></el-empty>
+      <el-empty :description="$t('noupdates')"></el-empty>
     </div>
     <div class="flex about-dialog-footer">
       <el-button bg text icon="Tickets"
                  @click="openUrl('https://github.com/MoYuanCN/ani-rss-Yuri/releases')"
                  type="primary">
-        更新历史
+        {{ $t('updatehistory') }}
       </el-button>
       <div>
         <el-button :disabled="!about.update" bg text icon="Check"
                    type="success" @click="update">
-          开始更新
+          {{ $t('startupdate') }}
         </el-button>
-        <el-button bg icon="Close" text @click="dialogVisible = false">取消</el-button>
+        <el-button bg icon="Close" text @click="dialogVisible = false">{{ $t('cancel') }}</el-button>
       </div>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {computed, onMounted, ref} from "vue";
 import {ElMessage, ElMessageBox, ElText} from "element-plus";
@@ -125,7 +126,7 @@ import 'markdown-it-github-alerts/styles/github-base.css'
 import {authorization} from "@/js/global.js";
 import * as http from "@/js/http.js";
 import {uiCustomization, uiAssetUrl} from "@/js/global.js";
-
+const {t} = useI18n()
 let md = markdownit({
   html: true,
   linkify: true
@@ -166,15 +167,15 @@ const unlockDeveloperMode = () => {
     password: developerCredentials.value.password || ''
   }
   if (!credentials.username || !credentials.password) {
-    ElMessage.error('请输入当前登录账号和密码')
+    ElMessage.error(t('enteryourcurrentusernameandpassword'))
     return
   }
   developerLoading.value = true
   http.verifyDeveloperCredentials(credentials)
       .then(() => ElMessageBox.confirm(
-          '账号密码验证通过。启用开发者选项后页面会刷新，本页其它未保存的修改将丢失。',
-          '确认开启开发者选项',
-          {confirmButtonText: '开启并刷新', cancelButtonText: '取消', type: 'warning'}
+          t('credentialsverifiedenablingdeveloperoptionsr'),
+          t('enabledeveloperoptions-2'),
+          {confirmButtonText: t('enableandreload'), cancelButtonText: t('cancel'), type: 'warning'}
       ))
       .then(() => http.setDeveloperSettings({
         username: credentials.username,
@@ -182,7 +183,7 @@ const unlockDeveloperMode = () => {
         customTorrentUrl: props.config.customTorrentUrl || ''
       }))
       .then(res => {
-        ElMessage.success(res.message || '开发者选项已开启，页面即将刷新')
+        ElMessage.success(res.message || t('developeroptionsenabledthepagewillreload'))
         developerDialogVisible.value = false
         developerCredentials.value = {username: '', password: ''}
         window.$skipUnsavedGuard = true
@@ -190,7 +191,7 @@ const unlockDeveloperMode = () => {
       })
       .catch(error => {
         if (error !== 'cancel' && error !== 'close') {
-          ElMessage.error(error?.message || '开启开发者选项失败')
+          ElMessage.error(error?.message || t('failedtoenabledeveloperoptions'))
         }
       })
       .finally(() => { developerLoading.value = false })
@@ -232,7 +233,7 @@ const update = async () => {
           } catch (e) {
           }
         }
-        ElMessage.error("重启时遇到错误")
+        ElMessage.error(t("errorwhilerestarting"))
       })
       .finally(() => {
         actionLoading.value = false

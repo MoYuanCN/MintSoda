@@ -1,30 +1,31 @@
 <template>
-  <el-dialog v-model="dialogVisible" align-center center width="300" title="删除订阅">
+  <el-dialog v-model="dialogVisible" align-center center width="300" :title="$t('deletesubscription')">
     <div>
       <div v-if="aniList.length === 1">
-        <el-text class="mx-1" size="large">是否删除 {{ aniList[0].title }} 第{{ aniList[0].season }}季?</el-text>
+        <el-text class="mx-1" size="large">{{ $t('deleteseasonn', {title: aniList[0].title, season: aniList[0].season}) }}</el-text>
       </div>
       <div v-else>
-        <el-text class="mx-1" size="large">是否删除共 {{ aniList.length }} 个订阅?</el-text>
+        <el-text class="mx-1" size="large">{{ $t('deletensubscriptions', {n: aniList.length}) }}</el-text>
       </div>
-      <el-checkbox v-model="deleteFiles" class="el-checkbox-danger">同时删除下载任务与本地已下载的文件</el-checkbox>
+      <el-checkbox v-model="deleteFiles" class="el-checkbox-danger">{{ $t('alsodeletedownloadtasksandlocalfiles') }}</el-checkbox>
     </div>
     <div class="action">
-      <el-button icon="Check" :loading="okLoading" @click="delAni" text bg type="danger">确定
+      <el-button icon="Check" :loading="okLoading" @click="delAni" text bg type="danger">{{ $t('ok') }}
       </el-button>
-      <el-button icon="Close" bg text @click="dialogVisible = false">取消</el-button>
+      <el-button icon="Close" bg text @click="dialogVisible = false">{{ $t('cancel') }}</el-button>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 
 import {getCurrentInstance, markRaw, ref} from "vue";
 import * as http from "@/js/http.js";
 import {deleteAni} from "@/js/http.js";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {Delete} from "@element-plus/icons-vue";
-
+const {t} = useI18n()
 const dialogVisible = ref(false)
 
 const aniList = ref([])
@@ -63,16 +64,16 @@ const delAni = async () => {
 
   ElMessageBox.confirm(
       `<strong style="color: var(--el-color-danger);">
-        将会删除整个文件夹, 是否执意继续?
+        {{ $t('theentirefolderwillbedeletedcontinue') }}
         <br>
         ${downloadPath}
        </strong>`,
-      '警告',
+      t('warning'),
       {
         dangerouslyUseHTMLString: true,
-        confirmButtonText: '执意继续删除',
+        confirmButtonText: t('deleteanyway'),
         confirmButtonClass: 'is-text is-has-bg el-button--danger',
-        cancelButtonText: '取消',
+        cancelButtonText: t('cancel'),
         cancelButtonClass: 'is-text is-has-bg',
         type: 'warning',
         icon: markRaw(Delete),
@@ -86,7 +87,7 @@ const delAni = async () => {
 
 const show = (anis) => {
   if (!anis.length) {
-    ElMessage.error('未选择订阅')
+    ElMessage.error(t('nosubscriptionselected'))
     return
   }
 

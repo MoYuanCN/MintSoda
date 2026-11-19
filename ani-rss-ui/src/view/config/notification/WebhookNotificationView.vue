@@ -20,32 +20,32 @@
           v-model="notificationConfig['webHookHeader']"
           :placeholder="'Authorization: Bearer xxx\nCookie: 123456'"/>
     </SettingsItem>
-    <SettingsItem label="Body 来源">
+    <SettingsItem :label="$t('bodysource')">
       <el-radio-group v-model="bodyMode" @change="bodyModeChanged">
-        <el-radio-button value="manual">手写 Body</el-radio-button>
-        <el-radio-button value="template">使用模板库</el-radio-button>
+        <el-radio-button value="manual">{{ $t('custombody') }}</el-radio-button>
+        <el-radio-button value="template">{{ $t('usetemplatelibrary') }}</el-radio-button>
       </el-radio-group>
     </SettingsItem>
     <template v-if="bodyMode === 'template'">
-      <SettingsItem label="模板作为 Body">
+      <SettingsItem :label="$t('templateasbody')">
         <div class="notification-template-select">
           <el-select v-model="notificationConfig.notificationTemplateId" clearable
-                     placeholder="选择一个模板作为 Body">
+                     :placeholder="$t('selectatemplateasthebody')">
             <el-option v-for="template in templates"
                        :key="template.id"
-                       :label="`${template.name || '未命名模板'} · ${template.type === 'JSON' ? 'JSON' : '文本'}`"
+                       :label="`${template.name || $t('untitledtemplate')} · ${template.type === 'JSON' ? 'JSON' : $t('text')}`"
                        :value="template.id"/>
           </el-select>
           <el-text size="small" type="info">
-            发送时会把模板里的 ${...} 占位符替换为真实值；JSON 字符串值会自动转义。
+            {{ $t('placeholderslikeinthetemplatearereplacedwith') }}
           </el-text>
         </div>
       </SettingsItem>
-      <SettingsItem v-if="selectedTemplate" label="模板预览">
+      <SettingsItem v-if="selectedTemplate" :label="$t('templatepreview')">
         <pre class="notification-template-preview">{{ selectedTemplate.content || '' }}</pre>
       </SettingsItem>
       <el-alert v-else :closable="false" show-icon type="warning"
-                title="尚未选择模板，发送时将使用空 Body。"/>
+                :title="$t('notemplateselectedanemptybodywillbesent')"/>
     </template>
     <template v-else>
       <SettingsItem label="Content-Type">
@@ -57,18 +57,19 @@
                   :autosize="{ minRows: 4}"
                   :placeholder="bodyPlaceholder"/>
         <el-alert v-if="isJson && manualBody && !validJson" :closable="false" show-icon type="error"
-                  title="请求体模板不是有效 JSON。占位符请放在 JSON 字符串值中，例如 {&quot;subgroup&quot;:&quot;${subgroup}&quot;}。"/>
+                  :title="$t('thebodytemplateisnotvalidjsonputplaceholdersinsidejsonstringv')"/>
         <el-alert v-else-if="isJson" :closable="false" show-icon type="info"
-                  title="JSON 中的模板变量会自动转义。可用 title、text、action、episode、subgroup、tmdburl、bgmUrl、downloadPath、image 等字段。"/>
+                  :title="$t('templatevariablesinjsonareescapedautomatical')"/>
       </SettingsItem>
     </template>
   </template>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {computed, ref, watch} from "vue";
-
+const {t} = useI18n()
 let props = defineProps(['notificationConfig', 'config', 'templates'])
 
 // 模板即 Body，因此文本模板与 JSON 模板都可以选。
@@ -104,7 +105,7 @@ const manualBody = computed(() => props.notificationConfig['webHookBody'] || '')
 const isJson = computed(() => /application\/json|\+json/i.test(props.notificationConfig['webHookContentType'] || ''))
 const bodyPlaceholder = computed(() => isJson.value
     ? '{"subgroup":"${subgroup}","event":"${text}"}'
-    : '字幕组: ${subgroup} ${text}')
+    : t('subgroup') + ': ${subgroup} ${text}')
 const validJson = computed(() => {
   try {
     JSON.parse(manualBody.value)

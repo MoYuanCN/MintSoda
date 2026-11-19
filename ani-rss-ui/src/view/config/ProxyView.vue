@@ -4,13 +4,13 @@
       <el-input v-model:model-value="props.config.proxyHost" :disabled="!props.config.proxy"
                 placeholder="192.168.0.x"/>
     </SettingsItem>
-    <SettingsItem label="端口">
+    <SettingsItem :label="$t('port')">
       <el-input-number v-model:model-value="props.config.proxyPort" :disabled="!props.config.proxy" :min="1"
                        :max="65535"/>
     </SettingsItem>
-    <SettingsItem label="用户名">
+    <SettingsItem :label="$t('username')">
       <el-input v-model:model-value="props.config.proxyUsername" :disabled="!props.config.proxy"
-                placeholder="可以为空">
+                :placeholder="$t('optional')">
         <template #prefix>
           <el-icon class="el-input__icon">
             <User/>
@@ -18,9 +18,9 @@
         </template>
       </el-input>
     </SettingsItem>
-    <SettingsItem label="密码">
+    <SettingsItem :label="$t('password')">
       <el-input v-model:model-value="props.config.proxyPassword" :disabled="!props.config.proxy"
-                placeholder="可以为空">
+                :placeholder="$t('optional')">
         <template #prefix>
           <el-icon class="el-input__icon">
             <Key/>
@@ -28,7 +28,7 @@
         </template>
       </el-input>
     </SettingsItem>
-    <SettingsItem label="代理列表">
+    <SettingsItem :label="$t('proxylist')">
       <el-input
           class="full-width"
           type="textarea"
@@ -36,10 +36,10 @@
           v-model="props.config.proxyList"
           :disabled="!props.config.proxy"/>
     </SettingsItem>
-    <SettingsItem label="启用">
+    <SettingsItem :label="$t('enable-3')">
       <el-switch v-model:model-value="props.config.proxy"/>
     </SettingsItem>
-    <SettingsItem label="代理测试">
+    <SettingsItem :label="$t('testproxy')">
       <div class="proxy-test-container">
         <div class="proxy-test-controls">
           <el-select
@@ -49,7 +49,7 @@
               allow-create
               default-first-option
               clearable
-              placeholder="测试地址"
+              :placeholder="$t('testurl')"
               :disabled="testLoading">
             <el-option :value="it" :label="formatUrlLabel(it)" :key="it" v-for="it in urls">
               <div class="proxy-test-option">
@@ -66,7 +66,7 @@
               :loading="testLoading"
               @click="test"
               icon="Odometer">
-            测试
+            {{ $t('test') }}
           </el-button>
         </div>
         <div
@@ -94,13 +94,14 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {computed, onMounted, ref} from "vue";
 import {ElMessage, ElText} from "element-plus";
 import {CircleCheck, Key, User, Warning} from "@element-plus/icons-vue";
 import {testProxy} from "@/js/http.js";
 import {base64Encode} from "@/js/global.js";
-
+const {t} = useI18n()
 let urls = ref([
   'https://mikanani.me',
   'https://mikanime.tv',
@@ -133,11 +134,11 @@ const resultTitle = computed(() => {
     return testError.value
   }
   if (!hasStatus.value) {
-    return '连接失败'
+    return t('connectionfailed')
   }
-  return testResult.value?.title || (resultOk.value ? '连接成功' : '响应异常')
+  return testResult.value?.title || (resultOk.value ? t('connected') : t('unexpectedresponse'))
 })
-const statusLabel = computed(() => hasStatus.value ? `HTTP ${resultStatus.value}` : '无状态')
+const statusLabel = computed(() => hasStatus.value ? `HTTP ${resultStatus.value}` : t('nostatus'))
 const timeLabel = computed(() => {
   const time = testResult.value?.time
   return Number.isFinite(Number(time)) ? `${time} ms` : '-- ms'
@@ -175,13 +176,13 @@ let test = () => {
       .then(res => {
         testResult.value = res.data || {}
         if (resultOk.value) {
-          ElMessage.success('测试成功')
+          ElMessage.success(t('testsuccessful'))
           return
         }
-        ElMessage.warning('测试异常')
+        ElMessage.warning(t('testerror'))
       })
       .catch(error => {
-        testError.value = error.message || '测试失败'
+        testError.value = error.message || t('testfailed')
       })
       .finally(() => {
         testLoading.value = false

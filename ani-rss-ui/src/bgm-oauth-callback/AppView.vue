@@ -3,16 +3,16 @@
     <el-card shadow="never" class="card">
       <template #header>
         <div class="card-header">
-          <span>授权结果</span>
+          <span>{{ $t('authorizationresult') }}</span>
         </div>
       </template>
       <div>
         <div v-if="me">
           <el-descriptions direction="vertical" border>
-            <el-descriptions-item :rowspan="2" :width="140" label="头像" align="center">
+            <el-descriptions-item :rowspan="2" :width="140" :label="$t('avatar')" align="center">
               <el-avatar :src="me?.avatar?.large"/>
             </el-descriptions-item>
-            <el-descriptions-item label="用户名">
+            <el-descriptions-item :label="$t('username')">
               <el-text v-if="me.username">
                 {{ me.username }}
               </el-text>
@@ -20,31 +20,31 @@
                 {{ me.id }}
               </el-text>
             </el-descriptions-item>
-            <el-descriptions-item label="主页">
+            <el-descriptions-item :label="$t('homepage')">
               {{ me.url }}
             </el-descriptions-item>
-            <el-descriptions-item label="邮箱">
+            <el-descriptions-item :label="$t('email')">
               {{ me.email }}
             </el-descriptions-item>
-            <el-descriptions-item label="注册日期">
+            <el-descriptions-item :label="$t('registered')">
               <el-text>
                 {{ me.regTime }}
               </el-text>
             </el-descriptions-item>
-            <el-descriptions-item label="授权剩余过期时间">
+            <el-descriptions-item :label="$t('authorizationexpiresin')">
               <el-tag type="success" v-if="me.expiresDays > 3">
-                {{ me.expiresDays }} 天
+                {{ $t('ndays', {n: me.expiresDays}) }}
               </el-tag>
               <el-tag type="danger" v-else>
-                {{ me.expiresDays }} 天
+                {{ $t('ndays', {n: me.expiresDays}) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="签名">
+            <el-descriptions-item :label="$t('signature')">
               <el-text v-if="me.sign">
                 {{ me.sign }}
               </el-text>
               <el-text v-else>
-                无
+                {{ $t('none') }}
               </el-text>
             </el-descriptions-item>
           </el-descriptions>
@@ -59,7 +59,7 @@
       </div>
       <template #footer>
         <div class="footer">
-          <el-button bg text @click="close">关闭</el-button>
+          <el-button bg text @click="close">{{ $t('close') }}</el-button>
         </div>
       </template>
     </el-card>
@@ -67,10 +67,12 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {onMounted, ref} from 'vue'
 import {init} from "@/js/global.js";
 import api from "@/js/api.js";
 import * as http from "@/js/http.js";
+const {t} = useI18n()
 
 const type = ref('success')
 const text = ref('')
@@ -111,7 +113,7 @@ onMounted(() => {
   const code = url.searchParams.get('code')
   if (!code) {
     type.value = 'error'
-    text.value = 'code 为空'
+    text.value = t('missingcode')
     return
   }
   load(code)

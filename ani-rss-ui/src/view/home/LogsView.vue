@@ -1,16 +1,16 @@
 <template>
   <div class="logs-page app-page-layout">
-    <PageHeaderView title="日志" :subtitle="`共 ${logs.length} 条 · 显示 ${filteredLogs.length} 条`">
+    <PageHeaderView :title="$t('logs')" :subtitle="t('totalentriesshowing', {total: logs.length, shown: filteredLogs.length})">
       <template #actions>
         <div class="log-actions">
-          <el-tooltip content="下载日志" placement="bottom">
+          <el-tooltip :content="$t('downloadlogs')" placement="bottom">
             <el-button @click="downloadLogs" class="auto-button" icon="Download">
-              下载
+              {{ $t('download') }}
             </el-button>
           </el-tooltip>
-          <el-tooltip content="刷新日志" placement="bottom">
+          <el-tooltip :content="$t('refreshlogs')" placement="bottom">
             <el-button :loading="getLogsLoading" @click="getLogs" class="auto-button" icon="Refresh">
-              刷新
+              {{ $t('refresh') }}
             </el-button>
           </el-tooltip>
           <el-button :loading="clearLoading"
@@ -18,19 +18,19 @@
                      type="danger"
                      icon="Delete"
                      @click="confirmClearLogs">
-            清空
+            {{ $t('clear') }}
           </el-button>
         </div>
       </template>
     </PageHeaderView>
     <div v-loading="loading" class="logs-body app-page-content app-page-padding">
-      <section class="logs-toolbar" aria-label="日志筛选">
+      <section class="logs-toolbar" :aria-label="$t('logfilters')">
         <el-input
             v-model="searchText"
             :prefix-icon="Search"
             class="log-search"
             clearable
-            placeholder="搜索日志"/>
+            :placeholder="$t('searchlogs')"/>
         <el-select
             v-model="selectLevels"
             class="level-select"
@@ -39,7 +39,7 @@
             collapse-tags-tooltip
             :max-collapse-tags="1"
             multiple
-            placeholder="日志等级">
+            :placeholder="$t('loglevel')">
           <el-option v-for="level in levels" :key="level" :label="level" :value="level">
             <div class="level-option">
             <span class="level-option-name">
@@ -57,7 +57,7 @@
             collapse-tags
             collapse-tags-tooltip
             multiple
-            placeholder="来源">
+            :placeholder="$t('source')">
           <el-option
               v-for="loggerName in loggerNames"
               :key="loggerName"
@@ -68,15 +68,15 @@
 
       <div class="log-viewer">
         <div class="log-columns" aria-hidden="true">
-          <span>时间</span>
-          <span>级别</span>
-          <span>来源</span>
-          <span>内容</span>
+          <span>{{ $t('time') }}</span>
+          <span>{{ $t('level') }}</span>
+          <span>{{ $t('source') }}</span>
+          <span>{{ $t('content') }}</span>
         </div>
         <el-scrollbar ref="scrollbarRef" class="logs-scrollbar" always>
           <div ref="innerRef" class="log-list">
             <el-empty v-if="!filteredLogs.length"
-                      :description="logs.length ? '没有匹配的日志' : '暂无日志'"
+                      :description="logs.length ? $t('nomatchinglogs') : $t('nologs')"
                       :image-size="72"/>
             <div v-for="(entry, index) in filteredLogs"
                  v-else
@@ -103,6 +103,7 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, nextTick, onActivated, ref} from "vue";
 import {Search} from "@element-plus/icons-vue";
 import {ElMessageBox} from "element-plus";
@@ -110,7 +111,7 @@ import {authorization} from "@/js/global.js";
 import PageHeaderView from "@/view/custom/PageHeaderView.vue";
 import * as http from "@/js/http.js";
 import {formatTime} from "@/js/format.js";
-
+const {t} = useI18n()
 const levels = ['DEBUG', 'INFO', 'WARN', 'ERROR']
 const loading = ref(true)
 const getLogsLoading = ref(false)
@@ -204,12 +205,12 @@ const clearLogs = () => {
 // 清理操作不可恢复，执行接口前通过模态弹窗进行二次确认。
 const confirmClearLogs = () => {
   ElMessageBox.confirm(
-      '日志清空后无法恢复，是否继续？',
-      '清空日志',
+      t('clearedlogscannotberecoveredcontinue'),
+      t('clearlogs'),
       {
-        confirmButtonText: '确认清空',
+        confirmButtonText: t('confirmclear'),
         confirmButtonClass: 'is-text is-has-bg el-button--danger',
-        cancelButtonText: '取消',
+        cancelButtonText: t('cancel'),
         cancelButtonClass: 'is-text is-has-bg',
         type: 'warning'
       }

@@ -3,7 +3,7 @@
       v-model="dialogVisible"
       align-center
       center
-      title="更换封面"
+      :title="$t('changecover')"
       width="min(680px, calc(100vw - 24px))">
     <div class="cover-layout">
       <div class="cover-preview-column">
@@ -40,7 +40,7 @@
             <el-icon>
               <Link/>
             </el-icon>
-            <span>图片链接</span>
+            <span>{{ $t('imageurl') }}</span>
           </div>
           <div class="cover-url-row">
             <el-input
@@ -49,7 +49,7 @@
                 clearable
                 placeholder="https://lain.bgm.tv/pic/cover/1234.jpg"
                 @keyup.enter="refreshCover"/>
-            <el-tooltip content="获取封面" placement="top">
+            <el-tooltip :content="$t('fetchcover')" placement="top">
               <el-button
                   :disabled="!ani.image"
                   :loading="refreshLoading"
@@ -65,14 +65,14 @@
             <el-icon>
               <UploadFilled/>
             </el-icon>
-            <span>本地文件</span>
+            <span>{{ $t('localfile') }}</span>
           </div>
           <UploadView
               url="api/upload"
               :extensions="['jpg', 'jpeg', 'png']"
               :callback="uploadCallback">
             <el-button bg icon="Upload">
-              选择图片
+              {{ $t('chooseimage') }}
             </el-button>
           </UploadView>
         </section>
@@ -81,9 +81,9 @@
 
     <template #footer>
       <div class="cover-footer">
-        <el-button @click="dialogVisible = false" bg text icon="Close">取消</el-button>
+        <el-button @click="dialogVisible = false" bg text icon="Close">{{ $t('cancel') }}</el-button>
         <el-button :loading="saveLoading" type="primary" bg text @click="save" icon="Check">
-          保存
+          {{ $t('save') }}
         </el-button>
       </div>
     </template>

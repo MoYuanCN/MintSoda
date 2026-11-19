@@ -1,38 +1,39 @@
 <template>
   <div class="reverse-match-settings">
     <el-alert :closable="false" show-icon type="info"
-              title="规则优先级：反匹配 > 全局匹配 > 排除。反匹配未命中默认跳过；可在订阅里改为继续普通规则或放行。"/>
+              :title="$t('priorityreversematchglobalmatchexcludearever')"/>
     <el-alert :closable="false" show-icon type="warning"
-              title="本页有两套保存：上方全局规则属于设置，需点击底部“保存设置”；下方订阅规则点击“保存该订阅规则”后立即生效。"/>
+              :title="$t('thispagehastwoscopesglobalrulesabovebelongto')"/>
     <el-card shadow="never">
       <div class="section-heading">
         <div>
-          <strong>全局反匹配规则</strong>
-          <el-text class="section-hint" size="small" type="info">订阅开启“使用全局反匹配”后共享这些规则。任意一条命中即可通过反匹配。</el-text>
+          <strong>{{ $t('globalreversematchrules') }}</strong>
+          <el-text class="section-hint" size="small" type="info">{{ $t('subscriptionsthatenableuseglobalreversematch') }}</el-text>
         </div>
       </div>
       <GlobalReverseMatchView :config="props.config"/>
     </el-card>
     <div class="reverse-match-settings-toolbar">
-      <el-select v-model="selectedId" filterable placeholder="选择订阅" :loading="loading">
+      <el-select v-model="selectedId" filterable :placeholder="$t('selectsubscription')" :loading="loading">
         <el-option v-for="ani in subscriptions" :key="ani.id"
-                   :label="`${ani.title} · ${ani.subgroup || '未知字幕组'}`" :value="ani.id"/>
+                   :label="`${ani.title} · ${ani.subgroup || $t('unknownsubgroup')}`" :value="ani.id"/>
       </el-select>
       <el-button type="primary" icon="Check" :disabled="!selectedAni || loading" :loading="saving"
-                 @click="save">保存该订阅规则</el-button>
+                 @click="save">{{ $t('savesubscriptionrules') }}</el-button>
     </div>
-    <el-empty v-if="!selectedAni && !loading" description="没有订阅"/>
+    <el-empty v-if="!selectedAni && !loading" :description="$t('nosubscriptions')"/>
     <ReverseMatchView v-else-if="selectedAni" :ani="selectedAni"/>
   </div>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, onMounted, ref} from 'vue'
 import {ElMessage} from 'element-plus'
 import * as http from '@/js/http.js'
 import ReverseMatchView from '@/view/config/ReverseMatchView.vue'
 import GlobalReverseMatchView from '@/view/config/GlobalReverseMatchView.vue'
-
+const {t} = useI18n()
 const props = defineProps({config: {type: Object, required: true}})
 
 const subscriptions = ref([])
@@ -57,7 +58,7 @@ const save = async () => {
   saving.value = true
   try {
     const response = await http.setAni(false, selectedAni.value)
-    ElMessage.success(response.message || '反匹配规则已保存')
+    ElMessage.success(response.message || t('reversematchrulessaved'))
     window.$reLoadList?.()
   } finally {
     saving.value = false

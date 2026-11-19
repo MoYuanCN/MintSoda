@@ -6,7 +6,7 @@
               show-icon
               class="standby-alert" type="warning">
       <template #title>
-        当前备用RSS功能并未开启, 可前往 <strong>设置-基本设置-RSS设置-备用RSS</strong> 启用
+        {{ $t('standbyrssisoffgoto') }} <strong>{{ $t('settingsbasicrssstandbyrss') }}</strong> {{ $t('toenableit') }}
       </template>
     </el-alert>
     <div class="flex standby-toolbar">
@@ -28,13 +28,13 @@
     </div>
     <div class="standby-table-container">
       <el-table class="standby-table" :data="standbyRss" height="400px" size="small">
-        <el-table-column fixed label="字幕组" min-width="100px">
+        <el-table-column fixed :label="$t('subgroup')" min-width="100px">
           <template #default="it">
             <div v-if="editIndex !== it.$index">
               {{ standbyRss[it.$index].label }}
             </div>
             <div v-else>
-              <el-input v-model:model-value="standbyRss[it.$index].label" placeholder="未知字幕组"/>
+              <el-input v-model:model-value="standbyRss[it.$index].label" :placeholder="$t('unknownsubgroup')"/>
             </div>
           </template>
         </el-table-column>
@@ -52,7 +52,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="偏移" width="150px">
+        <el-table-column :label="$t('offset')" width="150px">
           <template #default="it">
             <div v-if="editIndex !== it.$index">
               {{ standbyRss[it.$index].offset }}
@@ -60,7 +60,7 @@
             <el-input-number v-else v-model:model-value="standbyRss[it.$index].offset" size="small"/>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300">
+        <el-table-column :label="$t('action')" width="300">
           <template #default="it">
             <div class="flex">
               <el-button bg text icon="Edit" @click="editIndex = it.$index" v-if="editIndex !== it.$index"/>
@@ -79,11 +79,12 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, onMounted, ref} from "vue";
 import MikanView from "./MikanView.vue";
 import AniBTView from "@/view/home/AniBTView.vue";
 import * as http from "@/js/http.js";
-
+const {t} = useI18n()
 const props = defineProps(['ani'])
 const editIndex = ref(-1)
 const aniBTRef = ref()
@@ -111,7 +112,7 @@ let plus = () => {
     props.ani.standbyRssList = []
   }
   let object = {
-    label: '未知字幕组',
+    label: t('unknownsubgroup'),
     url: '',
     offset: props.ani.offset
   }

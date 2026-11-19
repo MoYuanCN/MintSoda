@@ -1,27 +1,30 @@
 <template>
   <div class="flex-center content">
+    <div class="locale-corner">
+      <LocaleSwitcher/>
+    </div>
     <div class="flex-center setup-page">
       <div class="setup-form">
-        <h2 class="title-h2">初始化登录账号</h2>
+        <h2 class="title-h2">{{ $t('createadministratoraccount') }}</h2>
         <el-alert class="setup-hint" :closable="false" show-icon type="info"
-                  title="首次启动需要设置登录凭据，完成后请妥善保存。"/>
+                  :title="$t('setupyoursignincredentialsonfirstlaunchandke')"/>
         <el-form label-position="top" @submit.prevent @keyup.enter="submit">
-          <el-form-item label="用户名">
-            <el-input v-model.trim="form.username" autocomplete="username" placeholder="3-32 位字母、数字、下划线或连字符"/>
+          <el-form-item :label="$t('username')">
+            <el-input v-model.trim="form.username" autocomplete="username" :placeholder="$t('332lettersdigitsunderscoresorhyphens')"/>
           </el-form-item>
-          <el-form-item label="密码">
+          <el-form-item :label="$t('password')">
             <el-input v-model="form.password" type="password" show-password
-                      autocomplete="new-password" :placeholder="`至少 ${passwordMinLength} 位`"/>
+                      autocomplete="new-password" :placeholder="t('atleastncharacters', {n: passwordMinLength})"/>
           </el-form-item>
-          <el-form-item label="确认密码">
+          <el-form-item :label="$t('confirmpassword')">
             <el-input v-model="form.confirm" type="password" show-password autocomplete="new-password"/>
           </el-form-item>
           <el-alert v-if="error" class="setup-error" :closable="false" show-icon type="error" :title="error"/>
           <el-text class="setup-tips" size="small">
-            密码至少 {{ passwordMinLength }} 位，且需包含大写字母、小写字母、数字、符号中的至少两类。
+            {{ $t('passwordmustbeatleastncharactersandcontainatleasttwooftypes', {n: passwordMinLength}) }}
           </el-text>
           <el-button class="setup-submit" type="primary" :loading="loading" @click="submit">
-            完成初始化
+            {{ $t('finishsetup') }}
           </el-button>
         </el-form>
       </div>
@@ -30,10 +33,12 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {onMounted, reactive, ref} from "vue";
 import {ElMessage} from "element-plus";
 import * as http from "@/js/http.js";
-
+import LocaleSwitcher from "@/view/custom/LocaleSwitcher.vue";
+const {t} = useI18n()
 const passwordMinLength = ref(8)
 const loading = ref(false)
 const error = ref('')
@@ -45,21 +50,21 @@ const form = reactive({
 })
 
 const checkPassword = value => {
-  if (!value) return '密码不能为空'
-  if (value.length < passwordMinLength.value) return `密码至少需要 ${passwordMinLength.value} 位`
+  if (!value) return t('passwordisrequired')
+  if (value.length < passwordMinLength.value) return t('passwordmustbeatleastncharacters', {n: passwordMinLength.value})
   let types = 0
   if (/[a-z]/.test(value)) types++
   if (/[A-Z]/.test(value)) types++
   if (/\d/.test(value)) types++
   if (/[^A-Za-z0-9]/.test(value)) types++
-  if (types < 2) return '密码需包含大写字母、小写字母、数字、符号中的至少两类'
+  if (types < 2) return t('passwordmustcontainatleasttwoofuppercaselett')
   return ''
 }
 
 const submit = () => {
   error.value = ''
   if (!/^[A-Za-z0-9_-]{3,32}$/.test(form.username)) {
-    error.value = '用户名需为 3-32 位字母、数字、下划线或连字符'
+    error.value = t('usernamemustbe332lettersdigitsunderscoresorh')
     return
   }
   const passwordError = checkPassword(form.password)
@@ -68,7 +73,7 @@ const submit = () => {
     return
   }
   if (form.password !== form.confirm) {
-    error.value = '两次输入的密码不一致'
+    error.value = t('thepasswordsdonotmatch')
     return
   }
 
@@ -79,7 +84,7 @@ const submit = () => {
         setTimeout(() => location.reload(), 600)
       })
       .catch(e => {
-        error.value = e.message || '初始化失败'
+        error.value = e.message || t('setupfailed')
       })
       .finally(() => {
         loading.value = false
@@ -100,6 +105,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.locale-corner {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
 .content {
   width: 100%;
   height: 100%;

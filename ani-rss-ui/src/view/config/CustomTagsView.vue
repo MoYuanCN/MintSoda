@@ -4,7 +4,7 @@
         v-if="!props.config.customTags.length"
         type="info"
         class="margin-4px">
-      无
+      {{ $t('none') }}
     </el-tag>
     <el-tag
         v-for="(tag, index) in props.config.customTags"

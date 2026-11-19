@@ -3,10 +3,10 @@
   <SettingsItem label="BgmApi">
     <el-input v-model:model-value="props.config['bgmApi']" placeholder="https://api.bgm.tv"/>
   </SettingsItem>
-  <SettingsItem label="获取方式">
+  <SettingsItem :label="$t('fetchmethod')">
     <el-radio-group v-model="props.config['bgmTokenType']">
-      <el-radio label="手动输入" value="INPUT"/>
-      <el-radio label="自动获取" value="AUTO"/>
+      <el-radio :label="$t('entermanually')" value="INPUT"/>
+      <el-radio :label="$t('fetchautomatically')" value="AUTO"/>
     </el-radio-group>
   </SettingsItem>
   <template v-if="props.config['bgmTokenType'] === 'INPUT'">
@@ -18,7 +18,7 @@
         />
         <div>
           <el-text class="mx-1" size="small">
-            你可以在&nbsp;
+            {{ $t('youcan') }}&nbsp;
             <el-link
                 type="primary"
                 class="text-extra-small"
@@ -26,7 +26,7 @@
                 target="_blank">
               https://next.bgm.tv/demo/access-token
             </el-link>
-            &nbsp;生成一个 Access Token
+            &nbsp;{{ $t('generateanaccesstoken') }}
           </el-text>
         </div>
       </div>
@@ -45,7 +45,7 @@
           placeholder="abcdefghijklm"
       />
     </SettingsItem>
-        <SettingsItem label="回调地址">
+        <SettingsItem :label="$t('callbackurl')">
       <div class="full-width">
         <el-input v-model="props.config['bgmRedirectUri']" :placeholder="defaultRedirectUri"/>
         <el-button bg icon="Refresh"
@@ -55,17 +55,17 @@
     </SettingsItem>
     <div class="flex justify-space-between">
       <el-text class="mx-1" size="small">
-        自动获取可以实现token自动续期
+        {{ $t('automaticfetchenablestokenrefresh') }}
         <br>
-        前往&nbsp;
+        {{ $t('goto') }}&nbsp;
         <el-link
             class="text-extra-small"
             type="primary"
             target="_blank"
             href="https://bgm.tv/dev/app">
-          Bangumi 开发者平台
+          {{ $t('bangumideveloperplatform') }}
         </el-link>
-        &nbsp;设置你自己的应用
+        &nbsp;{{ $t('createyourownapp') }}
       </el-text>
       <div>
         <el-button bg
@@ -74,13 +74,13 @@
                    @click="start"
                    :loading="loading"
         >
-          获取授权
+          {{ $t('authorize') }}
         </el-button>
         <el-button
             bg
             type="success"
             @click="bangumiMeRef?.show">
-          查看授权状态
+          {{ $t('viewauthorization') }}
         </el-button>
       </div>
     </div>
@@ -88,13 +88,14 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {ElMessageBox, ElText} from "element-plus";
 import BangumiMeView from "./BangumiMeView.vue";
 import {computed, ref} from "vue";
 import {setConfig} from "@/js/http.js";
 import {getBaseUrl} from "@/js/global.js";
-
+const {t} = useI18n()
 let bangumiMeRef = ref()
 
 let props = defineProps(['config'])
@@ -110,9 +111,9 @@ let loading = ref(false);
 let start = async () => {
   try {
     await ElMessageBox.confirm(
-        'Bangumi 授权回调需要读取本页应用信息，继续会先保存当前页面的设置。',
-        '获取授权',
-        {confirmButtonText: '保存并继续', cancelButtonText: '取消', type: 'info'}
+        t('bangumiauthorizationneedsthispagesappsetting'),
+        t('authorize'),
+        {confirmButtonText: t('saveandcontinue'), cancelButtonText: t('cancel'), type: 'info'}
     )
   } catch {
     return

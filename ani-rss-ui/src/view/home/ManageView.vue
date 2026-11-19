@@ -1,7 +1,7 @@
 <template>
   <ImportAniView ref="importAniRef" @callback="getList"/>
   <DelAniView ref="delAniRef" @callback="reloadAllLists"/>
-  <el-dialog v-model="dialogVisible" center title="管理">
+  <el-dialog v-model="dialogVisible" center :title="$t('manage')">
     <div class="manage-content" v-loading="loading">
       <div class="manage-header">
         <div class="manage-toolbar">
@@ -9,7 +9,7 @@
             <el-input
                 v-model="text"
                 clearable
-                placeholder="搜索"
+                :placeholder="$t('search')"
                 prefix-icon="Search"
             />
           </div>
@@ -33,7 +33,7 @@
         </div>
         <div class="manage-header-actions">
           <el-dropdown trigger="click">
-            <el-button aria-label="批量操作" icon="MoreFilled" title="批量操作"/>
+            <el-button :aria-label="$t('batchactions')" icon="MoreFilled" :title="$t('batchactions')"/>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item :disabled="!hasSelection" @click="updateTotalEpisodeNumber(false)">
@@ -41,7 +41,7 @@
                     <el-icon>
                       <RefreshRight/>
                     </el-icon>
-                    更新总集数
+                    {{ $t('updatetotalepisodes') }}
                   </el-text>
                 </el-dropdown-item>
                 <el-dropdown-item :disabled="!hasSelection" @click="updateTotalEpisodeNumber(true)">
@@ -49,7 +49,7 @@
                     <el-icon>
                       <Refresh/>
                     </el-icon>
-                    更新总集数 [F]
+                    {{ $t('updatetotalepisodesf') }}
                   </el-text>
                 </el-dropdown-item>
                 <el-dropdown-item :disabled="!hasSelection" divided @click="batchEnable(true)">
@@ -57,7 +57,7 @@
                     <el-icon>
                       <CircleCheck/>
                     </el-icon>
-                    启用
+                    {{ $t('enable-3') }}
                   </el-text>
                 </el-dropdown-item>
                 <el-dropdown-item :disabled="!hasSelection" @click="batchEnable(false)">
@@ -65,7 +65,7 @@
                     <el-icon>
                       <CircleClose/>
                     </el-icon>
-                    禁用
+                    {{ $t('disable') }}
                   </el-text>
                 </el-dropdown-item>
                 <el-dropdown-item divided @click="importAniRef?.show">
@@ -73,7 +73,7 @@
                     <el-icon>
                       <Download/>
                     </el-icon>
-                    导入
+                    {{ $t('import') }}
                   </el-text>
                 </el-dropdown-item>
                 <el-dropdown-item :disabled="!hasSelection" @click="exportData">
@@ -81,7 +81,7 @@
                     <el-icon>
                       <Upload/>
                     </el-icon>
-                    导出
+                    {{ $t('export') }}
                   </el-text>
                 </el-dropdown-item>
                 <el-dropdown-item :disabled="!hasSelection" divided @click="showDeleteDialog">
@@ -89,7 +89,7 @@
                     <el-icon>
                       <Remove/>
                     </el-icon>
-                    删除
+                    {{ $t('delete') }}
                   </el-text>
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -107,32 +107,32 @@
           @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" fixed/>
-        <el-table-column label="标题" width="200" fixed>
+        <el-table-column :label="$t('title')" width="200" fixed>
           <template #default="{row}">
             <el-text :line-clamp="2" size="small">
               {{ row.title }}
             </el-text>
           </template>
         </el-table-column>
-        <el-table-column label="季" prop="season" width="50"/>
-        <el-table-column label="字幕组" width="100">
+        <el-table-column :label="$t('season')" prop="season" width="50"/>
+        <el-table-column :label="$t('subgroup')" width="100">
           <template #default="{row}">
             <el-text size="small" truncated>
               {{ row.subgroup }}
             </el-text>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="80">
+        <el-table-column :label="$t('status')" width="80">
           <template #default="{row}">
             <el-tag v-if="row.enable">
-              已启用
+              {{ $t('enabled') }}
             </el-tag>
             <el-tag v-else type="info">
-              未启用
+              {{ $t('notenabled') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="进度" width="100">
+        <el-table-column :label="$t('progress')" width="100">
           <template #default="{row}">
             <el-tag type="warning">
               {{ row.currentEpisodeNumber }} /
@@ -140,7 +140,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="类型" width="100">
+        <el-table-column :label="$t('type')" width="100">
           <template #default="{row}">
             <el-tag type="danger">{{ row.ova ? 'ova' : 'tv' }}</el-tag>
           </template>
@@ -154,30 +154,31 @@
         </el-table-column>
       </el-table>
       <div>
-        <p class="manage-count">共 {{ searchList.length }} 项</p>
+        <p class="manage-count">{{ $t('nitems', {n: searchList.length}) }}</p>
       </div>
     </div>
   </el-dialog>
 </template>
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, nextTick, ref, watch} from "vue";
 import {ElMessage, ElText} from "element-plus";
 import DelAniView from "./DelAniView.vue";
 import ImportAniView from "@/view/home/ImportAniView.vue";
 import {CircleCheck, CircleClose, Download, Refresh, RefreshRight, Remove, Upload} from "@element-plus/icons-vue";
 import * as http from "@/js/http.js";
-
+const {t} = useI18n()
 const selectFilters = [
   {
-    label: '全部',
+    label: t('all'),
     predicate: () => true
   },
   {
-    label: '已启用',
+    label: t('enabled'),
     predicate: item => item.enable
   },
   {
-    label: '未启用',
+    label: t('notenabled'),
     predicate: item => !item.enable
   }
 ]
@@ -262,7 +263,7 @@ const handleSelectionChange = value => {
 
 const requireSelection = () => {
   if (!hasSelection.value) {
-    ElMessage.error('未选择订阅')
+    ElMessage.error(t('nosubscriptionselected'))
     return false
   }
   return true

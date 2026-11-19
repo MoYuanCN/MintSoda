@@ -1,24 +1,24 @@
 <template>
   <el-collapse v-model:model-value="activeName" accordion>
-    <el-collapse-item name="page" title="页面设置">
+    <el-collapse-item name="page" :title="$t('pagesettings')">
       <PageView :config="props.config"/>
     </el-collapse-item>
-    <el-collapse-item name="add" title="添加订阅">
+    <el-collapse-item name="add" :title="$t('addsubscription')">
       <AddView :config="props.config"/>
     </el-collapse-item>
-    <el-collapse-item name="rename" title="重命名设置">
+    <el-collapse-item name="rename" :title="$t('renamesettings')">
       <RenameView :config="props.config"/>
     </el-collapse-item>
-    <el-collapse-item name="rss" title="RSS设置">
+    <el-collapse-item name="rss" :title="$t('rsssettings')">
       <RssView :config="props.config"/>
     </el-collapse-item>
     <el-collapse-item name="bangumi" title="Bangumi Token">
       <BangumiView :config="props.config"/>
     </el-collapse-item>
-    <el-collapse-item name="other" title="其他">
+    <el-collapse-item name="other" :title="$t('other')">
       <OtherView :config="props.config"/>
     </el-collapse-item>
-    <el-collapse-item name="backup" title="备份">
+    <el-collapse-item name="backup" :title="$t('backup')">
       <BackupView :config="props.config"/>
     </el-collapse-item>
   </el-collapse>

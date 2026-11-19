@@ -1,6 +1,6 @@
 <template>
   <el-config-provider
-      :locale="zhCn"
+      :locale="elementLocale(currentLocale())"
       :link="linkConfig"
       :dialog="dialogConfig">
     <SetupView v-if="setupRequired"/>
@@ -10,13 +10,14 @@
 </template>
 
 <script setup>
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import LoginView from "@/view/LoginView.vue";
 import SetupView from "@/view/SetupView.vue";
 import MainLayoutView from "@/view/home/MainLayoutView.vue";
 import {authorization, init, applyUiCustomization} from "@/js/global.js";
 import {onMounted, reactive, ref} from "vue";
 import * as http from "@/js/http.js";
+import {currentLocale} from "@/i18n/index.js";
+import {elementLocale} from "@/i18n/element.js";
 
 /**
  * 链接配置

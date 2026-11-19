@@ -3,18 +3,18 @@
   <CollectionPreviewView ref="collectionPreviewRef" v-model:data="data"/>
   <el-dialog v-model="dialogVisible"
              center
-             title="添加合集">
+             :title="$t('addcollection')">
     <div v-loading="loading" style="height: 500px;">
       <el-scrollbar style="padding: 0 12px;">
         <div>
           <el-form @submit.prevent label-width="auto">
-            <el-form-item label="番剧名称">
+            <el-form-item :label="$t('animetitle')">
               <div class="full-width">
                 <div class="flex full-width">
                   <el-input
                       v-model:model-value="data.ani.title"
                       :disabled="rssButtonLoading"
-                      placeholder="请勿留空"
+                      :placeholder="$t('required')"
                       @keyup.enter="bgmRef?.show(data.ani.title)"
                   />
                   <div style="width: 4px;"></div>
@@ -25,14 +25,14 @@
                   <el-button :loading="getBgmNameLoading"
                              bg
                              icon="DocumentAdd" text @click="getBgmName">
-                    使用Bangumi
+                    {{ $t('usebangumi') }}
                   </el-button>
                   <el-button :disabled="data.ani.title === data.ani.themoviedbName || !data.ani.themoviedbName.length"
                              bg
                              icon="DocumentAdd"
                              text
                              @click="useTmdbTitle">
-                    使用TMDB
+                    {{ $t('usetmdb') }}
                   </el-button>
                 </div>
               </div>
@@ -57,22 +57,22 @@
                   <el-button :loading="getThemoviedbNameLoading" bg icon="Refresh" text @click="getThemoviedbName"/>
                 </div>
               </el-form-item>
-              <el-form-item label="字幕组">
+              <el-form-item :label="$t('subgroup')">
                 <div class="form-item-flex">
-                  <el-input v-model:model-value="data.ani.subgroup" placeholder="字幕组" class="width-150"/>
+                  <el-input v-model:model-value="data.ani.subgroup" :placeholder="$t('subgroup')" class="width-150"/>
                 </div>
               </el-form-item>
-              <el-form-item label="季">
+              <el-form-item :label="$t('season')">
                 <div class="form-item-flex">
                   <el-input-number v-model:model-value="data.ani.season" :min="0" class="width-150"/>
                 </div>
               </el-form-item>
-              <el-form-item label="集数偏移">
+              <el-form-item :label="$t('episodeoffset')">
                 <div class="form-item-flex">
                   <el-input-number v-model:model-value="data.ani.offset"/>
                 </div>
               </el-form-item>
-              <el-form-item label="日期">
+              <el-form-item :label="$t('date')">
                 <div class="form-item-flex">
                   <el-date-picker
                       v-model="data.ani.releaseDate"
@@ -80,32 +80,32 @@
                   />
                 </div>
               </el-form-item>
-              <el-form-item label="匹配">
+              <el-form-item :label="$t('match')">
                 <ExcludeView v-model:exclude="data.ani.match" :import-exclude="false"/>
               </el-form-item>
-              <el-form-item label="排除">
+              <el-form-item :label="$t('exclude')">
                 <ExcludeView v-model:exclude="data.ani.exclude" :import-exclude="true"/>
               </el-form-item>
-              <el-form-item label="全局排除">
+              <el-form-item :label="$t('globalexclude')">
                 <el-switch v-model:model-value="data.ani['globalExclude']"/>
               </el-form-item>
-              <el-form-item label="全局匹配">
+              <el-form-item :label="$t('globalmatch')">
                 <el-switch v-model="data.ani.globalMatch"/>
               </el-form-item>
-              <el-form-item label="全局反匹配">
+              <el-form-item :label="$t('globalreversematch')">
                 <el-switch v-model="data.ani.globalReverseMatch"/>
               </el-form-item>
-              <el-form-item v-if="data.ani.globalReverseMatch" label="反匹配未命中">
+              <el-form-item v-if="data.ani.globalReverseMatch" :label="$t('reversematchmiss')">
                 <el-select v-model="data.ani.reverseMatchMissBehavior" class="full-width">
-                  <el-option value="SKIP" label="跳过，不下载"/>
-                  <el-option value="NORMAL" label="继续普通匹配规则"/>
-                  <el-option value="ALLOW" label="直接放行"/>
+                  <el-option value="SKIP" :label="$t('skipdonotdownload')"/>
+                  <el-option value="NORMAL" :label="$t('continuewithnormalrules')"/>
+                  <el-option value="ALLOW" :label="$t('allowasis')"/>
                 </el-select>
               </el-form-item>
-              <el-form-item label="剧场版">
+              <el-form-item :label="$t('movie')">
                 <el-switch v-model:model-value="data.ani.ova"/>
               </el-form-item>
-              <el-form-item label="自定义集数规则">
+              <el-form-item :label="$t('customepisoderules')">
                 <div class="flex full-width">
                   <el-input v-model:model-value="data.ani.customEpisodeStr"
                             class="full-width"/>
@@ -113,7 +113,7 @@
                   <el-input-number v-model:model-value="data.ani.customEpisodeGroupIndex"/>
                 </div>
               </el-form-item>
-              <el-form-item label="下载位置">
+              <el-form-item :label="$t('downloadlocation')">
                 <div class="full-width">
                   <el-input v-model:model-value="data.ani.customDownloadPathTemplate"
                             :autosize="{ minRows: 2}"
@@ -123,11 +123,11 @@
                             @input="pathEdited = true"/>
                   <div class="path-hint">
                     <el-text v-if="useCollectionPath" size="small" type="success">
-                      正在使用设置中的“合集保存位置”，上方内容仅作参考
+                      {{ $t('usingthecollectionsavepathfromsettingsthefie') }}
                     </el-text>
                     <el-text v-else size="small" type="info">
-                      未设置“合集保存位置”时使用此路径；修改名称、TMDB 或季会自动更新。
-                      可直接填写含变量的模板，固定路径会在开始下载时按当前信息重新计算
+                      {{ $t('usedwhennocollectionsavepathissetupdatesauto') }}
+                      {{ $t('enteratemplatewithvariablesfixedpathsarereco') }}
                     </el-text>
                   </div>
                 </div>
@@ -137,7 +137,7 @@
                              @click="downloadPath"/>
                 </div>
               </el-form-item>
-              <el-form-item label="重命名模版">
+              <el-form-item :label="$t('renametemplate')">
                 <div class="full-width">
                   <el-switch v-model="data.ani['customRenameTemplateEnable']"/>
                   <br>
@@ -150,11 +150,11 @@
                       type="primary"
                       href="https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md"
                       target="_blank">
-                    详细说明
+                    {{ $t('details') }}
                   </el-link>
                 </div>
               </el-form-item>
-              <el-form-item label="自定义标签">
+              <el-form-item :label="$t('customtags')">
                 <CustomTagsView :config="data.ani"/>
               </el-form-item>
               <el-form-item label="Torrent">
@@ -169,7 +169,7 @@
                             url="api/uploadAndReadToBase64"
                             :extensions="['torrent']"
                             :callback="uploadCallback">
-                  <el-button bg icon="Upload">选择并上传种子</el-button>
+                  <el-button bg icon="Upload">{{ $t('chooseanduploadtorrent') }}</el-button>
                 </UploadView>
               </el-form-item>
             </template>
@@ -182,7 +182,7 @@
                  icon="Grid"
                  text
                  @click="collectionPreviewRef?.show">
-        预览
+        {{ $t('preview') }}
       </el-button>
       <el-button :disabled="!data.filename"
                  :loading="startLoading"
@@ -190,13 +190,14 @@
                  icon="Check"
                  text
                  type="primary" @click="start">
-        开始
+        {{ $t('start') }}
       </el-button>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {ref, watch} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import BgmView from "./BgmView.vue";
@@ -207,7 +208,7 @@ import {aniData} from "@/js/ani.js";
 import * as http from "@/js/http.js";
 import {getBgmTitle} from "@/js/http.js";
 import UploadView from "@/view/custom/UploadView.vue";
-
+const {t} = useI18n()
 let start = () => {
   startLoading.value = true
   http.startCollection(data.value)
@@ -254,7 +255,7 @@ const refreshCollectionPath = (notify = false) => {
         data.value.ani.customDownloadPath = pathEdited.value
         pathEdited.value = false
         if (notify) {
-          ElMessage.success('保存位置已更新')
+          ElMessage.success(t('savepathupdated'))
         }
       })
       .finally(() => {
@@ -287,11 +288,11 @@ let bgmAdd = (bgm) => {
   http.getAniBySubjectId(bgm['id'])
       .then((res) => {
         data.value.ani = res.data
-        data.value.ani.subgroup = '未知字幕组'
+        data.value.ani.subgroup = t('unknownsubgroup')
         data.value.ani.customEpisode = true
         data.value.show = true
         data.value.ani.match = []
-        data.value.ani.exclude = ['^(SPs?|CDs|Scans|PV|menu)/', 'Fonts|NCED|NCOP|迷你动画']
+        data.value.ani.exclude = ['^(SPs?|CDs|Scans|PV|menu)/', 'Fonts|NCED|NCOP|Mini anime']
         refreshCollectionPath()
       })
       .finally(() => {
@@ -306,8 +307,8 @@ let uploadCallback = (res, file) => {
   http.getCollectionSubgroup(data.value)
       .then(res => {
         data.value.ani.subgroup = res.data
-        if (res.data !== '未知字幕组') {
-          ElMessage.success(`字幕组已更新为 ${res.data}`)
+        if (res.data !== t('unknownsubgroup')) {
+          ElMessage.success(t('subgroupupdatedto', {subgroup: res.data}))
         }
       })
 }

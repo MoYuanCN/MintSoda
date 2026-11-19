@@ -1,22 +1,23 @@
+import {t} from "@/i18n/index.js"
 export let notificationTypeList = [
     {
         name: 'TELEGRAM',
-        label: 'TG 通知'
+        label: 'telegram'
     },
     {
         name: 'CUSTOM_REQUEST',
-        label: '自定义请求'
+        label: 'customrequest'
     },
     {
         name: 'EMBY_REFRESH',
-        label: '媒体库刷新'
+        label: 'libraryrefresh'
     },
     {
         name: 'PLUGIN',
-        label: '插件渠道'
+        label: 'pluginchannel'
     }
 ]
 
 export let getLabel = (name) => {
-    return notificationTypeList.find(item => item.name === name)?.label ?? '已移除的通知';
+    return t(notificationTypeList.find(item => item.name === name)?.label ?? 'removednotification');
 }

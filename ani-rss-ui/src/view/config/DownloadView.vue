@@ -3,27 +3,27 @@
       class="download-settings-form full-width">
     <section class="settings-section">
       <div class="settings-section-heading">
-        <h3>下载器连接</h3>
+        <h3>{{ $t('downloaderconnection') }}</h3>
       </div>
-      <SettingsItem label="下载工具">
+      <SettingsItem :label="$t('downloader')">
         <el-tag type="primary">qBittorrent</el-tag>
       </SettingsItem>
-      <SettingsItem label="地址">
+      <SettingsItem :label="$t('address')">
         <el-input
             v-model.trim="props.config.downloadToolHost"
             placeholder="http://192.168.1.x:8080"
             autocomplete="new-password"/>
       </SettingsItem>
-      <SettingsItem label="qBittorrent 认证方式">
+      <SettingsItem :label="$t('qbittorrentauthentication')">
         <el-select v-model="props.config.qbAuthType" class="width-200">
           <el-option label="ApiKey" value="API_KEY"/>
-          <el-option label="用户名和密码" value="USER_PASSWORD"/>
+          <el-option :label="$t('usernameandpassword')" value="USER_PASSWORD"/>
         </el-select>
       </SettingsItem>
       <SettingsItem v-if="props.config.qbAuthType !== 'USER_PASSWORD'" label="ApiKey">
         <el-input
             v-model.trim="props.config.downloadToolPassword"
-            placeholder="已保存；留空保持不变"
+            :placeholder="$t('savedleaveblanktokeep')"
             show-password
             autocomplete="new-password">
           <template #prefix>
@@ -35,23 +35,23 @@
         <div v-if="props.config.downloadToolPassword && !props.config.downloadToolPassword.startsWith('qbt_')" class="full-width margin-top-4">
           <el-alert show-icon type="warning" :closable="false">
             <template #title>
-              ApiKey 未正确配置
+              {{ $t('apikeyisnotconfiguredcorrectly') }}
             </template>
           </el-alert>
         </div>
       </SettingsItem>
       <template v-else>
-        <SettingsItem label="用户名">
+        <SettingsItem :label="$t('username')">
           <el-input v-model.trim="props.config.qbUsername" autocomplete="username"/>
         </SettingsItem>
-        <SettingsItem label="密码">
+        <SettingsItem :label="$t('password')">
           <el-input v-model="props.config.qbPassword" type="password" show-password
-                    placeholder="已保存；留空保持不变" autocomplete="new-password"/>
+                    :placeholder="$t('savedleaveblanktokeep')" autocomplete="new-password"/>
         </SettingsItem>
       </template>
       <SettingsItem>
         <div class="download-test-button">
-          <el-button @click="downloadLoginTest" bg text :loading="downloadLoginTestLoading" icon="Odometer">测试
+          <el-button @click="downloadLoginTest" bg text :loading="downloadLoginTestLoading" icon="Odometer">{{ $t('test') }}
           </el-button>
         </div>
       </SettingsItem>
@@ -59,9 +59,9 @@
 
     <section class="settings-section">
       <div class="settings-section-heading">
-        <h3>保存与清理</h3>
+        <h3>{{ $t('savingandcleanup') }}</h3>
       </div>
-      <SettingsItem label="保存位置">
+      <SettingsItem :label="$t('savepath')">
         <el-input v-model.trim="props.config['downloadPathTemplate']"/>
         <div class="full-width margin-top-4" v-if="!testPathTemplate(props.config['downloadPathTemplate'])">
           <el-alert
@@ -70,12 +70,12 @@
               :closable="false"
           >
             <template #title>
-              你的 保存位置 并未按照模版填写, 可能会遇到下载位置错误
+              {{ $t('yoursavepathdoesnotfollowthetemplatedownload') }}
             </template>
           </el-alert>
         </div>
       </SettingsItem>
-      <SettingsItem label="剧场版保存位置">
+      <SettingsItem :label="$t('moviesavepath')">
         <el-input v-model.trim="props.config['ovaDownloadPathTemplate']"/>
         <div class="full-width margin-top-4" v-if="!testPathTemplate(props.config['ovaDownloadPathTemplate'])">
           <el-alert
@@ -84,20 +84,20 @@
               :closable="false"
           >
             <template #title>
-              你的 剧场版保存位置 并未按照模版填写, 可能会遇到下载位置错误
+              {{ $t('yourmoviesavepathdoesnotfollowthetemplatedow') }}
             </template>
           </el-alert>
         </div>
       </SettingsItem>
-      <SettingsItem label="合集保存位置">
+      <SettingsItem :label="$t('collectionsavepath')">
         <el-input
             v-model.trim="props.config['collectionDownloadPathTemplate']"
-            placeholder="留空则使用普通保存位置"/>
+            :placeholder="$t('leaveblanktousethenormalsavepath')"/>
         <div class="full-width margin-top-4">
           <el-text class="mx-1" size="small">
-            仅用于合集下载。例如普通保存位置是 <code>/番剧/更新中</code> 时可设为 <code>/番剧/合集</code>。
+            {{ $t('collectionpathhint') }}
             <br>
-            支持与普通保存位置相同的变量；留空表示不启用，合集仍使用添加合集时显示的路径。
+            {{ $t('supportsthesamevariablesasthenormalsavepathl') }}
           </el-text>
         </div>
         <div class="full-width margin-top-4"
@@ -108,31 +108,31 @@
               :closable="false"
           >
             <template #title>
-              合集保存位置 没有包含任何变量，所有合集都会保存到同一目录
+              {{ $t('thecollectionsavepathcontainsnovariablessoev') }}
             </template>
           </el-alert>
         </div>
       </SettingsItem>
-      <SettingsItem label="自动删除">
+      <SettingsItem :label="$t('autodelete')">
         <div>
           <el-switch v-model:model-value="props.config.delete"/>
           <br>
           <el-text class="mx-1" size="small">
-            自动删除已完成的任务
+            {{ $t('autodeletecompletedtasks') }}
             <br>
-            如果同时开启了 <strong>备用rss功能</strong> 将会自动删除对应洗版视频, 以实现 <strong>主rss</strong> 的替换
+            {{ $t('ifstandbyrssisalsoenabledthebetterqualityfilesaredeleted') }}
           </el-text>
           <br>
           <el-checkbox v-model:model-value="props.config.awaitStalledUP"
                        :disabled="!props.config.delete"
-                       label="等待做种完毕"/>
+                       :label="$t('waitforseedingtofinish')"/>
           <br>
           <el-checkbox v-model:model-value="props.config.deleteStandbyRSSOnly"
                        :disabled="!props.config.delete"
-                       label="仅在主RSS更新后删除备用RSS"/>
+                       :label="$t('deletestandbyrssonlyafterthemainrssupdates')"/>
           <br>
           <el-text class="mx-1" size="small">
-            <strong>主RSS</strong> 将 <span class="download-danger-text">不会自动删除</span>，仅在其更新后删除对应备用RSS的任务与文件
+            {{ $t('mainrsstasksandfilesareneverdeletedautomatically') }}
           </el-text>
         </div>
       </SettingsItem>
@@ -140,33 +140,33 @@
 
     <section class="settings-section">
       <div class="settings-section-heading">
-        <h3>任务控制</h3>
+        <h3>{{ $t('taskcontrol') }}</h3>
       </div>
-      <SettingsItem label="失败重试次数">
+      <SettingsItem :label="$t('retryattempts')">
         <el-input-number v-model:model-value="props.config['downloadRetry']" :max="100" :min="3"/>
       </SettingsItem>
-      <SettingsItem label="同时下载限制">
+      <SettingsItem :label="$t('concurrentdownloadlimit')">
         <div>
           <el-input-number v-model:model-value="props.config.downloadCount" :min="0"/>
           <br/>
           <el-text class="mx-1" size="small">
-            设置为 0 时不做限制
+            {{ $t('setto0fornolimit') }}
           </el-text>
         </div>
       </SettingsItem>
-      <SettingsItem label="延迟下载">
+      <SettingsItem :label="$t('delayeddownload')">
         <el-input-number v-model:model-value="props.config.delayedDownload" :min="0">
           <template #suffix>
-            <span>分钟</span>
+            <span>{{ $t('minutes') }}</span>
           </template>
         </el-input-number>
       </SettingsItem>
-      <SettingsItem label="优先保留">
+      <SettingsItem :label="$t('prioritykeep')">
         <div class="full-width">
           <el-switch v-model:model-value="props.config.priorityKeywordsEnable"/>
           <div>
             <el-text class="mx-1" size="small">
-              启用多文件种子的文件优先保留过滤
+              {{ $t('enableprioritykeepfilteringformultifiletorre') }}
             </el-text>
           </div>
           <div v-if="props.config.priorityKeywordsEnable">
@@ -178,17 +178,17 @@
           </div>
         </div>
       </SettingsItem>
-      <SettingsItem label="自定义标签">
+      <SettingsItem :label="$t('customtags')">
         <CustomTagsView :config="props.config"/>
       </SettingsItem>
     </section>
 
     <section class="settings-section settings-section-advanced">
       <div class="settings-section-heading">
-        <h3>高级设置</h3>
+        <h3>{{ $t('advancedsettings') }}</h3>
       </div>
       <el-collapse v-model="activeName">
-        <el-collapse-item name="qBittorrent" title="qBittorrent 设置">
+        <el-collapse-item name="qBittorrent" :title="$t('qbittorrentsettings')">
           <q-bittorrent-view v-if="activeName.indexOf('qBittorrent') > -1" :config="props.config"/>
         </el-collapse-item>
       </el-collapse>

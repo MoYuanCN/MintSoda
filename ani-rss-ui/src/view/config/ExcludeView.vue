@@ -1,22 +1,22 @@
 <template>
-  <el-dialog title="添加正则" v-if="add" v-model:model-value="add" center align-center width="300">
+  <el-dialog :title="$t('addregex')" v-if="add" v-model:model-value="add" center align-center width="300">
     <div>
-      <SettingsItem label="字幕组" :label-width="50">
-        <el-input placeholder="留空匹配所有字幕组" v-model="subgroup"></el-input>
+      <SettingsItem :label="$t('subgroup')" :label-width="50">
+        <el-input :placeholder="$t('leaveblanktomatchallsubgroups')" v-model="subgroup"></el-input>
       </SettingsItem>
-      <SettingsItem label="正则" :label-width="50">
-        <el-input placeholder="如 720、简、\d-\d" v-model="exclude"></el-input>
+      <SettingsItem :label="$t('regex')" :label-width="50">
+        <el-input :placeholder="$t('eg720chsdd')" v-model="exclude"></el-input>
       </SettingsItem>
     </div>
     <div class="flex exclude-dialog-footer">
-      <el-button bg text @click="addExclude" icon="Plus">添加</el-button>
+      <el-button bg text @click="addExclude" icon="Plus">{{ $t('add') }}</el-button>
     </div>
   </el-dialog>
   <div class="full-width">
     <div class="tags-content">
       <el-tag v-if="!props.exclude.length"
               type="info">
-        无
+        {{ $t('none') }}
       </el-tag>
       <el-tag
           v-for="tag in props.exclude"
@@ -51,16 +51,16 @@
     <div class="flex exclude-footer">
       <el-button bg text size="small" @click="importExclude" v-if="props.importExclude"
                  :disabled="disabledImportExclude" :loading="importExcludeLoading" icon="Download">
-        导入全局排除
+        {{ $t('importglobalexclude') }}
       </el-button>
       <el-text class="mx-1" size="small" v-if="props.showText">
-        支持&nbsp;
+        {{ $t('supports') }}&nbsp;
         <el-link
             class="exclude-link"
             type="primary"
             href="https://www.runoob.com/regexp/regexp-syntax.html"
             target="_blank">
-          正则表达式
+          {{ $t('regularexpression') }}
         </el-link>
       </el-text>
     </div>
@@ -68,11 +68,12 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {ref} from "vue";
 import {ElMessage} from "element-plus";
 import {config} from "@/js/http.js";
 import SettingsItem from "@/view/custom/SettingsItem.vue";
-
+const {t} = useI18n()
 const handleClose = (tag) => {
   props.exclude.splice(props.exclude.indexOf(tag), 1)
 }
@@ -105,7 +106,7 @@ let exclude = ref('')
 
 let addExclude = () => {
   if (!exclude.value) {
-    ElMessage.error('正则为空')
+    ElMessage.error(t('regexisempty'))
     return
   }
   if (subgroup.value) {

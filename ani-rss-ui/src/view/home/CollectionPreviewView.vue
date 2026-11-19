@@ -2,24 +2,24 @@
   <el-dialog v-model="dialogVisible"
              center
              class="el-dialog-auto-width"
-             title="合集预览">
+             :title="$t('collectionpreview')">
     <div v-loading="loading">
       <el-table :data="list" height="500"
                 size="small"
                 scrollbar-always-on
                 stripe>
-        <el-table-column label="标题" min-width="400" prop="title"/>
-        <el-table-column label="重命名" min-width="280" prop="reName"/>
-        <el-table-column label="集数" prop="episode"/>
-        <el-table-column label="大小" min-width="100" prop="formatSize"/>
+        <el-table-column :label="$t('title')" min-width="400" prop="title"/>
+        <el-table-column :label="$t('rename')" min-width="280" prop="reName"/>
+        <el-table-column :label="$t('episodes')" prop="episode"/>
+        <el-table-column :label="$t('size')" min-width="100" prop="formatSize"/>
       </el-table>
     </div>
     <div v-if="subgroup !== props.data.ani.subgroup && subgroup" style="margin-top:12px;">
-      <el-alert close-text="应用" show-icon @close="closeAlert">
+      <el-alert :close-text="$t('apply')" show-icon @close="closeAlert">
         <template #title>
           <div class="flex" style="width:100%;justify-content: space-between;">
             <span>
-              检测到字幕组为 {{ subgroup }}
+              {{ $t('detectedsubgroup', {subgroup}) }}
             </span>
           </div>
         </template>
@@ -27,9 +27,9 @@
     </div>
     <div class="action">
       <div>
-        <span>共 {{ list.length }} 项</span>
+        <span>{{ $t('nitems', {n: list.length}) }}</span>
       </div>
-      <el-button bg icon="Close" text @click="dialogVisible = false">关闭</el-button>
+      <el-button bg icon="Close" text @click="dialogVisible = false">{{ $t('close') }}</el-button>
     </div>
   </el-dialog>
 </template>

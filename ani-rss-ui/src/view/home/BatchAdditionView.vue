@@ -1,22 +1,22 @@
 <template>
-  <el-dialog v-model="visible" title="批量添加订阅" width="min(860px, calc(100vw - 24px))" align-center
+  <el-dialog v-model="visible" :title="$t('batchaddsubscriptions')" width="min(860px, calc(100vw - 24px))" align-center
              :close-on-click-modal="false" :close-on-press-escape="false">
     <el-tabs v-model="activeName" type="card" @tab-remove="closeItemById">
       <el-tab-pane v-for="item in entries" :key="item.id" :name="item.id" closable>
         <template #label>
           <span>{{ item.label }}</span>
-          <el-tag v-if="item.status === 'loading'" size="small" type="info">加载中</el-tag>
-          <el-tag v-else-if="item.status === 'success'" size="small" type="success">已加载</el-tag>
-          <el-tag v-else-if="item.status === 'added'" size="small" type="success">已添加</el-tag>
-          <el-tag v-else size="small" type="danger">失败</el-tag>
+          <el-tag v-if="item.status === 'loading'" size="small" type="info">{{ $t('loading') }}</el-tag>
+          <el-tag v-else-if="item.status === 'success'" size="small" type="success">{{ $t('loaded') }}</el-tag>
+          <el-tag v-else-if="item.status === 'added'" size="small" type="success">{{ $t('added') }}</el-tag>
+          <el-tag v-else size="small" type="danger">{{ $t('failed') }}</el-tag>
         </template>
-        <div v-if="item.status === 'loading'" v-loading="true" class="batch-loading">正在加载订阅信息…</div>
+        <div v-if="item.status === 'loading'" v-loading="true" class="batch-loading">{{ $t('loadingsubscriptioninfo') }}</div>
         <el-alert v-else-if="item.status === 'error'" :title="item.error" type="error" show-icon :closable="false"/>
         <div v-else-if="item.ani" class="batch-editor">
           <AniView v-model:ani="item.ani" @callback="confirmItem(item, $event)"/>
         </div>
         <div v-if="item.status === 'error'" class="batch-actions">
-          <el-button type="primary" :loading="item.status === 'loading'" @click="retry(item)">重试</el-button>
+          <el-button type="primary" :loading="item.status === 'loading'" @click="retry(item)">{{ $t('retry') }}</el-button>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -24,12 +24,13 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, ref} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import * as http from '@/js/http.js'
 import AniView from './AniView.vue'
 import {aniData} from '@/js/ani.js'
-
+const {t} = useI18n()
 const props = defineProps({
   modelValue: Boolean,
   items: {type: Array, default: () => []},
@@ -83,7 +84,7 @@ const load = async item => {
     item.status = 'success'
   } catch (error) {
     item.status = 'error'
-    item.error = error?.message || '订阅加载失败'
+    item.error = error?.message || t('failedtoloadsubscriptions')
   }
 }
 
@@ -97,7 +98,7 @@ const open = async (items = props.items) => {
   })
   entries.value = [...grouped.values()].map((sources, index) => ({
     id: `${Date.now()}-${index}`,
-    label: `订阅 ${index + 1}`,
+    label: t('nsubscriptions', {n: index + 1}),
     source: sources[0],
     sources,
     status: 'loading',
@@ -112,7 +113,7 @@ const open = async (items = props.items) => {
 const openRequests = async requests => {
   entries.value = requests.map((request, index) => ({
     id: `${Date.now()}-${index}`,
-    label: request.title || request.subgroup || `订阅 ${index + 1}`,
+    label: request.title || request.subgroup || t('nsubscriptions', {n: index + 1}),
     request,
     sources: [],
     status: 'loading',
@@ -130,10 +131,10 @@ const confirmItem = async (item, done) => {
     const added = await addSubscription(item)
     if (!added) return
     item.status = 'added'
-    ElMessage.success('订阅添加成功')
+    ElMessage.success(t('subscriptionadded'))
     closeItem(item)
   } catch (error) {
-    ElMessage.error(error?.message || '订阅添加失败')
+    ElMessage.error(error?.message || t('failedtoaddsubscription'))
   } finally {
     done?.()
   }
@@ -144,13 +145,13 @@ const addSubscription = async item => {
   try {
     await http.addAni(item.ani)
   } catch (error) {
-    const duplicate = ['此订阅已存在', '订阅标题重复'].includes(error?.message)
+    const duplicate = [t('thissubscriptionalreadyexists'), t('duplicatesubscriptiontitle')].includes(error?.message)
     if (!duplicate) throw error
     try {
       await ElMessageBox.confirm(
-          `订阅“${item.ani.title}”已存在，是否覆盖原订阅？`,
-          '订阅重复',
-          {confirmButtonText: '覆盖', cancelButtonText: '取消', type: 'warning'}
+          t('subscriptionalreadyexists', {title: item.ani.title}),
+          t('duplicatesubscription'),
+          {confirmButtonText: t('overwrite'), cancelButtonText: t('cancel'), type: 'warning'}
       )
     } catch {
       return false

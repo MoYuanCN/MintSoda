@@ -1,36 +1,36 @@
 <template>
   <el-collapse>
-    <el-collapse-item title="可复用通知模板">
+    <el-collapse-item :title="$t('reusablenotificationtemplates')">
       <div class="notification-template-list">
         <el-card v-for="(template, index) in templateList" :key="template.id" shadow="never">
           <div class="notification-template-heading">
-            <el-input v-model="template.name" placeholder="模板名称"/>
-            <el-button circle text type="danger" icon="Delete" aria-label="删除模板"
+            <el-input v-model="template.name" :placeholder="$t('templatename')"/>
+            <el-button circle text type="danger" icon="Delete" :aria-label="$t('deletetemplate')"
                        @click="removeTemplate(index)"/>
           </div>
           <el-form label-position="top">
-            <el-form-item label="模板类型">
+            <el-form-item :label="$t('templatetype')">
               <el-select v-model="template.type" class="template-type-select">
-                <el-option label="普通文本" value="TEXT"/>
+                <el-option :label="$t('plaintext')" value="TEXT"/>
                 <el-option label="JSON" value="JSON"/>
               </el-select>
             </el-form-item>
-            <el-form-item :label="template.type === 'JSON' ? 'JSON 内容' : '文本内容'">
+            <el-form-item :label="template.type === 'JSON' ? $t('jsoncontent') : $t('textcontent')">
               <el-input v-model="template.content" type="textarea"
                         :autosize="{ minRows: 2, maxRows: 6 }"
                         :placeholder="templatePlaceholder(template)"/>
               <el-alert v-if="template.type === 'JSON' && invalidJson(template.content)" class="template-json-error"
                         :closable="false" show-icon type="error"
-                        title="模板内容不是有效 JSON；请将变量写在 JSON 字符串值内。"/>
+                        :title="$t('thetemplateisnotvalidjsonputvariablesinsidej')"/>
             </el-form-item>
           </el-form>
         </el-card>
         <el-button class="notification-template-add" icon="Plus" bg text type="primary" @click="addTemplate">
-          添加模板
+          {{ $t('addtemplate') }}
         </el-button>
       </div>
       <el-alert class="notification-template-help" :closable="false" show-icon type="info"
-                title="可创建多个命名模板；Telegram 使用普通文本，自定义请求可使用普通文本或 JSON。模板直接填写 ${title}、${subgroup}、${text} 等字段变量；JSON 字符串变量会自动转义。"/>
+                :title="$t('createmultiplenamedtemplatestelegramusesplai')"/>
     </el-collapse-item>
   </el-collapse>
   <div class="notification-container">
@@ -42,9 +42,9 @@
             <div class="notification-card-main">
               <div class="notification-card-heading">
                 <!-- 状态点与标题同行，实心和空心区分状态，并为键盘及读屏提供说明。 -->
-                <el-tooltip :content="it['enable'] ? '已启用' : '已禁用'" placement="top">
+                <el-tooltip :content="it['enable'] ? $t('enabled') : $t('disabled')" placement="top">
                   <span class="notification-status" :class="{ 'is-enabled': it['enable'] }"
-                        role="img" :aria-label="it['enable'] ? '已启用' : '已禁用'" tabindex="0"/>
+                        role="img" :aria-label="it['enable'] ? $t('enabled') : $t('disabled')" tabindex="0"/>
                 </el-tooltip>
                 <el-tooltip :content="getLabel(it['notificationType'])" placement="top">
                   <p class="notification-card-title">
@@ -53,12 +53,12 @@
                 </el-tooltip>
               </div>
               <el-text line-clamp="1" size="small" class="notification-card-text" truncated>
-                {{ it['comment'] ? it['comment'] : '无备注' }}
+                {{ it['comment'] ? it['comment'] : $t('nocomment') }}
               </el-text>
             </div>
             <div>
               <el-dropdown trigger="click">
-                <el-button circle icon="MoreFilled" text class="notification-more-button" aria-label="通知操作"/>
+                <el-button circle icon="MoreFilled" text class="notification-more-button" :aria-label="$t('notificationactions')"/>
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item @click="toggleNotification(it)">
@@ -66,13 +66,13 @@
                         <el-icon>
                           <SwitchButton/>
                         </el-icon>
-                        禁用
+                        {{ $t('disable') }}
                       </el-text>
                       <el-text type="success" v-else>
                         <el-icon>
                           <SwitchButton/>
                         </el-icon>
-                        启用
+                        {{ $t('enable-3') }}
                       </el-text>
                     </el-dropdown-item>
                     <el-dropdown-item @click="edit(it)">
@@ -80,7 +80,7 @@
                         <el-icon>
                           <Edit/>
                         </el-icon>
-                        编辑
+                        {{ $t('edit') }}
                       </el-text>
                     </el-dropdown-item>
                     <el-dropdown-item @click="del(it)" divided>
@@ -88,7 +88,7 @@
                         <el-icon>
                           <Delete/>
                         </el-icon>
-                        删除
+                        {{ $t('delete') }}
                       </el-text>
                     </el-dropdown-item>
                   </el-dropdown-menu>
@@ -107,7 +107,7 @@
         class="notification-add-button"
         :loading="addLoading"
     >
-      添加通知
+      {{ $t('addnotification') }}
     </el-button>
   </div>
   <NotificationConfigView ref="notificationConfigRef" v-model:config="props.config"
@@ -115,6 +115,7 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import NotificationConfigView from "./NotificationConfigView.vue";
 import {computed, ref} from "vue";
 import {ElMessage} from "element-plus";
@@ -122,7 +123,7 @@ import {ElMessage} from "element-plus";
 import {getLabel} from "@/js/notification-type.js";
 import {Delete, Edit, SwitchButton} from "@element-plus/icons-vue";
 import {newNotification} from "@/js/http.js";
-
+const {t} = useI18n()
 let addLoading = ref(false)
 const templateList = computed(() => {
   if (!Array.isArray(props.config.notificationTemplateList)) props.config.notificationTemplateList = []
@@ -132,15 +133,15 @@ const templateList = computed(() => {
 const addTemplate = () => {
   templateList.value.push({
     id: globalThis.crypto?.randomUUID?.() || `template-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    name: `模板 ${templateList.value.length + 1}`,
+    name: t('templaten', {n: templateList.value.length + 1}),
     type: 'TEXT',
-    content: '${title} S${seasonFormat}E${episodeFormat}\n字幕组: ${subgroup}\n${text}'
+    content: '${title} S${seasonFormat}E${episodeFormat}\n' + t('subgroup') + ': ${subgroup}\n${text}'
   })
 }
 
 const templatePlaceholder = template => template.type === 'JSON'
     ? '{"subgroup":"${subgroup}","event":"${text}"}'
-    : '${title} S${seasonFormat}E${episodeFormat}\n字幕组: ${subgroup}\n${text}'
+    : '${title} S${seasonFormat}E${episodeFormat}\n' + t('subgroup') + ': ${subgroup}\n${text}'
 
 const invalidJson = body => {
   if (!body?.trim()) return false
@@ -158,7 +159,7 @@ const removeTemplate = index => {
   for (const notification of props.config.notificationConfigList || []) {
     if (notification.notificationTemplateId === id) notification.notificationTemplateId = ''
   }
-  ElMessage.info('已删除模板；使用该模板的通知将改用各自的备用模板')
+  ElMessage.info(t('templatedeletednotificationsusingitwillfallb'))
 }
 
 // 新增通知先编辑草稿，点击确定才写入列表；编辑则替换原项。

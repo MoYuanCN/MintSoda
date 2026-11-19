@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 
+import {t} from "@/i18n/index.js"
 export function formatSize(bytes) {
     if (!bytes) {
         return '-'
@@ -27,23 +28,23 @@ export let fromNow = (timestamp, template) => {
     const elapsedMin = Math.floor(elapsedMs / (1000 * 60));
 
     if (elapsedMin < 1) {
-        return "刚刚";
+        return t("justnow");
     }
 
     if (elapsedMin < 60) {
-        return `${elapsedMin}分钟前`;
+        return t('minutesago', {n: elapsedMin});
     }
 
     const hour = Math.floor(elapsedMs / (1000 * 60 * 60));
 
     if (hour < 24) {
-        return `${hour}小时前`;
+        return t('hoursago', {n: hour});
     }
 
     const day = Math.floor(elapsedMs / (1000 * 60 * 60 * 24));
 
     if (day >= 1 && day <= 3) {
-        return `${day}天前`;
+        return t('daysago', {n: day});
     }
 
     const target = new Date(timestamp);

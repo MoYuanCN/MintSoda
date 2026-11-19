@@ -10,7 +10,7 @@
                  @keyup.enter="login">
           <el-form-item>
             <el-input v-model.trim="user.username"
-                      placeholder="用户名" autocomplete="username">
+                      :placeholder="$t('username')" autocomplete="username">
               <template #prefix>
                 <el-icon class="el-input__icon">
                   <User/>
@@ -20,7 +20,7 @@
           </el-form-item>
           <el-form-item>
             <el-input v-model.trim="user.password" show-password
-                      placeholder="密码" autocomplete="current-password">
+                      :placeholder="$t('password')" autocomplete="current-password">
               <template #prefix>
                 <el-icon class="el-input__icon">
                   <Key/>
@@ -29,11 +29,14 @@
             </el-input>
           </el-form-item>
           <div class="flex-center action">
-            <el-checkbox v-model:model-value="rememberThePassword.remember">记住密码</el-checkbox>
-            <el-button @click="login" :loading="loading" icon="Right">登录</el-button>
+            <el-checkbox v-model:model-value="rememberThePassword.remember">{{ $t('rememberpassword') }}</el-checkbox>
+            <el-button @click="login" :loading="loading" icon="Right">{{ $t('signin') }}</el-button>
           </div>
         </el-form>
       </div>
+    </div>
+    <div class="locale-corner">
+      <LocaleSwitcher/>
     </div>
     <div class="footer">
       <el-link type="default"
@@ -46,13 +49,15 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {computed, onMounted, ref} from "vue";
 import * as http from "@/js/http.js";
 import {Key} from "@element-plus/icons-vue";
 import {ElMessage} from "element-plus";
 import {authorization, rememberThePassword} from "@/js/global.js";
 import {uiCustomization, uiAssetUrl} from "@/js/global.js";
-
+import LocaleSwitcher from "@/view/custom/LocaleSwitcher.vue";
+const {t} = useI18n()
 let loading = ref(false)
 const loginLogo = computed(() => uiCustomization.value.loginLogoImage
     ? uiAssetUrl(uiCustomization.value.loginLogoImage)
@@ -70,7 +75,7 @@ let login = () => {
   let {username, password} = user.value;
 
   if (!password || !username) {
-    ElMessage.error('请输入账号与密码')
+    ElMessage.error(t('pleaseenteryourusernameandpassword'))
     return
   }
 
@@ -123,6 +128,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.locale-corner {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
 .content {
   width: 100%;
   height: 100%;

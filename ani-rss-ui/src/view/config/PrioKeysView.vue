@@ -1,24 +1,24 @@
 <template>
-  <el-dialog title="关键词设置" v-if="add" v-model:model-value="add" center align-center width="300"
+  <el-dialog :title="$t('keywordsettings')" v-if="add" v-model:model-value="add" center align-center width="300"
              @open="$nextTick(() => $refs.keywordInputRef?.focus())">
     <form @submit.prevent="addKeyword">
-      <SettingsItem label="关键词">
-        <el-input ref="keywordInputRef" placeholder="如：简体、繁体、1080p" v-model="keyword"
+      <SettingsItem :label="$t('keyword')">
+        <el-input ref="keywordInputRef" :placeholder="$t('egchscht1080p')" v-model="keyword"
                   @keyup.enter="addKeyword"/>
       </SettingsItem>
     </form>
     <div class="flex prio-keys-dialog-footer">
-      <el-button bg text @click="addKeyword" icon="Plus">添加</el-button>
+      <el-button bg text @click="addKeyword" icon="Plus">{{ $t('add') }}</el-button>
     </div>
   </el-dialog>
   <div class="full-width">
     <div class="gap-2">
       <el-tag v-if="!props.keywords.length" type="info" class="prio-keys-tag">
-        无
+        {{ $t('none') }}
       </el-tag>
       <el-tag v-for="(tag, index) in props.keywords" :key="tag" closable :disable-translations="false"
               @close="handleClose(index)" class="prio-keys-tag">
-        <el-tooltip :content="`优先级: ${index + 1}`">
+        <el-tooltip :content="t('priorityn', {n: index + 1})">
           <el-text line-clamp="1" size="small" class="prio-keys-tag-text">
             {{ tag }}
           </el-text>
@@ -33,21 +33,22 @@
     <div class="flex prio-keys-footer">
       <el-button bg text size="small" @click="importGlobalKeywords" v-if="props.importGlobal"
                  :disabled="disabledImport" :loading="importLoading" icon="Download">
-        从全局导入关键词
+        {{ $t('importkeywordsfromglobal') }}
       </el-button>
       <el-text class="mx-1" size="small" v-if="props.showText">
-        当种子包含多个文件时，优先保留的文件关键词，优先级从左到右递减。
+        {{ $t('whenatorrenthasmultiplefilesthesekeywordspic') }}
       </el-text>
     </div>
   </div>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {ref} from "vue";
 import {ElMessage} from "element-plus";
 import {config} from "@/js/http.js";
-
+const {t} = useI18n()
 const handleClose = (index) => {
   props.keywords.splice(index, 1)
 }
@@ -57,11 +58,11 @@ const keyword = ref('')
 
 const addKeyword = () => {
   if (!keyword.value.trim()) {
-    ElMessage.error('关键词不能为空')
+    ElMessage.error(t('keywordcannotbeempty'))
     return
   }
   if (props.keywords.indexOf(keyword.value.trim()) > -1) {
-    ElMessage.error('关键词已存在')
+    ElMessage.error(t('keywordalreadyexists'))
     return
   }
   props.keywords.push(keyword.value.trim())
@@ -78,7 +79,7 @@ let importGlobalKeywords = () => {
       .then(res => {
         disabledImport.value = true
         if (!res.data.priorityKeywords || !res.data.priorityKeywords.length) {
-          ElMessage.warning('全局优先保留关键词为空')
+          ElMessage.warning(t('globalprioritykeepkeywordsareempty'))
           return
         }
         for (let keyword of res.data.priorityKeywords) {
@@ -87,7 +88,7 @@ let importGlobalKeywords = () => {
           }
           props.keywords.push(keyword)
         }
-        ElMessage.success('导入成功')
+        ElMessage.success(t('importsuccessful'))
       })
       .finally(() => {
         importLoading.value = false

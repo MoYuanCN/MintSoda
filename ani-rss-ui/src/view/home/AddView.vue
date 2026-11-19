@@ -4,7 +4,7 @@
   <AniBTView ref="aniBTRef"/>
   <MikanView ref="mikanRef"/>
   <BgmView ref="bgmRef" @callback="bgmCallback"/>
-  <el-dialog v-model="dialogVisible" class="add-subscription-dialog" center title="添加订阅"
+  <el-dialog v-model="dialogVisible" class="add-subscription-dialog" center :title="$t('addsubscription')"
              :close-on-click-modal="!rssButtonLoading"
              :close-on-press-escape="!rssButtonLoading"
              :show-close="!rssButtonLoading"
@@ -22,7 +22,7 @@
                 <img :src="source.icon" :alt="source.label" class="source-icon"/>
                 <div>
                   <h3>{{ source.label }}</h3>
-                  <el-text size="small" type="info">RSS 订阅</el-text>
+                  <el-text size="small" type="info">{{ $t('rsssubscription') }}</el-text>
                 </div>
               </div>
               <el-button
@@ -34,11 +34,11 @@
                 <el-icon class="el-icon--left">
                   <Search/>
                 </el-icon>
-                浏览 {{ source.label }}
+                {{ $t('browse') }} {{ source.label }}
               </el-button>
             </div>
             <el-form class="source-form" label-position="top" @submit.prevent>
-              <el-form-item label="RSS 地址">
+              <el-form-item :label="$t('rssurl')">
                 <el-input
                     v-model="ani.url"
                     :autosize="{ minRows: 3, maxRows: 5 }"
@@ -50,26 +50,26 @@
             <el-alert
                 :closable="false"
                 show-icon
-                title="请使用单个番剧与字幕组的 RSS，聚合订阅集中更新时可能出现遗漏。"
+                :title="$t('useanrssfeedforasingleshowandsubgroupaggrega')"
                 type="info"/>
           </div>
         </el-tab-pane>
-        <el-tab-pane label="其他" name="other">
+        <el-tab-pane :label="$t('other')" name="other">
           <div class="source-panel other-source-panel">
             <el-form class="source-form" label-position="top" @submit.prevent>
-              <el-form-item label="番剧名称">
+              <el-form-item :label="$t('animetitle')">
                 <div class="title-search-row">
                   <el-input
                       v-model="ani.title"
                       :disabled="rssButtonLoading"
-                      placeholder="请勿留空"/>
+                      :placeholder="$t('required')"/>
                   <el-button
-                      aria-label="搜索 Bangumi"
+                      :aria-label="$t('searchbangumi')"
                       bg
                       text
                       type="primary"
                       :disabled="rssButtonLoading"
-                      title="搜索 Bangumi"
+                      :title="$t('searchbangumi')"
                       @click="bgmRef?.show(ani.title)">
                     <el-icon class="el-icon--left">
                       <Search/>
@@ -77,13 +77,13 @@
                   </el-button>
                 </div>
               </el-form-item>
-              <el-form-item label="Bangumi 地址">
+              <el-form-item :label="$t('bangumiurl')">
                 <el-input
                     v-model="ani.bgmUrl"
                     :disabled="rssButtonLoading"
                     placeholder="https://bgm.tv/subject/123456"/>
               </el-form-item>
-              <el-form-item label="RSS 地址">
+              <el-form-item :label="$t('rssurl')">
                 <el-input
                     v-model="ani.url"
                     :autosize="{ minRows: 3, maxRows: 5 }"
@@ -95,14 +95,14 @@
             <el-alert
                 :closable="false"
                 show-icon
-            title="将由 qBittorrent 接收 RSS 下载任务。"
+            :title="$t('qbittorrentwillreceiverssdownloadtasks')"
                 type="warning"/>
           </div>
         </el-tab-pane>
       </el-tabs>
       <div class="action">
         <el-button :loading="rssButtonLoading" bg text type="primary" @click="getRss">
-          下一步
+          {{ $t('next') }}
           <el-icon class="el-icon--right">
             <ArrowRight/>
           </el-icon>
@@ -113,6 +113,7 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {ref} from "vue";
 import {ElMessage} from "element-plus";
 import {ArrowRight, Search} from "@element-plus/icons-vue";
@@ -124,7 +125,7 @@ import AniBTView from "@/view/home/AniBTView.vue";
 import {useLocalStorage} from "@vueuse/core";
 import mikanIcon from "@/icon/icon-Mikan.png";
 import aniBTIcon from "@/icon/icon-AniBT.png";
-
+const {t} = useI18n()
 const aniBTRef = ref()
 const mikanRef = ref()
 const bgmRef = ref()
@@ -158,7 +159,7 @@ const rssButtonLoading = ref(false)
 const getRss = async () => {
   if (activeName.value === 'other') {
     if (!ani.value.bgmUrl) {
-      ElMessage.error('请选择在 Bangumi 中所对应的番剧')
+      ElMessage.error(t('selectthematchingbangumientry'))
       return
     }
   }

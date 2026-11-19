@@ -1,159 +1,159 @@
 <template>
-  <el-dialog v-model="jsDialogVisible" align-center center title="自定义JS" width="800">
+  <el-dialog v-model="jsDialogVisible" align-center center :title="$t('customjs')" width="800">
     <el-input v-model:model-value="props.config['customJs']" :rows="6"
               type="textarea"/>
     <div class="flex justify-end full-width mt-8">
       <el-link type="primary" href="https://github.com/MoYuanCN/ani-rss-Yuri/tree/main/ani-rss-ui/public/api"
-               target="_blank">更多CSS
+               target="_blank">{{ $t('morecss') }}
       </el-link>
     </div>
     <div class="flex justify-end full-width mt-8">
-      <el-button bg icon="Close" text @click="jsDialogVisible = false">关闭</el-button>
+      <el-button bg icon="Close" text @click="jsDialogVisible = false">{{ $t('close') }}</el-button>
     </div>
   </el-dialog>
-  <el-dialog v-model="cssDialogVisible" align-center center title="自定义CSS" width="800">
+  <el-dialog v-model="cssDialogVisible" align-center center :title="$t('customcss')" width="800">
     <el-input v-model:model-value="props.config['customCss']" :rows="6"
               type="textarea"/>
     <div class="flex justify-end full-width mt-8">
-      <el-button bg icon="Close" text @click="cssDialogVisible = false">关闭</el-button>
+      <el-button bg icon="Close" text @click="cssDialogVisible = false">{{ $t('close') }}</el-button>
     </div>
   </el-dialog>
-  <SettingsItem label="外观">
+  <SettingsItem :label="$t('appearance')">
     <el-radio-group v-model="store">
-      <el-radio-button label="自动" value="auto">
+      <el-radio-button :label="$t('auto')" value="auto">
         <template #default>
           <el-icon>
             <Adjust/>
           </el-icon>
         </template>
       </el-radio-button>
-      <el-radio-button label="浅色" value="light">
+      <el-radio-button :label="$t('light')" value="light">
         <el-icon>
           <Sun/>
         </el-icon>
       </el-radio-button>
-      <el-radio-button label="深色" value="dark">
+      <el-radio-button :label="$t('dark')" value="dark">
         <el-icon>
           <Moon/>
         </el-icon>
       </el-radio-button>
     </el-radio-group>
   </SettingsItem>
-  <SettingsItem label="主题色">
+  <SettingsItem :label="$t('accentcolor')">
     <div class="theme-color-row">
       <el-color-picker v-model="props.config.accentColor" :predefine="predefineColors"
                        @change="colorChange(props.config.accentColor || '#409eff')"/>
-      <el-button bg text @click="resetAccentColor">恢复默认</el-button>
+      <el-button bg text @click="resetAccentColor">{{ $t('resettodefault') }}</el-button>
     </div>
-    <el-checkbox v-model="props.config.themeDynamicColor" label="从背景图动态取色"/>
-    <el-text size="small" type="info">设置主题色后优先使用；未设置且开启动态取色时，从应用或登录背景图提取主色。</el-text>
+    <el-checkbox v-model="props.config.themeDynamicColor" :label="$t('pickcolorfrombackground')"/>
+    <el-text size="small" type="info">{{ $t('anexplicitaccentcolorwinswhenunsetanddynamic') }}</el-text>
   </SettingsItem>
-  <SettingsItem label="界面质感">
+  <SettingsItem :label="$t('surfacestyle')">
     <div class="theme-preset-row">
       <el-button v-for="preset in qualityPresets" :key="preset.name" bg text
                  @click="applyPreset(preset)">{{ preset.name }}</el-button>
     </div>
   </SettingsItem>
-  <SettingsItem label="应用背景图">
+  <SettingsItem :label="$t('appbackground')">
     <div class="theme-slider-pair">
       <div>
-        <el-text size="small">浅色模式</el-text>
+        <el-text size="small">{{ $t('lightmode') }}</el-text>
         <UiAssetPicker :config="props.config" field="appBackgroundImage"/>
       </div>
       <div>
-        <el-text size="small">深色模式（留空沿用浅色）</el-text>
+        <el-text size="small">{{ $t('darkmodeblankreuseslight') }}</el-text>
         <UiAssetPicker :config="props.config" field="appBackgroundImageDark"/>
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="登录背景图">
+  <SettingsItem :label="$t('loginbackground')">
     <div class="theme-slider-pair">
       <div>
-        <el-text size="small">浅色模式</el-text>
+        <el-text size="small">{{ $t('lightmode') }}</el-text>
         <UiAssetPicker :config="props.config" field="loginBackgroundImage"/>
       </div>
       <div>
-        <el-text size="small">深色模式（留空沿用浅色）</el-text>
+        <el-text size="small">{{ $t('darkmodeblankreuseslight') }}</el-text>
         <UiAssetPicker :config="props.config" field="loginBackgroundImageDark"/>
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="背景效果">
+  <SettingsItem :label="$t('backgroundeffect')">
     <div class="theme-slider-pair">
       <div>
-        <el-text size="small">模糊度</el-text>
+        <el-text size="small">{{ $t('blur') }}</el-text>
         <el-slider v-model="props.config.backgroundBlur" :min="0" :max="40" show-input/>
       </div>
       <div>
-        <el-text size="small">不透明度</el-text>
+        <el-text size="small">{{ $t('opacity') }}</el-text>
         <el-slider v-model="props.config.backgroundOpacity" :min="0" :max="100" show-input/>
       </div>
     </div>
-    <el-text size="small" type="info">模糊与透明度只作用于背景图，不影响界面文字与交互。</el-text>
+    <el-text size="small" type="info">{{ $t('blurandopacityonlyaffectthebackgroundimageno') }}</el-text>
   </SettingsItem>
-  <SettingsItem label="登录 Logo">
+  <SettingsItem :label="$t('loginlogo')">
     <UiAssetPicker :config="props.config" field="loginLogoImage"/>
   </SettingsItem>
-  <SettingsItem label="应用 Logo">
+  <SettingsItem :label="$t('applogo')">
     <UiAssetPicker :config="props.config" field="appLogoImage"/>
   </SettingsItem>
-  <SettingsItem label="卡片透明度">
+  <SettingsItem :label="$t('cardopacity')">
     <el-slider v-model="props.config.cardOpacity" :min="0" :max="100" show-input/>
   </SettingsItem>
-  <SettingsItem label="卡片模糊度">
+  <SettingsItem :label="$t('cardblur')">
     <el-slider v-model="props.config.cardBlur" :min="0" :max="40" show-input/>
   </SettingsItem>
-  <SettingsItem label="导航栏">
+  <SettingsItem :label="$t('navigationbar')">
     <div class="theme-slider-pair">
       <div>
-        <el-text size="small">不透明度</el-text>
+        <el-text size="small">{{ $t('opacity') }}</el-text>
         <el-slider v-model="props.config.navOpacity" :min="0" :max="100" show-input/>
       </div>
       <div>
-        <el-text size="small">模糊度</el-text>
+        <el-text size="small">{{ $t('blur') }}</el-text>
         <el-slider v-model="props.config.navBlur" :min="0" :max="40" show-input/>
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="弹窗">
+  <SettingsItem :label="$t('dialog')">
     <div class="theme-slider-pair">
       <div>
-        <el-text size="small">不透明度</el-text>
+        <el-text size="small">{{ $t('opacity') }}</el-text>
         <el-slider v-model="props.config.dialogOpacity" :min="0" :max="100" show-input/>
       </div>
       <div>
-        <el-text size="small">模糊度</el-text>
+        <el-text size="small">{{ $t('blur') }}</el-text>
         <el-slider v-model="props.config.dialogBlur" :min="0" :max="40" show-input/>
       </div>
     </div>
   </SettingsItem>
-  <SettingsItem label="圆角大小">
+  <SettingsItem :label="$t('cornerradius')">
     <el-slider v-model="props.config.appCornerRadius" :min="0" :max="40" show-input/>
   </SettingsItem>
-  <SettingsItem label="默认排序">
+  <SettingsItem :label="$t('defaultsort')">
     <el-select v-model="props.config['sortType']" class="width-200">
-      <el-option value="SCORE" label="评分"/>
-      <el-option value="PINYIN" label="拼音"/>
-      <el-option value="TITLE" label="标题"/>
-      <el-option value="DOWNLOAD_TIME" label="更新时间"/>
-      <el-option value="UPDATE_WEEK" label="更新星期"/>
-      <el-option value="STANDBY_RSS" label="备用RSS数量"/>
+      <el-option value="SCORE" :label="$t('score')"/>
+      <el-option value="PINYIN" :label="$t('pinyin')"/>
+      <el-option value="TITLE" :label="$t('title')"/>
+      <el-option value="DOWNLOAD_TIME" :label="$t('updatedat')"/>
+      <el-option value="UPDATE_WEEK" :label="$t('updateweekday')"/>
+      <el-option value="STANDBY_RSS" :label="$t('standbyrsscount')"/>
     </el-select>
-    <el-text size="small" type="info">订阅页顶部可临时切换排序，不修改此默认值。</el-text>
+    <el-text size="small" type="info">{{ $t('thesubscriptionspagecanswitchsortingtemporar') }}</el-text>
   </SettingsItem>
-  <SettingsItem label="点击封面">
+  <SettingsItem :label="$t('oncoverclick')">
     <el-select v-model="coverClickAction" class="width-150">
-      <el-option label="编辑订阅" value="edit"/>
-      <el-option label="编辑封面" value="cover"/>
+      <el-option :label="$t('editsubscription')" value="edit"/>
+      <el-option :label="$t('editcover')" value="cover"/>
     </el-select>
   </SettingsItem>
-  <SettingsItem label="启动页">
+  <SettingsItem :label="$t('startuppage')">
     <el-select v-model="startupPage" class="width-150">
-      <el-option label="首页" value="/home"/>
-      <el-option label="订阅页" value="/subscriptions"/>
+      <el-option :label="$t('home')" value="/home"/>
+      <el-option :label="$t('subscriptionspage')" value="/subscriptions"/>
     </el-select>
   </SettingsItem>
-  <SettingsItem label="最大内容宽度">
+  <SettingsItem :label="$t('maxcontentwidth')">
     <el-input-number v-model="maxContentWidth"
                      :min="1200">
       <template #suffix>
@@ -161,12 +161,12 @@
       </template>
     </el-input-number>
   </SettingsItem>
-  <SettingsItem label="其他">
-    <el-checkbox v-model="showScore" label="显示评分"/>
-    <el-checkbox v-model="showWeek" label="按星期展示"/>
-    <el-checkbox v-model="showLastDownloadTime" label="显示更新时间"/>
+  <SettingsItem :label="$t('other')">
+    <el-checkbox v-model="showScore" :label="$t('showscore')"/>
+    <el-checkbox v-model="showWeek" :label="$t('groupbyweekday')"/>
+    <el-checkbox v-model="showLastDownloadTime" :label="$t('showlastupdatetime')"/>
   </SettingsItem>
-  <SettingsItem label="自定义">
+  <SettingsItem :label="$t('custom')">
     <el-button bg @click="jsDialogVisible = true">
       <template #icon>
         <Js/>
@@ -182,12 +182,13 @@
   </SettingsItem>
   <SettingsItem label="WebUI">
     <UploadView url="api/webui/upload" :callback="callback" :extensions="['zip']">
-      <el-button bg icon="Upload">选择文件并上传</el-button>
+      <el-button bg icon="Upload">{{ $t('chooseafileandupload') }}</el-button>
     </UploadView>
   </SettingsItem>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {ref} from "vue";
 import {Adjust, Css3Alt, Js, Moon, Sun} from "@vicons/fa";
 import {
@@ -206,7 +207,7 @@ import SettingsItem from "@/view/custom/SettingsItem.vue";
 import UiAssetPicker from "@/view/config/UiAssetPicker.vue";
 import {watch} from "vue";
 import {applyUiCustomization} from "@/js/global.js";
-
+const {t} = useI18n()
 let predefineColors = ref([
   '#409eff', '#109D58', '#BF3545', '#CB7574',
   '#9AAEC7', '#2EC5B6', '#1C1C1C', '#F7B1A9',
@@ -222,7 +223,7 @@ let predefineColors = ref([
 // 浅色清新主题预设：只修改已有的外观字段，不新增配置项、不产生额外文件。
 const qualityPresets = [
   {
-    name: '蓝白玻璃',
+    name: t('blueglass'),
     accentColor: '#5B8FF9',
     cardOpacity: 78, cardBlur: 14,
     navOpacity: 72, navBlur: 18,
@@ -230,7 +231,7 @@ const qualityPresets = [
     appCornerRadius: 16
   },
   {
-    name: '樱花粉白',
+    name: t('sakurapink'),
     accentColor: '#E48FB2',
     cardOpacity: 82, cardBlur: 18,
     navOpacity: 78, navBlur: 20,
@@ -238,7 +239,7 @@ const qualityPresets = [
     appCornerRadius: 18
   },
   {
-    name: '薄荷青白',
+    name: t('mint'),
     accentColor: '#4FB8A8',
     cardOpacity: 88, cardBlur: 10,
     navOpacity: 84, navBlur: 12,
@@ -246,7 +247,7 @@ const qualityPresets = [
     appCornerRadius: 12
   },
   {
-    name: '磨砂雾面',
+    name: t('frosted'),
     accentColor: '',
     cardOpacity: 88, cardBlur: 24,
     navOpacity: 86, navBlur: 24,
@@ -254,7 +255,7 @@ const qualityPresets = [
     appCornerRadius: 10
   },
   {
-    name: '清透极简',
+    name: t('minimalclear'),
     accentColor: '#409eff',
     cardOpacity: 96, cardBlur: 2,
     navOpacity: 96, navBlur: 2,

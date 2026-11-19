@@ -3,10 +3,10 @@
     <SettingsItem label="EmbyHost">
       <el-input v-model="notificationConfig['embyHost']" placeholder="http://x.x.x.x:8096"/>
     </SettingsItem>
-    <SettingsItem label="Emby密钥">
+    <SettingsItem :label="$t('embyapikey')">
       <el-input v-model="notificationConfig['embyApiKey']"/>
     </SettingsItem>
-    <SettingsItem label="媒体库">
+    <SettingsItem :label="$t('library')">
       <div>
         <el-checkbox-group v-model="notificationConfig['embyRefreshViewIds']">
           <el-checkbox
@@ -20,12 +20,12 @@
         </div>
       </div>
     </SettingsItem>
-    <SettingsItem label="延迟">
+    <SettingsItem :label="$t('delay')">
       <el-input-number v-model="notificationConfig['embyDelayed']"
                        class="notification-input-width"
                        :min="0">
         <template #suffix>
-          <span>秒</span>
+          <span>{{ $t('seconds') }}</span>
         </template>
       </el-input-number>
     </SettingsItem>

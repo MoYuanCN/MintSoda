@@ -3,7 +3,7 @@
     <AddView ref="addRef"/>
     <CollectionView ref="collectionRef"/>
     <ManageView ref="manageRef"/>
-    <PageHeaderView title="订阅" :subtitle="`共 ${subscriptionTotal} 个订阅`"/>
+    <PageHeaderView :title="$t('subscriptions-2')" :subtitle="t('nsubscriptions', {n: subscriptionTotal})"/>
     <div class="subscription-body app-page-content app-page-padding">
       <div class="subscription-toolbar">
         <div class="subscription-filters">
@@ -11,7 +11,7 @@
               v-model="title"
               class="subscription-search"
               clearable
-              placeholder="搜索"
+              :placeholder="$t('search')"
               prefix-icon="Search"
               @clear="changeFilterList"
               @input="changeFilterList"/>
@@ -19,7 +19,7 @@
               v-model:model-value="releaseDate"
               class="subscription-select"
               clearable
-              placeholder="日期"
+              :placeholder="$t('date')"
               @change="selectChange">
             <el-option v-for="it in releaseDateList"
                        :key="it"
@@ -38,7 +38,7 @@
           <el-select
               v-model:model-value="sortType"
               class="subscription-select subscription-sort"
-              placeholder="排序"
+              :placeholder="$t('sort')"
               @change="changeSort">
             <el-option v-for="sortItem in sortOptions"
                        :key="sortItem.value"
@@ -48,29 +48,29 @@
         </div>
         <div class="subscription-actions">
           <el-dropdown trigger="click">
-            <el-button aria-label="添加" type="primary" class="auto-button" icon="Plus">
-              添加
+            <el-button :aria-label="$t('add')" type="primary" class="auto-button" icon="Plus">
+              {{ $t('add') }}
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="addRef?.show">
-                  添加订阅
+                  {{ $t('addsubscription') }}
                 </el-dropdown-item>
                 <el-dropdown-item @click="collectionRef?.show">
-                  添加合集
+                  {{ $t('addcollection') }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-          <el-button aria-label="刷新"
+          <el-button :aria-label="$t('refresh')"
                      :loading="refreshLoading"
                      class="auto-button"
                      icon="Refresh"
                      @click="confirmRefreshAni">
-            刷新
+            {{ $t('refresh') }}
           </el-button>
-          <el-button aria-label="管理" @click="manageRef?.show" class="auto-button" icon="Fold">
-            管理
+          <el-button :aria-label="$t('manage')" @click="manageRef?.show" class="auto-button" icon="Fold">
+            {{ $t('manage') }}
           </el-button>
         </div>
       </div>
@@ -84,6 +84,7 @@
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import {onMounted, ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {useLocalStorage} from "@vueuse/core";
@@ -94,7 +95,7 @@ import CollectionView from "@/view/home/CollectionView.vue";
 import ManageView from "@/view/home/ManageView.vue";
 import PageHeaderView from "@/view/custom/PageHeaderView.vue";
 import * as http from "@/js/http.js";
-
+const {t} = useI18n()
 const listRef = ref()
 const addRef = ref()
 const collectionRef = ref()
@@ -104,15 +105,15 @@ const releaseDate = ref('')
 const releaseDateList = ref([])
 const subscriptionTotal = ref(0)
 const refreshLoading = ref(false)
-const enable = useLocalStorage('select-enable', '已启用')
+const enable = useLocalStorage('select-enable', t('enabled'))
 const sortType = subscriptionSort
 const sortOptions = [
-  {label: '按评分', value: 'SCORE'},
-  {label: '按拼音', value: 'PINYIN'},
-  {label: '按标题', value: 'TITLE'},
-  {label: '按更新时间', value: 'DOWNLOAD_TIME'},
-  {label: '按更新星期', value: 'UPDATE_WEEK'},
-  {label: '按备用RSS数量', value: 'STANDBY_RSS'}
+  {label: t('byscore'), value: 'SCORE'},
+  {label: t('bypinyin'), value: 'PINYIN'},
+  {label: t('bytitle'), value: 'TITLE'},
+  {label: t('byupdatetime'), value: 'DOWNLOAD_TIME'},
+  {label: t('byupdateweekday'), value: 'UPDATE_WEEK'},
+  {label: t('bystandbyrsscount'), value: 'STANDBY_RSS'}
 ]
 
 const changeSort = () => {
@@ -120,15 +121,15 @@ const changeSort = () => {
 }
 const enableSelect = [
   {
-    label: '全部',
+    label: t('all'),
     fun: () => true
   },
   {
-    label: '已启用',
+    label: t('enabled'),
     fun: item => item.enable
   },
   {
-    label: '未启用',
+    label: t('notenabled'),
     fun: item => !item.enable
   }
 ]
@@ -173,12 +174,12 @@ const refreshAni = () => {
 // 全量刷新可能触发大量订阅请求，执行前通过模态弹窗进行确认。
 const confirmRefreshAni = () => {
   ElMessageBox.confirm(
-      '将立即刷新全部订阅，是否继续？',
-      '刷新全部订阅',
+      t('allsubscriptionswillberefreshednowcontinue'),
+      t('refreshallsubscriptions'),
       {
-        confirmButtonText: '确认刷新',
+        confirmButtonText: t('confirmrefresh'),
         confirmButtonClass: 'is-text is-has-bg el-button--primary',
-        cancelButtonText: '取消',
+        cancelButtonText: t('cancel'),
         cancelButtonClass: 'is-text is-has-bg',
         type: 'warning'
       }

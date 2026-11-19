@@ -1,37 +1,37 @@
 <template>
-  <el-dialog v-model="dialogVisible" center title="修改通知">
+  <el-dialog v-model="dialogVisible" center :title="$t('editnotification')">
     <el-scrollbar :always="true" class="notification-config-scrollbar">
-      <SettingsItem label="通知类型">
+      <SettingsItem :label="$t('notificationtype')">
         <el-select v-model="notificationConfig['notificationType']">
           <el-option v-for="it in notificationTypeList"
                      :key="it.name"
-                     :label="it.label"
+                     :label="$t(it.label)"
                      :value="it.name"
           />
         </el-select>
       </SettingsItem>
-      <SettingsItem label="备注">
-        <el-input v-model="notificationConfig['comment']" placeholder="无备注"/>
+      <SettingsItem :label="$t('comment')">
+        <el-input v-model="notificationConfig['comment']" :placeholder="$t('nocomment')"/>
       </SettingsItem>
       <SettingsItem v-if="notificationConfig.notificationType !== 'CUSTOM_REQUEST'
-                     && notificationConfig.notificationType !== 'PLUGIN'" label="消息模板">
+                     && notificationConfig.notificationType !== 'PLUGIN'" :label="$t('messagetemplate')">
         <div class="notification-template-select">
-          <el-select v-model="notificationConfig.notificationTemplateId" clearable placeholder="使用单条通知模板"
+          <el-select v-model="notificationConfig.notificationTemplateId" clearable :placeholder="$t('useasinglenotificationtemplate')"
                      @change="templateSelectionChanged">
             <el-option v-for="template in availableTemplates"
-                       :key="template.id" :label="`${template.name || '未命名模板'} · ${template.type === 'JSON' ? 'JSON' : '文本'}`"
+                       :key="template.id" :label="`${template.name || $t('untitledtemplate')} · ${template.type === 'JSON' ? 'JSON' : $t('text')}`"
                        :value="template.id"/>
           </el-select>
-          <el-text size="small" type="info">Telegram 使用文本模板；未选择时使用渠道模板。</el-text>
+          <el-text size="small" type="info">{{ $t('telegramusestexttemplatesthechanneltemplatei') }}</el-text>
         </div>
       </SettingsItem>
-      <SettingsItem label="通知状态">
+      <SettingsItem :label="$t('notificationevents')">
         <el-checkbox-group v-model:model-value="notificationConfig['statusList']">
-          <el-checkbox label="开始下载" value="DOWNLOAD_START"/>
-          <el-checkbox label="下载完成" value="DOWNLOAD_END"/>
-          <el-checkbox label="缺集" value="OMIT"/>
-          <el-checkbox label="错误" value="ERROR"/>
-          <el-checkbox label="订阅完结" value="COMPLETED"/>
+          <el-checkbox :label="$t('downloadstarted')" value="DOWNLOAD_START"/>
+          <el-checkbox :label="$t('downloadfinished')" value="DOWNLOAD_END"/>
+          <el-checkbox :label="$t('missingepisodes')" value="OMIT"/>
+          <el-checkbox :label="$t('error')" value="ERROR"/>
+          <el-checkbox :label="$t('subscriptioncompleted')" value="COMPLETED"/>
         </el-checkbox-group>
       </SettingsItem>
       <EmbyRefreshNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"/>
@@ -39,7 +39,7 @@
       <WebhookNotificationView v-model:notification-config="notificationConfig" v-model:config="props.config"
                                :templates="props.config.notificationTemplateList || []"/>
       <PluginNotificationView v-model:notification-config="notificationConfig"/>
-      <SettingsItem label="顺序">
+      <SettingsItem :label="$t('order')">
         <div>
           <el-input-number
               v-model="notificationConfig['sort']"
@@ -47,7 +47,7 @@
           />
         </div>
       </SettingsItem>
-      <SettingsItem label="重试">
+      <SettingsItem :label="$t('retry')">
         <el-input-number
             :min="0"
             :max="100"
@@ -55,20 +55,21 @@
             class="notification-input-width"
         />
       </SettingsItem>
-      <SettingsItem label="开启">
+      <SettingsItem :label="$t('enable-2')">
         <el-switch v-model="notificationConfig['enable']"/>
       </SettingsItem>
     </el-scrollbar>
     <div class="flex notification-config-footer">
-      <el-button bg text @click="messageTest" icon="Odometer" :loading="messageTestLoading">测试
+      <el-button bg text @click="messageTest" icon="Odometer" :loading="messageTestLoading">{{ $t('test') }}
       </el-button>
-      <el-button @click="confirm" text bg icon="Check" type="primary">确定
+      <el-button @click="confirm" text bg icon="Check" type="primary">{{ $t('ok') }}
       </el-button>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {computed, ref, watch} from "vue";
 import EmbyRefreshNotificationView from "./notification/EmbyRefreshNotificationView.vue";
@@ -78,10 +79,9 @@ import PluginNotificationView from "./notification/PluginNotificationView.vue";
 import {notificationTypeList} from "@/js/notification-type.js";
 import {ElMessage} from "element-plus";
 import {testNotification} from "@/js/http.js";
-
-
+const {t} = useI18n()
 let notificationConfig = ref({
-  "comment": "无备注",
+  "comment": t("nocomment"),
   "notificationTemplate": "${text}",
   "notificationType": "TELEGRAM",
   "telegramBotToken": "",
@@ -148,7 +148,7 @@ const messageTest = () => {
     try {
       JSON.parse(selectedTemplate.content)
     } catch {
-      ElMessage.error('当前 JSON 模板格式无效，请先修正模板内容')
+      ElMessage.error(t('thejsontemplateisinvalidfixitscontentfirst'))
       messageTestLoading.value = false
       return
     }

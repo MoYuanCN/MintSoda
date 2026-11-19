@@ -1,41 +1,42 @@
 <template>
-  <SettingsItem label="自动备份配置">
+  <SettingsItem :label="$t('autobackupsettings')">
     <div style="display: flex;gap: 4px;">
       <el-switch v-model="props.config['configBackup']"/>
       <el-input-number v-model="props.config['configBackupDay']" :min="1">
         <template #suffix>
-          <span>天</span>
+          <span>{{ $t('days') }}</span>
         </template>
       </el-input-number>
     </div>
   </SettingsItem>
   <div class="content flex">
-    <el-button bg @click="exportBackup" icon="Upload">导出设置</el-button>
-    <el-button bg @click="importBackup" icon="Download">导入设置</el-button>
+    <el-button bg @click="exportBackup" icon="Upload">{{ $t('exportsettings') }}</el-button>
+    <el-button bg @click="importBackup" icon="Download">{{ $t('importsettings') }}</el-button>
     <UploadView ref="uploadRef" url="api/importBackup" :extensions="['zip']" :callback="callback"/>
   </div>
 </template>
 <script setup>
+import {useI18n} from "vue-i18n"
 import {authorization} from "@/js/global.js";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {markRaw, ref} from "vue";
 import {WarnTriangleFilled} from "@element-plus/icons-vue";
 import UploadView from "@/view/custom/UploadView.vue";
 import SettingsItem from "@/view/custom/SettingsItem.vue";
-
+const {t} = useI18n()
 let uploadRef = ref()
 
 let importBackup = () => {
   ElMessageBox.confirm(
       `<strong style="color: var(--el-color-danger);">
-        将会覆盖掉现有的设置、订阅、下载记录, 是否执意继续?
+        {{ $t('thisoverwritesexistingsettingssubscriptionsanddownloadrecords') }}
        </strong>`,
-      '警告',
+      t('warning'),
       {
         dangerouslyUseHTMLString: true,
-        confirmButtonText: '继续',
+        confirmButtonText: t('continue'),
         confirmButtonClass: 'is-text is-has-bg el-button--danger',
-        cancelButtonText: '取消',
+        cancelButtonText: t('cancel'),
         cancelButtonClass: 'is-text is-has-bg',
         type: 'warning',
         icon: markRaw(WarnTriangleFilled),

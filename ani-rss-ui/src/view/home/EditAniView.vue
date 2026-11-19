@@ -1,9 +1,9 @@
 <template>
   <el-dialog v-model="downloadPathDialogVisible" align-center center width="300"
-             @close="callback" title="移动文件">
+             @close="callback" :title="$t('movefiles')">
     <div>
       <strong>
-        检测到修改后的下载位置发生了改动，是否将已下载文件移动到新的位置？
+        {{ $t('thedownloadpathchangedmovealreadydownloadedf') }}
       </strong>
       <br>
       <el-text class="mx-1" size="small">
@@ -15,30 +15,30 @@
         move = true
         editAni()
         downloadPathDialogVisible = false
-      }">移动
+      }">{{ $t('move') }}
       </el-button>
       <el-button icon="Close" bg text @click="()=>{
         move = false
         editAni()
         downloadPathDialogVisible = false
-      }">不移动
+      }">{{ $t('donotmove') }}
       </el-button>
     </div>
   </el-dialog>
-  <el-dialog v-model="dialogVisible" title="修改订阅" center v-if="dialogVisible">
+  <el-dialog v-model="dialogVisible" :title="$t('editsubscription-2')" center v-if="dialogVisible">
     <AniView v-model:ani="ani" edit-mode @callback="editChange"/>
   </el-dialog>
 </template>
 
 <script setup>
+import {useI18n} from "vue-i18n"
 
 import {ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import AniView from "./AniView.vue";
 import {aniData} from "@/js/ani.js";
 import * as http from '@/js/http.js'
-
-
+const {t} = useI18n()
 const dialogVisible = ref(false)
 const downloadPathDialogVisible = ref(false)
 
@@ -75,12 +75,12 @@ const editAni = () => {
   }
 
   ElMessageBox.confirm(
-      '将会移动整个文件夹, 是否执意继续?',
-      '警告',
+      t('theentirefolderwillbemovedcontinue'),
+      t('warning'),
       {
-        confirmButtonText: '执意继续移动',
+        confirmButtonText: t('moveanyway'),
         confirmButtonClass: 'is-text is-has-bg el-button--danger',
-        cancelButtonText: '取消',
+        cancelButtonText: t('cancel'),
         cancelButtonClass: 'is-text is-has-bg',
         type: 'warning',
       }
