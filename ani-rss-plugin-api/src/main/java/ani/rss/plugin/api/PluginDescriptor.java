@@ -16,6 +16,8 @@ import java.util.List;
  * @param updateUrl      自动更新检查地址，可为空
  * @param permissions    插件声明的能力，仅用于展示与审计
  * @param minAppVersion  允许运行的最低宿主张版本，可为空
+ * @param runtime        运行时：JAVA 或 JAVASCRIPT，缺省为 JAVA
+ * @param entry          JS 插件的入口文件，缺省 main.js；JAVA 插件忽略
  */
 public record PluginDescriptor(
         String id,
@@ -28,13 +30,29 @@ public record PluginDescriptor(
         String homepage,
         String updateUrl,
         List<String> permissions,
-        String minAppVersion
+        String minAppVersion,
+        String runtime,
+        String entry
 ) {
+    public static final String RUNTIME_JAVA = "JAVA";
+    public static final String RUNTIME_JAVASCRIPT = "JAVASCRIPT";
+
     public PluginDescriptor {
         permissions = permissions == null ? List.of() : List.copyOf(permissions);
+        runtime = runtime == null || runtime.isBlank()
+                ? RUNTIME_JAVA
+                : runtime.trim().toUpperCase(java.util.Locale.ROOT);
+        entry = entry == null || entry.isBlank() ? "main.js" : entry.trim();
     }
 
     public boolean compatible() {
         return apiVersion != null && apiVersion <= PluginApi.VERSION;
+    }
+
+    /**
+     * 是否为脚本插件
+     */
+    public boolean script() {
+        return RUNTIME_JAVASCRIPT.equals(runtime);
     }
 }

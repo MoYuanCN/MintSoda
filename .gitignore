@@ -55,3 +55,5 @@ ani-rss-update.exe
 *.versionsBackup
 .pnpm-store
 /ani-rss-ui/node/
+# 示例插件构建产物
+examples/plugins/**/plugin.zip

@@ -13,9 +13,14 @@ public final class PluginApi {
     public static final int VERSION = 2;
 
     /**
-     * 插件描述文件名
+     * 插件描述文件名，安装时统一规范化为该名称
      */
     public static final String DESCRIPTOR_FILE = "plugin.json";
+
+    /**
+     * 可选的描述文件名，包内提供 manifest.json 时同样接受
+     */
+    public static final String MANIFEST_FILE = "manifest.json";
 
     private PluginApi() {
     }

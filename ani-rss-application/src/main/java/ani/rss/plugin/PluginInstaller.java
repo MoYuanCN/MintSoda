@@ -45,7 +45,7 @@ public class PluginInstaller {
      */
     public PluginInfo installFromUrl(String url, String sha256, Long size, String source) {
         URLUtils.verify(url);
-        File temp = FileUtil.createTempFile("plugin-", ".jar", true);
+        File temp = FileUtil.createTempFile("plugin-", packageSuffix(url), true);
         try {
             HttpReq.get(url).then(res -> {
                 HttpReq.assertStatus(res);
@@ -63,7 +63,7 @@ public class PluginInstaller {
     public PluginInfo installFromUpload(MultipartFile file, String sha256) throws Exception {
         Assert.notNull(file, "请选择插件包");
         Assert.isTrue(file.getSize() > 0 && file.getSize() <= MAX_PLUGIN_SIZE, "插件包大小不合法");
-        File temp = FileUtil.createTempFile("plugin-", ".jar", true);
+        File temp = FileUtil.createTempFile("plugin-", packageSuffix(file.getOriginalFilename()), true);
         try {
             try (InputStream inputStream = file.getInputStream()) {
                 FileUtil.writeFromStream(inputStream, temp);
@@ -71,6 +71,57 @@ public class PluginInstaller {
             return installFromFile(temp, sha256, null, "upload");
         } finally {
             FileUtil.del(temp);
+        }
+    }
+
+    /**
+     * 删除目录下的全部内容，但保留指定名称的子目录，避免覆盖安装丢失数据。
+     */
+    private static void cleanExcept(File dir, String keep) {
+        File[] children = dir.listFiles();
+        if (children == null) {
+            return;
+        }
+        for (File child : children) {
+            if (child.getName().equals(keep)) {
+                continue;
+            }
+            FileUtil.del(child);
+        }
+    }
+
+    /**
+     * 保持原扩展名，JAR 与 ZIP 都按 ZIP 解析，仅用于临时文件命名。
+     */
+    private static String packageSuffix(String name) {
+        String lower = StrUtil.nullToEmpty(name).toLowerCase(java.util.Locale.ROOT);
+        return lower.endsWith(".zip") ? ".zip" : ".jar";
+    }
+
+    /**
+     * 将 ZIP 解包到目标目录，拒绝逃出目标目录的条目。
+     */
+    private static void extractArchive(File archive, File target) {
+        FileUtil.mkdir(target);
+        java.nio.file.Path base = target.toPath().toAbsolutePath().normalize();
+        try (java.util.zip.ZipFile zipFile = new java.util.zip.ZipFile(archive)) {
+            java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                java.util.zip.ZipEntry entry = entries.nextElement();
+                java.nio.file.Path resolved = base.resolve(entry.getName()).normalize();
+                Assert.isTrue(resolved.startsWith(base), "插件包含非法路径: " + entry.getName());
+                if (entry.isDirectory()) {
+                    java.nio.file.Files.createDirectories(resolved);
+                    continue;
+                }
+                java.nio.file.Files.createDirectories(resolved.getParent());
+                try (java.io.InputStream inputStream = zipFile.getInputStream(entry)) {
+                    java.nio.file.Files.copy(inputStream, resolved,
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        } catch (java.io.IOException e) {
+            throw new IllegalArgumentException("插件包解压失败: " + e.getMessage(), e);
         }
     }
 
@@ -91,18 +142,29 @@ public class PluginInstaller {
         PluginDescriptor descriptor = PluginManager.readDescriptor(jar);
         String id = descriptor.id();
 
+        // 脚本插件是 ZIP，需要解包；Java 插件是单个 JAR，直接落盘。
         File staging = new File(FileUtil.getTmpDir(), "plugin-staging-" + UUID.randomUUID());
         PluginPaths.ensure(staging);
         try {
-            FileUtil.copy(jar, new File(staging, "plugin.jar"), true);
+            if (descriptor.script()) {
+                extractArchive(jar, staging);
+            } else {
+                FileUtil.copy(jar, new File(staging, "plugin.jar"), true);
+            }
             FileUtil.writeUtf8String(GsonStatic.toJson(descriptor), new File(staging, "plugin.json"));
+            // manifest.json 只作为来源格式，落盘后统一为 plugin.json。
+            FileUtil.del(new File(staging, ani.rss.plugin.api.PluginApi.MANIFEST_FILE));
 
             if (pluginManager.find(id).isPresent()) {
                 pluginManager.disable(id);
             }
-            PluginPaths.ensure(PluginPaths.dir(id));
-            FileUtil.move(new File(staging, "plugin.jar"), PluginPaths.jarFile(id), true);
-            FileUtil.move(new File(staging, "plugin.json"), PluginPaths.descriptorFile(id), true);
+            File target = PluginPaths.dir(id);
+            PluginPaths.ensure(target);
+            if (descriptor.script()) {
+                // 脚本插件不产生 plugin.jar，先清掉旧版本残留，但保留插件私有数据目录。
+                cleanExcept(target, "data");
+            }
+            FileUtil.copyContent(staging, target, true);
         } finally {
             FileUtil.del(staging);
         }

@@ -26,6 +26,7 @@ import java.util.List;
  * @param config        插件配置 JSON
  * @param channels      提供的通知渠道
  * @param endpoints     提供的 HTTP 接口
+ * @param runtime       运行时：JAVA 或 JAVASCRIPT
  */
 public record PluginInfo(
         String id,
@@ -46,7 +47,8 @@ public record PluginInfo(
         List<SectionView> sections,
         String config,
         List<ChannelView> channels,
-        List<EndpointView> endpoints
+        List<EndpointView> endpoints,
+        String runtime
 ) {
     public PluginInfo {
         permissions = permissions == null ? List.of() : List.copyOf(permissions);
@@ -60,7 +62,8 @@ public record PluginInfo(
                 descriptor.id(), descriptor.name(), descriptor.version(), descriptor.apiVersion(),
                 descriptor.author(), descriptor.description(), descriptor.homepage(),
                 descriptor.permissions(), PluginState.DISABLED, "", "", 0L,
-                descriptor.updateUrl(), "", false, List.of(), "", List.of(), List.of()
+                descriptor.updateUrl(), "", false, List.of(), "", List.of(), List.of(),
+                descriptor.runtime()
         );
     }
 

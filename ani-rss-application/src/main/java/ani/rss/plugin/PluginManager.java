@@ -3,6 +3,8 @@ package ani.rss.plugin;
 import ani.rss.commons.GsonStatic;
 import ani.rss.commons.MavenUtils;
 import ani.rss.plugin.api.*;
+import ani.rss.plugin.runtime.PluginSource;
+import ani.rss.plugin.runtime.PluginSources;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
@@ -12,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -51,7 +52,7 @@ public class PluginManager {
     });
 
     public record LoadedPlugin(PluginDescriptor descriptor, Plugin plugin, PluginContextImpl context,
-                               PluginClassLoader classLoader, URL jarUrl) {
+                               ani.rss.plugin.runtime.PluginSource source) {
     }
 
     /**
@@ -90,15 +91,40 @@ public class PluginManager {
         if (existing != null) {
             return existing;
         }
-        File jar = PluginPaths.jarFile(id);
-        if (!jar.isFile()) {
-            throw new IllegalArgumentException("插件文件不存在: " + id);
+        PluginDescriptor descriptor = readInstalledDescriptor(id);
+        PluginSource source = null;
+        try {
+            source = PluginSources.create(descriptor);
+            Plugin plugin = source.load();
+            PluginContextImpl context = new PluginContextImpl(descriptor, registry, MavenUtils.getVersion());
+            plugin.onLoad(context);
+            LoadedPlugin loadedPlugin = new LoadedPlugin(descriptor, plugin, context, source);
+            loaded.put(id, loadedPlugin);
+            PluginRecord record = registry.getOrCreate(id);
+            if (!descriptor.script()) {
+                record.setSha256(SecureUtil.sha256(PluginPaths.jarFile(id)));
+            }
+            registry.sync();
+            log.info("插件已加载 {} {} ({})", descriptor.name(), descriptor.version(), descriptor.runtime());
+            return loadedPlugin;
+        } catch (Exception e) {
+            if (source != null) {
+                source.close();
+            }
+            throw new IllegalStateException("插件加载失败: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 读取已安装插件的描述文件，并校验标识与接口版本。
+     */
+    private static PluginDescriptor readInstalledDescriptor(String id) {
         File descriptorFile = PluginPaths.descriptorFile(id);
         if (!descriptorFile.isFile()) {
             throw new IllegalArgumentException("插件缺少 plugin.json: " + id);
         }
-        PluginDescriptor descriptor = GsonStatic.fromJson(FileUtil.readUtf8String(descriptorFile), PluginDescriptor.class);
+        PluginDescriptor descriptor = GsonStatic.fromJson(
+                FileUtil.readUtf8String(descriptorFile), PluginDescriptor.class);
         if (!id.equals(descriptor.id())) {
             throw new IllegalArgumentException("插件标识与目录不一致: " + id);
         }
@@ -106,26 +132,13 @@ public class PluginManager {
             throw new IllegalStateException("插件接口版本不兼容，需要 " + descriptor.apiVersion()
                     + "，当前 " + PluginApi.VERSION);
         }
-        try {
-            URL url = jar.toURI().toURL();
-            PluginClassLoader classLoader = new PluginClassLoader(id, url, PluginManager.class.getClassLoader());
-            Class<?> mainClass = classLoader.loadClass(descriptor.mainClass());
-            if (!Plugin.class.isAssignableFrom(mainClass)) {
-                throw new IllegalArgumentException("插件入口未实现 Plugin 接口: " + descriptor.mainClass());
-            }
-            Plugin plugin = (Plugin) mainClass.getDeclaredConstructor().newInstance();
-            PluginContextImpl context = new PluginContextImpl(descriptor, registry, MavenUtils.getVersion());
-            plugin.onLoad(context);
-            LoadedPlugin loadedPlugin = new LoadedPlugin(descriptor, plugin, context, classLoader, url);
-            loaded.put(id, loadedPlugin);
-            PluginRecord record = registry.getOrCreate(id);
-            record.setSha256(SecureUtil.sha256(jar));
-            registry.sync();
-            log.info("插件已加载 {} {}", descriptor.name(), descriptor.version());
-            return loadedPlugin;
-        } catch (Exception e) {
-            throw new IllegalStateException("插件加载失败: " + e.getMessage(), e);
+        if (descriptor.script() && StrUtil.isBlank(descriptor.entry())) {
+            throw new IllegalArgumentException("脚本插件缺少入口文件");
         }
+        if (!descriptor.script() && StrUtil.isBlank(descriptor.mainClass())) {
+            throw new IllegalArgumentException("插件缺少入口类");
+        }
+        return descriptor;
     }
 
     public synchronized void enable(String id) {
@@ -176,7 +189,7 @@ public class PluginManager {
         if (loadedPlugin != null) {
             try {
                 loadedPlugin.plugin().onUnload(loadedPlugin.context());
-                loadedPlugin.classLoader().close();
+                loadedPlugin.source().close();
             } catch (Exception e) {
                 log.warn("插件 {} 卸载时资源释放失败", id);
             }
@@ -198,7 +211,7 @@ public class PluginManager {
         if (removed != null) {
             try {
                 removed.plugin().onUnload(removed.context());
-                removed.classLoader().close();
+                removed.source().close();
             } catch (Exception e) {
                 log.warn("插件 {} 重载时资源释放失败", id);
             }
@@ -280,14 +293,15 @@ public class PluginManager {
                     record == null ? "" : StrUtil.nullToEmpty(record.getLatestVersion()),
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     sections(context.sections()), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
-                    channels(context.notificationChannels()), endpoints(context.endpoints())
+                    channels(context.notificationChannels()), endpoints(context.endpoints()),
+                    descriptor.runtime()
             );
         }
         File descriptorFile = PluginPaths.descriptorFile(id);
         if (!descriptorFile.isFile()) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "缺少 plugin.json", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of());
+                    List.of(), "", List.of(), List.of(), "");
         }
         try {
             PluginDescriptor descriptor = GsonStatic.fromJson(FileUtil.readUtf8String(descriptorFile), PluginDescriptor.class);
@@ -301,11 +315,11 @@ public class PluginManager {
                     descriptor.updateUrl(), record == null ? "" : StrUtil.nullToEmpty(record.getLatestVersion()),
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     List.of(), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
-                    List.of(), List.of());
+                    List.of(), List.of(), descriptor.runtime());
         } catch (Exception e) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "plugin.json 解析失败", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of());
+                    List.of(), "", List.of(), List.of(), "");
         }
     }
 
@@ -352,26 +366,75 @@ public class PluginManager {
 
     /**
      * 读取插件包内的描述文件，用于安装前校验。
+     * <p>
+     * Java 插件是包含 {@code plugin.json} 的 JAR；脚本插件是包含
+     * {@code plugin.json} 与入口脚本的 ZIP 包。
      */
     public static PluginDescriptor readDescriptor(File jar) {
-        try (JarFile jarFile = new JarFile(jar)) {
-            JarEntry entry = jarFile.getJarEntry(PluginApi.DESCRIPTOR_FILE);
-            if (entry == null) {
+        String json;
+        if (jar.isDirectory()) {
+            File descriptorFile = new File(jar, PluginApi.DESCRIPTOR_FILE);
+            if (!descriptorFile.isFile()) {
                 throw new IllegalArgumentException("插件包缺少 plugin.json");
             }
-            try (InputStream inputStream = jarFile.getInputStream(entry)) {
-                PluginDescriptor descriptor = GsonStatic.fromJson(
-                        IoUtil.readUtf8(inputStream), PluginDescriptor.class);
-                if (StrUtil.isBlank(descriptor.id()) || StrUtil.isBlank(descriptor.mainClass())) {
-                    throw new IllegalArgumentException("plugin.json 缺少 id 或 mainClass");
-                }
-                PluginPaths.verifyId(descriptor.id());
-                return descriptor;
+            json = FileUtil.readUtf8String(descriptorFile);
+            return validateDescriptor(json, jar);
+        }
+        try (JarFile jarFile = new JarFile(jar)) {
+            // plugin.json 优先，未提供时兼容 manifest.json。
+            JarEntry entry = jarFile.getJarEntry(PluginApi.DESCRIPTOR_FILE);
+            if (entry == null) {
+                entry = jarFile.getJarEntry(PluginApi.MANIFEST_FILE);
             }
+            if (entry == null) {
+                throw new IllegalArgumentException("插件包缺少 plugin.json 或 manifest.json");
+            }
+            try (InputStream inputStream = jarFile.getInputStream(entry)) {
+                json = IoUtil.readUtf8(inputStream);
+            }
+            return validateDescriptor(json, jar);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
             throw new IllegalArgumentException("插件包读取失败: " + e.getMessage(), e);
+        }
+    }
+
+    private static PluginDescriptor validateDescriptor(String json, File packageFile) {
+        PluginDescriptor descriptor = GsonStatic.fromJson(json, PluginDescriptor.class);
+        if (StrUtil.isBlank(descriptor.id())) {
+            throw new IllegalArgumentException("plugin.json 缺少 id");
+        }
+        PluginPaths.verifyId(descriptor.id());
+        if (descriptor.script()) {
+            if (StrUtil.isBlank(descriptor.entry())) {
+                throw new IllegalArgumentException("脚本插件缺少入口文件");
+            }
+            if (StrUtil.containsAny(descriptor.entry(), "..", "\\")) {
+                throw new IllegalArgumentException("脚本入口路径不合法");
+            }
+            if (!hasEntry(packageFile, descriptor.entry())) {
+                throw new IllegalArgumentException("插件包缺少入口脚本: " + descriptor.entry());
+            }
+            return descriptor;
+        }
+        if (StrUtil.isBlank(descriptor.mainClass())) {
+            throw new IllegalArgumentException("plugin.json 缺少 mainClass");
+        }
+        return descriptor;
+    }
+
+    /**
+     * 判断包内是否存在指定文件；目录形式直接检查文件系统。
+     */
+    private static boolean hasEntry(File packageFile, String entry) {
+        if (packageFile.isDirectory()) {
+            return new File(packageFile, entry).isFile();
+        }
+        try (JarFile jarFile = new JarFile(packageFile)) {
+            return jarFile.getJarEntry(entry) != null;
+        } catch (Exception e) {
+            return false;
         }
     }
 
