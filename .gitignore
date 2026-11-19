@@ -51,7 +51,7 @@ logs
 /HANDOFF.md
 
 *.log
-ani-rss-update.exe
+ani-rss-Yuri-update.exe
 *.versionsBackup
 .pnpm-store
 /ani-rss-ui/node/

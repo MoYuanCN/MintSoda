@@ -40,7 +40,7 @@ public class AniMcpTools {
 
     @McpTool(
             name = "list_subscriptions",
-            description = "列出现有 ANI-RSS 订阅，可按启用状态过滤",
+            description = "列出现有 ANI-RSS-Yuri 订阅，可按启用状态过滤",
             annotations = @McpTool.McpAnnotations(
                     title = "订阅列表",
                     readOnlyHint = true,
@@ -130,7 +130,7 @@ public class AniMcpTools {
      */
     @McpTool(
             name = "rss_to_subscription",
-            description = "将 RSS 地址解析并转换为完整的 ANI-RSS 订阅对象。请先调用此工具，再将返回的订阅对象传给 preview_subscription_items 或 add_subscription",
+            description = "将 RSS 地址解析并转换为完整的 ANI-RSS-Yuri 订阅对象。请先调用此工具，再将返回的订阅对象传给 preview_subscription_items 或 add_subscription",
             annotations = @McpTool.McpAnnotations(
                     title = "RSS 转订阅",
                     readOnlyHint = true,
@@ -172,7 +172,7 @@ public class AniMcpTools {
 
     @McpTool(
             name = "add_subscription",
-            description = "添加一个完整的 ANI-RSS 订阅对象。请先调用 rss_to_subscription，可选调用 preview_subscription_items",
+            description = "添加一个完整的 ANI-RSS-Yuri 订阅对象。请先调用 rss_to_subscription，可选调用 preview_subscription_items",
             annotations = @McpTool.McpAnnotations(
                     title = "添加订阅",
                     destructiveHint = false,
@@ -200,7 +200,7 @@ public class AniMcpTools {
      */
     @McpTool(
             name = "edit_subscription",
-            description = "编辑一个 ANI-RSS 订阅。请先调用 list_subscriptions 获取完整订阅对象，保留 id 并修改需要调整的字段后传入",
+            description = "编辑一个 ANI-RSS-Yuri 订阅。请先调用 list_subscriptions 获取完整订阅对象，保留 id 并修改需要调整的字段后传入",
             annotations = @McpTool.McpAnnotations(
                     title = "编辑订阅",
                     destructiveHint = false,
@@ -230,7 +230,7 @@ public class AniMcpTools {
      */
     @McpTool(
             name = "delete_subscription",
-            description = "删除一个或多个 ANI-RSS 订阅。deleteFiles 为 true 时还会删除下载器任务和本地视频文件",
+            description = "删除一个或多个 ANI-RSS-Yuri 订阅。deleteFiles 为 true 时还会删除下载器任务和本地视频文件",
             annotations = @McpTool.McpAnnotations(
                     title = "删除订阅",
                     openWorldHint = false

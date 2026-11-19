@@ -1,6 +1,6 @@
 #!/bin/bash
-# ANI-RSS 服务控制脚本
-# 用法: ani-rss [start|stop|restart|status|log|uninstall|help]
+# ANI-RSS-Yuri 服务控制脚本
+# 用法: ani-rss-yuri [start|stop|restart|status|log|uninstall|help]
 
 # 定义颜色代码
 RED='\033[0;31m'
@@ -8,7 +8,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-SERVICE="ani-rss.service"
+SERVICE="ani-rss-yuri.service"
 SERVICE_FILE="/etc/systemd/system/${SERVICE}"
 
 # 检查 root 权限
@@ -24,13 +24,13 @@ check_service() {
 # 显示帮助信息
 show_help() {
     echo -e "${YELLOW}使用方法:"
-    echo "  ani-rss start    启动服务"
-    echo "  ani-rss stop     停止服务"
-    echo "  ani-rss restart 重启服务"
-    echo "  ani-rss status  查看服务状态"
-    echo "  ani-rss log  查看服务日志"
-    echo "  ani-rss uninstall  卸载"
-    echo -e "  ani-rss help    显示帮助信息${NC}"
+    echo "  ani-rss-yuri start    启动服务"
+    echo "  ani-rss-yuri stop     停止服务"
+    echo "  ani-rss-yuri restart  重启服务"
+    echo "  ani-rss-yuri status   查看服务状态"
+    echo "  ani-rss-yuri log      查看服务日志"
+    echo "  ani-rss-yuri uninstall  卸载"
+    echo -e "  ani-rss-yuri help     显示帮助信息${NC}"
 }
 
 # 操作执行函数
@@ -67,7 +67,7 @@ service_action() {
             systemctl status "$SERVICE" --no-pager
             ;;
         uninstall)
-            /bin/bash -c "$(curl -fsSL https://github.com/MoYuanCN/ani-rss-Yuri/raw/main/linux/uninstall-ani-rss.sh)"
+            /bin/bash -c "$(curl -fsSL https://github.com/MoYuanCN/ani-rss-Yuri/raw/main/linux/uninstall-yuri.sh)"
             ;;
         *)
             show_help

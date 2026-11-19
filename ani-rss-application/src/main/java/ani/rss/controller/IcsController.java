@@ -30,7 +30,7 @@ public class IcsController extends BaseController {
 
         response.setContentType(ContentType.TEXT_CALENDAR);
         response.setCharacterEncoding(StandardCharsets.UTF_8);
-        response.setHeader("Content-Disposition", "attachment; filename=ani-rss-calendar.ics");
+        response.setHeader("Content-Disposition", "attachment; filename=ani-rss-Yuri-calendar.ics");
         setCacheControl(response, 3600);
 
         try (OutputStream outputStream = response.getOutputStream()) {

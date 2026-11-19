@@ -36,12 +36,12 @@ public class IcsService {
     public String generateIcs() {
         PropertyList propertyList = new PropertyList()
                 .add(createVersion())
-                .add(new ProdId("-//ani-rss//CN"))
+                .add(new ProdId("-//ani-rss-Yuri//CN"))
                 .add(new CalScale(CalScale.VALUE_GREGORIAN))
                 .add(new Method(Method.VALUE_PUBLISH))
-                .add(new XProperty("X-WR-CALNAME", "ani-rss"))
+                .add(new XProperty("X-WR-CALNAME", "ani-rss-Yuri"))
                 .add(new XProperty("X-WR-TIMEZONE", CALENDAR_ZONE.getId()))
-                .add(new XProperty("X-WR-CALDESC", "ani-rss 动漫订阅日历"));
+                .add(new XProperty("X-WR-CALDESC", "ani-rss-Yuri 动漫订阅日历"));
 
         List<VEvent> list = AniUtil.ANI_LIST.stream()
                 .filter(Ani::getEnable)

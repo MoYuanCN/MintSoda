@@ -1,5 +1,5 @@
 #!/bin/bash
-# ANI-RSS 一体化安装脚本 with Systemd 服务
+# ANI-RSS-Yuri 一体化安装脚本 with Systemd 服务
 # 适用系统: Ubuntu/Debian/CentOS/RHEL
 
 # 定义颜色代码
@@ -9,9 +9,9 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 
 # 定义常量
-INSTALL_DIR="/opt/ani-rss"
-SERVICE_USER="ani-rss"
-SERVICE_NAME="ani-rss.service"
+INSTALL_DIR="/opt/ani-rss-yuri"
+SERVICE_USER="ani-rss-yuri"
+SERVICE_NAME="ani-rss-yuri.service"
 SERVER_PORT="17789"
 
 # 检查root权限
@@ -62,28 +62,28 @@ deploy_app() {
     echo -e "${YELLOW}正在部署应用程序...${NC}"
     mkdir -p "$INSTALL_DIR" || exit 1
 
-    echo "正在下载 ani-rss.jar"
+    echo "正在下载 ani-rss-Yuri.jar"
     # 下载jar包
-    if ! wget -q https://github.com/MoYuanCN/ani-rss-Yuri/releases/latest/download/ani-rss.jar -O "$INSTALL_DIR/ani-rss.jar"; then
-        echo -e "${RED}下载 ani-rss.jar 失败${NC}"
+    if ! wget -q https://github.com/MoYuanCN/ani-rss-Yuri/releases/latest/download/ani-rss-Yuri.jar -O "$INSTALL_DIR/ani-rss-Yuri.jar"; then
+        echo -e "${RED}下载 ani-rss-Yuri.jar 失败${NC}"
         exit 1
     fi
-    echo "下载完成 ani-rss.jar"
+    echo "下载完成 ani-rss-Yuri.jar"
 
-    echo "正在下载 ani-rss.sh"
+    echo "正在下载 ani-rss-yuri.sh"
     # 下载管理脚本
-    if ! wget -q https://github.com/MoYuanCN/ani-rss-Yuri/raw/main/linux/ani-rss.sh -O "/usr/local/bin/ani-rss"; then
+    if ! wget -q https://github.com/MoYuanCN/ani-rss-Yuri/raw/main/linux/ani-rss-yuri.sh -O "/usr/local/bin/ani-rss-yuri"; then
         echo -e "${RED}下载启动脚本失败${NC}"
         exit 1
     fi
-    echo "下载完成 ani-rss.sh"
+    echo "下载完成 ani-rss-yuri.sh"
 
-    sudo chmod +x /usr/local/bin/ani-rss
+    sudo chmod +x /usr/local/bin/ani-rss-yuri
 
     # 设置权限
     chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
     chmod 750 "$INSTALL_DIR"
-    chmod 640 "$INSTALL_DIR/ani-rss.jar"
+    chmod 640 "$INSTALL_DIR/ani-rss-Yuri.jar"
     echo -e "${GREEN}程序部署完成${NC}"
 }
 
@@ -112,7 +112,7 @@ setup_service() {
     echo -e "${YELLOW}正在配置系统服务...${NC}"
     tee /etc/systemd/system/"$SERVICE_NAME" > /dev/null <<EOF
 [Unit]
-Description=ANI-RSS Service
+Description=ANI-RSS-Yuri Service
 After=network.target
 
 [Service]
@@ -120,7 +120,7 @@ Type=simple
 User=$SERVICE_USER
 Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/java -Xms64m -Xmx512m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UseCompactObjectHeaders -XX:TieredStopAtLevel=1 -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/sun.net.www.protocol.https=ALL-UNNAMED -Dfile.encoding=UTF-8 -jar $INSTALL_DIR/ani-rss.jar
+ExecStart=/usr/bin/java -Xms64m -Xmx512m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+UseCompactObjectHeaders -XX:TieredStopAtLevel=1 -XX:+IgnoreUnrecognizedVMOptions --enable-native-access=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/sun.net.www.protocol.https=ALL-UNNAMED -Dfile.encoding=UTF-8 -jar $INSTALL_DIR/ani-rss-Yuri.jar
 Restart=on-failure
 RestartSec=30
 LimitNOFILE=65535
@@ -164,7 +164,7 @@ show_info() {
     echo -e "用户名: admin"
     echo -e "初始密码: admin${NC}"
     echo -e "${RED}请务必及时修改默认用户名与密码${NC}"
-    ani-rss help
+    ani-rss-yuri help
 }
 
 # 主流程

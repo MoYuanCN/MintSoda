@@ -9,7 +9,7 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-SERVICE="ani-rss.service"
+SERVICE="ani-rss-yuri.service"
 INSTALL_DIR="${ANI_RSS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
 need_root() {
@@ -54,7 +54,7 @@ manifest_version() {
 }
 
 show_version() {
-    local jar="$INSTALL_DIR/ani-rss.jar"
+    local jar="$INSTALL_DIR/ani-rss-Yuri.jar"
     if [ -f "$jar" ]; then
         local version
         version="$(manifest_version "$jar")"
@@ -74,9 +74,9 @@ show_status() {
         systemctl status "$SERVICE" --no-pager -l | head -n 12
         return
     fi
-    if pgrep -f "ani-rss.jar" >/dev/null 2>&1; then
-        echo -e "${GREEN}检测到 ani-rss.jar 进程在前台运行${NC}"
-        pgrep -af "ani-rss.jar" | head -n 5
+    if pgrep -f "ani-rss-Yuri.jar" >/dev/null 2>&1; then
+        echo -e "${GREEN}检测到 ani-rss-Yuri.jar 进程在前台运行${NC}"
+        pgrep -af "ani-rss-Yuri.jar" | head -n 5
     else
         echo -e "${RED}未检测到运行中的 ANI-RSS-Yuri${NC}"
     fi
@@ -84,7 +84,7 @@ show_status() {
 
 do_update() {
     need_root || return
-    local url="https://github.com/MoYuanCN/ani-rss-Yuri/releases/latest/download/ani-rss.jar"
+    local url="https://github.com/MoYuanCN/ani-rss-Yuri/releases/latest/download/ani-rss-Yuri.jar"
     local tmp
     tmp="$(mktemp)"
     echo -e "${YELLOW}正在下载最新版本...${NC}"
@@ -96,14 +96,14 @@ do_update() {
     if service_exists; then
         systemctl stop "$SERVICE"
     fi
-    cp "$tmp" "$INSTALL_DIR/ani-rss.jar"
+    cp "$tmp" "$INSTALL_DIR/ani-rss-Yuri.jar"
     rm -f "$tmp"
-    chmod 640 "$INSTALL_DIR/ani-rss.jar"
+    chmod 640 "$INSTALL_DIR/ani-rss-Yuri.jar"
     if service_exists; then
         systemctl start "$SERVICE"
         echo -e "${GREEN}已更新并重启服务${NC}"
     else
-        echo -e "${GREEN}已更新 ani-rss.jar，请手动重启进程${NC}"
+        echo -e "${GREEN}已更新 ani-rss-Yuri.jar，请手动重启进程${NC}"
     fi
 }
 

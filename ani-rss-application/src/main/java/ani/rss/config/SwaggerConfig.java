@@ -24,7 +24,7 @@ public class SwaggerConfig {
 
         String version = MavenUtils.getVersion();
 
-        info.title("ANI-RSS")
+        info.title("ANI-RSS-Yuri")
                 .contact(new Contact())
                 .description("基于RSS自动追番、订阅与下载")
                 .version("v" + version)

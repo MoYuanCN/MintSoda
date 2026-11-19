@@ -73,9 +73,10 @@ public class ConfigUtil {
                 return resolvedConfigDir;
             }
 
-            // Windows（非 exe 运行）默认为 用户目录/ani-rss
+            // Windows（非 exe 运行）默认为 用户目录/ani-rss-Yuri
             if (osInfo.isWindows()) {
-                file = new File(FileUtil.getUserHomePath(), "ani-rss");
+                file = new File(FileUtil.getUserHomePath(), "ani-rss-Yuri");
+                migrateLegacyWindowsConfig(file);
             }
 
             resolvedConfigDir = file;
@@ -83,20 +84,28 @@ public class ConfigUtil {
         }
     }
 
-    private static void migrateLegacyWindowsConfig(File portableConfigDir) {
+    /**
+     * 从上游的 {@code ani-rss} 目录复制旧配置。
+     * <p>
+     * 仅在目标目录还没有配置文件时执行，旧目录保留为备份，避免迁移失败导致用户数据丢失。
+     *
+     * @param targetConfigDir 当前使用的配置目录
+     */
+    private static void migrateLegacyWindowsConfig(File targetConfigDir) {
         File legacyConfigDir = new File(FileUtil.getUserHomePath(), "ani-rss");
         File legacyConfigFile = new File(legacyConfigDir, FILE_NAME);
-        File portableConfigFile = new File(portableConfigDir, FILE_NAME);
-        if (!legacyConfigFile.isFile() || portableConfigFile.exists()) {
+        File targetConfigFile = new File(targetConfigDir, FILE_NAME);
+        if (!legacyConfigFile.isFile() || targetConfigFile.exists()) {
             return;
         }
 
         try {
-            // Keep the old directory as a backup and only fill missing portable files.
-            FileUtil.copy(legacyConfigDir, portableConfigDir, false);
-            log.info("已将旧配置复制到 exe 便携目录 {}，旧目录保留为备份", portableConfigDir);
+            // 只复制目录内容，避免在目标目录里再多出一层 ani-rss/。
+            FileUtil.mkdir(targetConfigDir);
+            FileUtil.copyContent(legacyConfigDir, targetConfigDir, true);
+            log.info("已将旧配置复制到配置目录 {}，旧目录保留为备份", targetConfigDir);
         } catch (Exception e) {
-            log.warn("迁移旧配置到 exe 便携目录失败 {}", portableConfigDir, e);
+            log.warn("迁移旧配置到配置目录失败 {}", targetConfigDir, e);
         }
     }
 

@@ -9,7 +9,7 @@ NC='\033[0m'
 cd "$(dirname "$0")/src/main/resources" || exit 1
 
 # 更新程序
-UPDATE_EXE_FILE="ani-rss-update.exe"
+UPDATE_EXE_FILE="ani-rss-Yuri-update.exe"
 
 if [ ! -e ${UPDATE_EXE_FILE} ]; then
   echo -e "${YELLOW}下载 ${UPDATE_EXE_FILE}${NC}"

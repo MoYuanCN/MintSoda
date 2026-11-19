@@ -235,14 +235,13 @@ public class qBittorrent implements BaseDownload {
                         return torrentsInfos.stream()
                                 .map(qBittorrentTorrentsInfo::toTorrentsInfo)
                                 .filter(torrentsInfo -> {
-                                    // 过滤出 ani-rss 标签或分类
-                                    String category = torrentsInfo.getCategory();
-                                    if (category.equals(TorrentsTagEnum.ANI_RSS.getValue())) {
+                                    // 过滤出本应用的标签或分类，兼容旧标识
+                                    if (TorrentsTagEnum.matches(torrentsInfo.getCategory())) {
                                         return true;
                                     }
 
                                     List<String> tagList = torrentsInfo.getTagList();
-                                    return tagList.contains(TorrentsTagEnum.ANI_RSS.getValue());
+                                    return tagList.stream().anyMatch(TorrentsTagEnum::matches);
                                 })
                                 .toList();
                     });

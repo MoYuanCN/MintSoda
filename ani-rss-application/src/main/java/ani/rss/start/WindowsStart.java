@@ -13,7 +13,7 @@ import java.nio.file.Path;
 
 @Slf4j
 public class WindowsStart implements BaseStart {
-    private static final String SHORTCUT_NAME = "ani-rss.lnk";
+    private static final String SHORTCUT_NAME = "ani-rss-Yuri.lnk";
 
     /**
      * 启用
@@ -34,14 +34,14 @@ public class WindowsStart implements BaseStart {
 
         File vbs = null;
         try {
-            vbs = File.createTempFile("ani-rss-autostart", ".vbs");
+            vbs = File.createTempFile("ani-rss-Yuri-autostart", ".vbs");
             String script = """
                     Set objShell = CreateObject("WScript.Shell")
                     Set objShortcut = objShell.CreateShortcut("%s")
                     objShortcut.TargetPath = "%s"
                     objShortcut.WorkingDirectory = "%s"
                     objShortcut.WindowStyle = 1
-                    objShortcut.Description = "ani-rss"
+                    objShortcut.Description = "ANI-RSS-Yuri"
                     objShortcut.Save
                     """.formatted(
                     escapeVbs(shortcut.getAbsolutePath()),

@@ -26,14 +26,14 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 REPO_URL="https://github.com/MoYuanCN/ani-rss-Yuri"
-JAR_URL="$REPO_URL/releases/latest/download/ani-rss.jar"
+JAR_URL="$REPO_URL/releases/latest/download/ani-rss-Yuri.jar"
 ASSYURI_URL="https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/assyuri"
 
 ENV_FILE="/etc/ani-rss-yuri.env"
 INSTALL_DIR="$(pwd)"
 PORT="17789"
-SERVICE_NAME="ani-rss.service"
-SERVICE_USER="ani-rss"
+SERVICE_NAME="ani-rss-yuri.service"
+SERVICE_USER="ani-rss-yuri"
 USERNAME=""
 PASSWORD=""
 ASSUME_YES="no"
@@ -302,14 +302,14 @@ create_user() {
 }
 
 download_jar() {
-    local target="$INSTALL_DIR/ani-rss.jar"
+    local target="$INSTALL_DIR/ani-rss-Yuri.jar"
     if [ -f "$target" ] && [ "$ASSUME_YES" != "yes" ]; then
-        confirm "当前目录已存在 ani-rss.jar，是否覆盖？" || die "已取消"
+        confirm "当前目录已存在 ani-rss-Yuri.jar，是否覆盖？" || die "已取消"
     fi
-    log "正在下载 ani-rss.jar 到 $target"
+    log "正在下载 ani-rss-Yuri.jar 到 $target"
     curl -fL "$JAR_URL" -o "$target.tmp" || die "下载失败"
     mv "$target.tmp" "$target"
-    ok "已下载 ani-rss.jar"
+    ok "已下载 ani-rss-Yuri.jar"
 }
 
 install_assyuri() {
@@ -370,7 +370,7 @@ Type=simple
 User=$SERVICE_USER
 Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/java -Xms64m -Xmx512m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+IgnoreUnrecognizedVMOptions -Dfile.encoding=UTF-8 -jar $INSTALL_DIR/ani-rss.jar$setup_env
+ExecStart=/usr/bin/java -Xms64m -Xmx512m -Xss256k -XX:+UseG1GC -XX:+UseStringDeduplication -XX:+IgnoreUnrecognizedVMOptions -Dfile.encoding=UTF-8 -jar $INSTALL_DIR/ani-rss-Yuri.jar$setup_env
 Restart=on-failure
 RestartSec=15
 LimitNOFILE=65535
@@ -395,20 +395,20 @@ UNIT
 fix_permissions() {
     mkdir -p "$INSTALL_DIR/config"
     chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config"
-    chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/ani-rss.jar"
+    chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/ani-rss-Yuri.jar"
     chmod 750 "$INSTALL_DIR/config"
-    chmod 640 "$INSTALL_DIR/ani-rss.jar"
+    chmod 640 "$INSTALL_DIR/ani-rss-Yuri.jar"
 
     # 服务以独立用户运行，安装目录必须可遍历，例如 /root 下的目录会失败。
     local readable="no"
     if command -v runuser >/dev/null 2>&1; then
-        runuser -u "$SERVICE_USER" -- test -r "$INSTALL_DIR/ani-rss.jar" 2>/dev/null && readable="yes"
+        runuser -u "$SERVICE_USER" -- test -r "$INSTALL_DIR/ani-rss-Yuri.jar" 2>/dev/null && readable="yes"
     elif command -v su >/dev/null 2>&1; then
-        su -s /bin/sh "$SERVICE_USER" -c "test -r '$INSTALL_DIR/ani-rss.jar'" 2>/dev/null && readable="yes"
+        su -s /bin/sh "$SERVICE_USER" -c "test -r '$INSTALL_DIR/ani-rss-Yuri.jar'" 2>/dev/null && readable="yes"
     else
         readable="yes"
     fi
-    [ "$readable" = "yes" ] || die "服务用户 $SERVICE_USER 无法读取 $INSTALL_DIR/ani-rss.jar。请改用 --dir /opt/ani-rss 等可访问目录后重试"
+    [ "$readable" = "yes" ] || die "服务用户 $SERVICE_USER 无法读取 $INSTALL_DIR/ani-rss-Yuri.jar。请改用 --dir /opt/ani-rss-yuri 等可访问目录后重试"
 }
 
 show_hint() {

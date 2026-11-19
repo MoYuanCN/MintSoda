@@ -29,5 +29,5 @@ jobs:
           append_body: false
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            ./ani-rss-application/target/ani-rss.jar
-            ./ani-rss-application/target/ani-rss.exe
+            ./ani-rss-application/target/ani-rss-Yuri.jar
+            ./ani-rss-application/target/ani-rss-Yuri.exe

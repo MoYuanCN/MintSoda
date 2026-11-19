@@ -1,5 +1,5 @@
 #!/bin/bash
-# ANI-RSS 完全卸载脚本
+# ANI-RSS-Yuri 完全卸载脚本
 # 功能: 移除服务、配置、数据和系统用户
 
 # 定义颜色代码
@@ -9,9 +9,9 @@ YELLOW='\033[0;33m'
 NC='\033[0m' # 重置颜色
 
 # 配置常量
-SERVICE_NAME="ani-rss.service"
-INSTALL_DIR="/opt/ani-rss"
-SERVICE_USER="ani-rss"
+SERVICE_NAME="ani-rss-yuri.service"
+INSTALL_DIR="/opt/ani-rss-yuri"
+SERVICE_USER="ani-rss-yuri"
 
 # 检查root权限
 check_root() {
@@ -44,7 +44,7 @@ remove_service() {
     if systemctl is-active --quiet "$SERVICE_NAME"; then
         systemctl stop "$SERVICE_NAME" || {
             echo -e "${RED}服务停止失败，尝试强制终止...${NC}"
-            pkill -f "ani-rss.jar" && echo -e "${GREEN}进程已终止${NC}"
+            pkill -f "ani-rss-Yuri.jar" && echo -e "${GREEN}进程已终止${NC}"
         }
     fi
 
@@ -73,7 +73,7 @@ remove_install_dir() {
     else
         echo -e "${YELLOW}安装目录不存在，跳过${NC}"
     fi
-    rm /usr/local/bin/ani-rss
+    rm -f /usr/local/bin/ani-rss-yuri
 }
 
 # 删除系统用户

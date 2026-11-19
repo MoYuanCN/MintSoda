@@ -47,7 +47,7 @@ public class BackupController extends BaseController {
     @GetMapping("/exportBackup")
     public void backupBackup() throws IOException {
         String version = MavenUtils.getVersion();
-        String filename = StrUtil.format("ani-rss.backup.{}.zip", version);
+        String filename = StrUtil.format("ani-rss-Yuri.backup.{}.zip", version);
 
         String contentType = getContentType(filename);
 

@@ -42,7 +42,7 @@ public class HttpReq {
 
         String ua = StrUtil.trimToEmpty(ConfigUtil.CONFIG.getCustomUserAgent());
         if (StrUtil.isBlank(ua)) {
-            ua = StrUtil.format("ani-rss-yuri/{} (https://github.com/MoYuanCN/ani-rss-Yuri)",
+            ua = StrUtil.format("ani-rss-Yuri/{} (https://github.com/MoYuanCN/ani-rss-Yuri)",
                     MavenUtils.getVersion());
         }
 

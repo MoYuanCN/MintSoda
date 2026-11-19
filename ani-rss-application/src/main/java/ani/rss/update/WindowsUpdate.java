@@ -22,14 +22,15 @@ public class WindowsUpdate implements BaseUpdate {
     @Override
     public void update(File updateFile) {
         MavenUtils.CurrentFile currentFile = MavenUtils.getCurrentFile();
-        File updateExe = new File(updateFile.getParent(), "ani-rss-update.exe");
-        File updateManifest = new File(updateFile.getParent(), "ani-rss-update.exe.manifest");
+        // 更新器文件名固定，避免与正在运行的程序同名而被占用。
+        File updateExe = new File(updateFile.getParent(), "ani-rss-Yuri-update.exe");
+        File updateManifest = new File(updateFile.getParent(), "ani-rss-Yuri-update.exe.manifest");
         FileUtil.del(updateExe);
         FileUtil.del(updateManifest);
 
         try {
             @Cleanup
-            InputStream updateExeStream = ResourceUtil.getStream("ani-rss-update.exe");
+            InputStream updateExeStream = ResourceUtil.getStream("ani-rss-Yuri-update.exe");
             FileUtil.writeFromStream(updateExeStream, updateExe, true);
 
             String manifest = """

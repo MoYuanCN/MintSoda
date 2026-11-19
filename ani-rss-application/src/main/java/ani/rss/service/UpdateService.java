@@ -38,7 +38,7 @@ public class UpdateService {
         try {
             MavenUtils.CurrentFile currentFile = MavenUtils.getCurrentFile();
 
-            String filename = currentFile.isJar() ? "ani-rss.jar" : "ani-rss.exe";
+            String filename = currentFile.isJar() ? "ani-rss-Yuri.jar" : "ani-rss-Yuri.exe";
 
             UpdateInfo updateInfo = githubService.getUpdateInfo("MoYuanCN", "ani-rss-Yuri", filename, version);
 

@@ -64,7 +64,7 @@ public class CollectionService {
         String downloadPath = resolveDownloadPath(ani);
 
         String name = StrFormatter.format("[{}] {} 第{}季", subgroup, title, ani.getSeason());
-        download(name, tempFile, downloadPath, List.of("ANI-RSS合集下载", subgroup));
+        download(name, tempFile, downloadPath, List.of("ANI-RSS-Yuri合集下载", subgroup));
 
         TorrentsInfo torrentsInfo = new TorrentsInfo()
                 .setHash(torrentFile.getHash());

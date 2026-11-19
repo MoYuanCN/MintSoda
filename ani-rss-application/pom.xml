@@ -148,7 +148,7 @@
     </dependencies>
 
     <build>
-        <finalName>ani-rss</finalName>
+        <finalName>ani-rss-Yuri</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -219,8 +219,8 @@
                                 </goals>
                                 <configuration>
                                     <headerType>gui</headerType>
-                                    <outfile>target/ani-rss.exe</outfile>
-                                    <jar>target/ani-rss.jar</jar>
+                                    <outfile>target/ani-rss-Yuri.exe</outfile>
+                                    <jar>target/ani-rss-Yuri.jar</jar>
                                     <errTitle>Java environment is required!</errTitle>
                                     <cmdLine>--gui</cmdLine>
                                     <chdir>.</chdir>
@@ -231,8 +231,8 @@
                                     <restartOnCrash>false</restartOnCrash>
                                     <icon>${project.parent.basedir}/ani-rss-ui/public/favicon.ico</icon>
                                     <singleInstance>
-                                        <mutexName>ani-rss (${project.version})</mutexName>
-                                        <windowTitle>ani-rss (${project.version})</windowTitle>
+                                        <mutexName>ani-rss-Yuri (${project.version})</mutexName>
+                                        <windowTitle>ANI-RSS-Yuri (${project.version})</windowTitle>
                                     </singleInstance>
                                     <jre>
                                         <path>%JAVA_HOME%/bin;%PATH%</path>
@@ -256,7 +256,7 @@
                                         <copyright>Copyright (C) 2024-2025</copyright>
                                         <productName>${project.artifactId}</productName>
                                         <internalName>${project.artifactId}</internalName>
-                                        <originalFilename>ani-rss.exe</originalFilename>
+                                        <originalFilename>ani-rss-Yuri.exe</originalFilename>
                                         <language>SIMPLIFIED_CHINESE</language>
                                     </versionInfo>
                                 </configuration>
