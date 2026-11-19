@@ -5,7 +5,6 @@ import ani.rss.commons.GsonStatic;
 import ani.rss.entity.*;
 import ani.rss.entity.web.ContentType;
 import ani.rss.entity.web.Header;
-import ani.rss.enums.BgmTokenTypeEnum;
 import ani.rss.enums.OffsetTypeEnum;
 import ani.rss.service.DownloadService;
 import ani.rss.service.MikanService;
@@ -250,16 +249,11 @@ public class BgmUtil {
                 });
     }
 
+    /**
+     * 当前账号信息。账号与 Token 逻辑见 {@link BgmAuth}。
+     */
     public static BgmMe me() {
-        String bgmToken = CONFIG.getBgmToken();
-        Assert.notBlank(bgmToken, "BgmToken 未填写");
-
-        String bgmApi = CONFIG.getBgmApi();
-        return setToken(HttpReq.get(bgmApi + "/v0/me"))
-                .thenFunction(res -> {
-                    HttpReq.assertStatus(res);
-                    return GsonStatic.fromJson(res.body(), BgmMe.class);
-                });
+        return BgmAuth.me();
     }
 
     /**
@@ -268,12 +262,7 @@ public class BgmUtil {
      * @return 用户名
      */
     public static String username() {
-        BgmMe me = me();
-        return Opt.of(me)
-                .map(BgmMe::getUsername)
-                .filter(Objects::nonNull)
-                .filter(StrUtil::isNotBlank)
-                .orElse(String.valueOf(me.getId()));
+        return BgmAuth.username();
     }
 
     /**
@@ -480,14 +469,7 @@ public class BgmUtil {
      * @return HttpRequest
      */
     public static HttpRequest setToken(HttpRequest httpRequest) {
-        String bgmToken = CONFIG.getBgmToken();
-
-        if (StrUtil.isNotBlank(bgmToken)) {
-            httpRequest.header(Header.AUTHORIZATION, "Bearer " + bgmToken);
-        }
-
-        ThreadUtil.sleep(RandomUtil.randomInt(500, 1000));
-        return httpRequest;
+        return BgmAuth.setToken(httpRequest);
     }
 
     /**
@@ -496,86 +478,14 @@ public class BgmUtil {
      * @return 天数
      */
     public static Integer getExpiresDays() {
-        String bgmToken = CONFIG.getBgmToken();
-        if (StrUtil.isBlank(bgmToken)) {
-            return 0;
-        }
-        long expires = HttpReq.post("https://bgm.tv/oauth/token_status")
-                .form("access_token", bgmToken)
-                .thenFunction(res -> {
-                    HttpReq.assertStatus(res);
-                    JsonObject jsonObject = GsonStatic.fromJson(res.body(), JsonObject.class);
-                    return jsonObject.get("expires").getAsLong() * 1000L;
-                });
-
-        long currentTimeMillis = System.currentTimeMillis();
-
-        int days = 0;
-
-        if (expires > currentTimeMillis) {
-            days = Math.toIntExact(TimeUnit.MILLISECONDS.toDays(expires - currentTimeMillis));
-        }
-        return days;
+        return BgmAuth.getExpiresDays();
     }
 
     /**
      * 刷新token
      */
     public static void refreshToken() {
-        BgmTokenTypeEnum bgmTokenType = CONFIG.getBgmTokenType();
-        if (bgmTokenType != BgmTokenTypeEnum.AUTO) {
-            return;
-        }
-
-        String bgmToken = CONFIG.getBgmToken();
-        if (StrUtil.isBlank(bgmToken)) {
-            return;
-        }
-
-        long days = getExpiresDays();
-
-        if (days >= 3) {
-            return;
-        }
-
-        String bgmAppID = CONFIG.getBgmAppID();
-        String bgmAppSecret = CONFIG.getBgmAppSecret();
-        String bgmRefreshToken = CONFIG.getBgmRefreshToken();
-        String bgmRedirectUri = CONFIG.getBgmRedirectUri();
-
-        if (StrUtil.isBlank(bgmAppID)) {
-            return;
-        }
-        if (StrUtil.isBlank(bgmAppSecret)) {
-            return;
-        }
-        if (StrUtil.isBlank(bgmRefreshToken)) {
-            return;
-        }
-        if (StrUtil.isBlank(bgmRedirectUri)) {
-            return;
-        }
-
-        Map<String, String> bodyMap = Map.of(
-                "grant_type", "refresh_token",
-                "client_id", bgmAppID,
-                "client_secret", bgmAppSecret,
-                "refresh_token", bgmRefreshToken,
-                "redirect_uri", bgmRedirectUri
-        );
-
-        HttpReq.post("https://bgm.tv/oauth/access_token", bodyMap)
-                .then(res -> {
-                    HttpReq.assertStatus(res);
-                    JsonObject jsonObject = GsonStatic.fromJson(res.body(), JsonObject.class);
-                    String accessToken = jsonObject.get("access_token").getAsString();
-                    String refreshToken = jsonObject.get("refresh_token").getAsString();
-                    CONFIG.setBgmToken(accessToken)
-                            .setBgmRefreshToken(refreshToken);
-                });
-
-        ConfigUtil.sync();
-        log.info("BgmToken 已自动刷新");
+        BgmAuth.refreshToken();
     }
 
     /**

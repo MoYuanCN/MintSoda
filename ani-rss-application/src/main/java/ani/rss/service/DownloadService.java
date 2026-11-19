@@ -3,14 +3,15 @@ package ani.rss.service;
 import ani.rss.commons.ExceptionUtils;
 import ani.rss.commons.FileUtils;
 import ani.rss.commons.GsonStatic;
-import ani.rss.commons.PinyinUtils;
 import ani.rss.entity.Ani;
 import ani.rss.entity.Config;
 import ani.rss.entity.Item;
-import ani.rss.entity.StandbyRss;
 import ani.rss.entity.torrent.TorrentsInfo;
 import ani.rss.enums.NotificationStatusEnum;
 import ani.rss.plugin.PluginHook;
+import ani.rss.service.support.DownloadNotifier;
+import ani.rss.service.support.DownloadPass;
+import ani.rss.service.support.DownloadPathResolver;
 import ani.rss.plugin.PluginHooks;
 import ani.rss.enums.StringEnum;
 import ani.rss.enums.TorrentsStateEnum;
@@ -20,7 +21,6 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Opt;
-import cn.hutool.core.lang.func.Func1;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -31,11 +31,9 @@ import jakarta.annotation.Resource;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import wushuo.tmdb.api.entity.Tmdb;
 
 import java.io.File;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 下载的主要逻辑
@@ -47,65 +45,28 @@ public class DownloadService {
     private static final Object LOCK = new Object();
 
     /**
-     * 单轮刷新内的目录与任务缓存。
-     * 短间隔轮询时避免为每个条目重复列目录或请求下载器，减少磁盘唤醒与网络开销。
+     * 下载动漫
+     *
+     * @param ani 订阅
      */
-    private static final class PassCache {
-        private final Map<String, List<File>> dirFiles = new HashMap<>();
-        private final Map<String, String> downloadPaths = new HashMap<>();
-    }
-
-    private static final ThreadLocal<PassCache> PASS_CACHE = new ThreadLocal<>();
-
     /**
-     * 开始一轮处理，建立本轮缓存。
+     * 开始一轮处理，建立本轮缓存。委托给 {@link DownloadPass}，保留旧入口以兼容调用方。
      */
     public static void beginPass() {
-        PASS_CACHE.set(new PassCache());
+        DownloadPass.begin();
     }
 
     /**
      * 结束一轮处理，释放本轮缓存。
      */
     public static void endPass() {
-        PASS_CACHE.remove();
+        DownloadPass.end();
     }
 
-    /**
-     * 列出目录内容，同一轮内相同目录只读取一次。
-     *
-     * @param path 目录
-     * @return 文件列表
-     */
-    private static List<File> listFilesCached(String path) {
-        PassCache cache = PASS_CACHE.get();
-        if (cache == null) {
-            return FileUtils.listFileList(path);
-        }
-        return cache.dirFiles.computeIfAbsent(path, FileUtils::listFileList);
-    }
-
-    /**
-     * 删除文件后使对应目录的缓存失效，避免同一轮内继续使用过期的文件列表。
-     *
-     * @param path 目录
-     */
-    private static void invalidateDirCache(String path) {
-        PassCache cache = PASS_CACHE.get();
-        if (cache != null) {
-            cache.dirFiles.remove(path);
-        }
-    }
-
-    /**
-     * 下载动漫
-     *
-     * @param ani 订阅
-     */
     @Synchronized("LOCK")
     public void downloadAni(Ani ani) {
         // 单条刷新（如添加订阅后立即下载）没有外层轮次时，自行建立并释放本次缓存。
-        boolean ownsPass = PASS_CACHE.get() == null;
+        boolean ownsPass = !DownloadPass.active();
         if (ownsPass) {
             beginPass();
         }
@@ -395,7 +356,7 @@ public class DownloadService {
             }
         }
 
-        List<File> files = listFilesCached(downloadPath);
+        List<File> files = DownloadPass.listFiles(downloadPath);
         boolean changed = false;
         for (File file : files) {
             String fileName = file.getName();
@@ -443,7 +404,7 @@ public class DownloadService {
             }
         }
         if (changed) {
-            invalidateDirCache(downloadPath);
+            DownloadPass.invalidate(downloadPath);
         }
     }
 
@@ -513,210 +474,45 @@ public class DownloadService {
     }
 
     /**
-     * 下载完成通知
+     * 下载完成通知。收尾逻辑见 {@link DownloadNotifier}。
      *
      * @param torrentsInfo 种子信息
      */
     public void notification(TorrentsInfo torrentsInfo) {
-        Boolean finished = torrentsInfo.finished();
-        String name = torrentsInfo.getName();
-
-        if (!finished) {
-            return;
-        }
-        // 添加下载完成标签，防止重复通知
-        List<String> tags = torrentsInfo.getTagList();
-        if (tags.contains(TorrentsTagEnum.DOWNLOAD_COMPLETE.getValue())) {
-            return;
-        }
-        Boolean b = TorrentUtil.addTags(torrentsInfo, TorrentsTagEnum.DOWNLOAD_COMPLETE.getValue());
-        if (!b) {
-            return;
-        }
-        Optional<Ani> aniOpt = findAniByDownloadPath(torrentsInfo);
-
-        if (aniOpt.isEmpty()) {
-            log.debug("未能获取番剧对象: {}", torrentsInfo.getName());
-            return;
-        }
-
-        Ani ani = aniOpt.get();
-
-        // 根据标签反向判断出字幕组
-        String subgroup = ani.getSubgroup();
-        Set<String> collect = ani.getStandbyRssList()
-                .stream()
-                .map(StandbyRss::getLabel)
-                .collect(Collectors.toSet());
-
-        subgroup = tags
-                .stream()
-                .filter(collect::contains)
-                .findFirst()
-                .orElse(subgroup);
-        subgroup = StrUtil.blankToDefault(subgroup, "未知字幕组");
-        ani.setSubgroup(subgroup);
-
-        String text = StrFormatter.format("{} 下载完成", name);
-        if (tags.contains(TorrentsTagEnum.STANDBY_RSS.getValue())) {
-            text = StrFormatter.format("(备用RSS) {}", text);
-        }
-        NotificationUtil.send(CONFIG, ani, text, NotificationStatusEnum.DOWNLOAD_END);
-
-        String title = ani.getTitle();
-
-        try {
-            AniUtil.completed(ani);
-        } catch (Exception e) {
-            log.error("番剧完结迁移失败 {}", title);
-            log.error(e.getMessage(), e);
-        }
+        DownloadNotifier.completed(torrentsInfo, this::findAniByDownloadPath);
     }
 
     /**
-     * 获取下载位置
+     * 获取下载位置。模板解析已抽到 {@link DownloadPathResolver}，此处保留原有入口。
      *
      * @param ani 订阅
      * @return 下载位置
      */
     public String getDownloadPath(Ani ani) {
-        return getDownloadPath(ani, CONFIG);
+        return DownloadPathResolver.resolve(ani);
     }
 
     /**
-     * 获取下载位置
+     * 使用指定模板获取下载位置，不修改订阅本身。
      *
      * @param ani                  订阅
      * @param downloadPathTemplate 下载位置模板
      * @return 下载位置
      */
     public String getDownloadPath(Ani ani, String downloadPathTemplate) {
-        Ani clone = ObjectUtil.clone(ani);
-        clone.setCustomDownloadPathTemplate(downloadPathTemplate)
-                .setCustomDownloadPath(true);
-        return getDownloadPath(clone, CONFIG);
+        return DownloadPathResolver.resolve(ani, downloadPathTemplate);
     }
 
     /**
-     * 获取下载位置
+     * 使用指定配置获取下载位置。
      *
-     * @param ani 订阅
+     * @param ani    订阅
+     * @param config 配置
      * @return 下载位置
      */
     public String getDownloadPath(Ani ani, Config config) {
-        PassCache cache = PASS_CACHE.get();
-        String cacheKey = null;
-        if (cache != null && config == CONFIG) {
-            cacheKey = String.join("|",
-                    StrUtil.nullToEmpty(ani.getId()),
-                    String.valueOf(ani.getSeason()),
-                    StrUtil.nullToEmpty(ani.getTitle()),
-                    StrUtil.nullToEmpty(ani.getSubgroup()),
-                    String.valueOf(ani.getOva()),
-                    String.valueOf(ani.getReleaseDate()),
-                    String.valueOf(ani.getCustomDownloadPath()),
-                    StrUtil.nullToEmpty(ani.getCustomDownloadPathTemplate())
-            );
-            String cached = cache.downloadPaths.get(cacheKey);
-            if (cached != null) {
-                return cached;
-            }
-        }
-
-        Boolean customDownloadPath = ani.getCustomDownloadPath();
-        String customDownloadPathTemplate = ani.getCustomDownloadPathTemplate();
-        Boolean ova = ani.getOva();
-
-        String downloadPathTemplate = config.getDownloadPathTemplate();
-        String ovaDownloadPathTemplate = config.getOvaDownloadPathTemplate();
-        if (ova && StrUtil.isNotBlank(ovaDownloadPathTemplate)) {
-            // 剧场版位置
-            downloadPathTemplate = ovaDownloadPathTemplate;
-        }
-
-        if (customDownloadPath && StrUtil.isNotBlank(customDownloadPathTemplate)) {
-            // 自定义下载位置
-            downloadPathTemplate = StrUtil.split(customDownloadPathTemplate, "\n", true, true)
-                    .stream()
-                    .map(FileUtils::getAbsolutePath)
-                    .findFirst()
-                    .orElse(downloadPathTemplate);
-        }
-
-        String title = StrUtil.trimToEmpty(ani.getTitle());
-
-        String letter = PinyinUtils.getPinyinInitialLetters(title);
-
-        downloadPathTemplate = downloadPathTemplate.replace("${letter}", letter);
-
-        Date releaseDate = ani.getReleaseDate();
-        Tmdb tmdb = ani.getTmdb();
-
-        Date tmdbDate = Optional.ofNullable(tmdb)
-                .map(Tmdb::getDate)
-                .orElse(releaseDate);
-
-        int tmdbYear = DateUtil.year(tmdbDate);
-        int year = DateUtil.year(releaseDate);
-        int month = DateUtil.month(releaseDate) + 1;
-        String monthFormat = String.format("%02d", month);
-
-        // 季度
-        if (
-                downloadPathTemplate.contains("${quarter}") ||
-                        downloadPathTemplate.contains("${quarterFormat}") ||
-                        downloadPathTemplate.contains("${quarterName}")
-        ) {
-            int quarter;
-            String quarterName;
-            /*
-            https://github.com/wushuo894/ani-rss/pull/451
-            优化季度判断规则，避免将月底先行播放的番归类到上个季度
-            */
-            if (List.of(12, 1, 2).contains(month)) {
-                if (month == 12) {
-                    // 当使用季度信息, 并且月份等于12时, 年份自动 +1。避免年份与月份不一致
-                    year++;
-                }
-                quarter = 1;
-                quarterName = "冬";
-            } else if (List.of(3, 4, 5).contains(month)) {
-                quarter = 4;
-                quarterName = "春";
-            } else if (List.of(6, 7, 8).contains(month)) {
-                quarter = 7;
-                quarterName = "夏";
-            } else {
-                quarter = 10;
-                quarterName = "秋";
-            }
-            String quarterFormat = String.format("%02d", quarter);
-            downloadPathTemplate = downloadPathTemplate.replace("${quarter}", String.valueOf(quarter));
-            downloadPathTemplate = downloadPathTemplate.replace("${quarterFormat}", quarterFormat);
-            downloadPathTemplate = downloadPathTemplate.replace("${quarterName}", quarterName);
-        }
-
-        // 年份可能因季度规则被调整，这里先写入本方法的计算值，再交给统一模板替换。
-        TemplateVariables variables = TemplateVariables.from(ani)
-                .put("tmdbYear", String.valueOf(tmdbYear))
-                .put("year", String.valueOf(year))
-                .put("month", String.valueOf(month))
-                .put("monthFormat", monthFormat);
-        downloadPathTemplate = variables.apply(downloadPathTemplate);
-
-        List<Func1<Ani, Object>> list = List.of(
-                Ani::getThemoviedbName
-        );
-
-        downloadPathTemplate = RenameUtil.replaceField(downloadPathTemplate, ani, list);
-
-        String downloadPath = FileUtils.getAbsolutePath(downloadPathTemplate);
-        if (cacheKey != null) {
-            cache.downloadPaths.put(cacheKey, downloadPath);
-        }
-        return downloadPath;
+        return DownloadPathResolver.resolve(ani, config);
     }
-
 
     /**
      * 将本轮新增的任务登记到刷新缓存，使同时下载限制在后续订阅中仍然准确。
@@ -782,7 +578,7 @@ public class DownloadService {
         }
 
         String downloadPath = getDownloadPath(ani);
-        List<File> files = listFilesCached(downloadPath);
+        List<File> files = DownloadPass.listFiles(downloadPath);
 
         if (files.stream()
                 .filter(file -> FileUtils.isVideoFormat(file.getName()))
