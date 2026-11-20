@@ -120,10 +120,11 @@ bash ./package.sh
 - 插件运行时通过 `plugin/runtime/PluginSource` 抽象；新增语言只加一个 `PluginSource` 实现与 `PluginSources` 分支，不要改 `PluginManager` 的加载逻辑。
 - JavaScript 插件运行在 `ScriptSandbox`：必须保持 `ClassShutter` 全拒绝、`initSafeStandardObjects` 与调用超时，不得为兼容放开 Java 类访问；传给脚本的宿主数据必须先转成原生对象。
 - Lua 插件运行在 `LuaPlugin` 自建的安全 `Globals`：只装基础库，不装 `IoLib`/`OsLib`/`luajava`，并移除 `dofile`/`loadfile`/`require`/`package.loadlib`；新增库或加载入口前必须确认不引入文件与进程访问。
-- 扩展点由 `PluginManager` 统一加载与分发：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、下载事件、插件自定义接口。扩展点列表在启用状态变化时重建索引，分发路径只读快照；新增扩展点时同步更新 `docs/PLUGIN_DEVELOPMENT.md`。
+- 扩展点由 `PluginManager` 统一加载与分发：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、下载事件、条目改写、界面页面、插件自定义接口。扩展点列表在启用状态变化时重建索引，分发路径只读快照；新增扩展点时同步更新 `docs/PLUGIN_DEVELOPMENT.md`。
 - 模板占位符统一走 `util/other/TemplateVariables`，不要在通知、重命名、下载路径里再各写一份替换逻辑。
 - 插件自定义接口必须经 `/api/plugin/api/{pluginId}/**` 分发并保持 `@Auth`，不要为插件单独开放免鉴权路由。
-- 插件过滤器在 `MatchRuleUtil` 之后执行，不得绕过反匹配 > 全局匹配 > 排除的既有优先级；RSS 下载、预览与合集预览必须共用同一插件过滤路径。
+- 插件过滤器在 `MatchRuleUtil` 之后执行，不得绕过反匹配 > 全局匹配 > 排除的既有优先级；RSS 下载、预览与合集预览必须共用同一插件过滤路径。条目改写发生在过滤之后、重命名之前，只能改标题与字幕组。
+- 插件页面（`PluginPage`）只能使用白名单区块，由前端按类型渲染，插件不提供 HTML 或脚本；页面取数与操作统一走 `/api/plugin/api/{pluginId}/**`，不要为页面新增免鉴权路由。
 - 插件路径一律经 `PluginPaths` 规范化并限制在 `plugins/` 内；插件标识仅允许 `A-Z a-z 0-9 . _ -`。
 - 安装与更新必须校验 `size` 与 `sha256`，远程地址经 `commons/URLUtils#verify`；先写临时目录校验通过后再替换正式目录。
 - 插件权限由 `PluginPermission` 定义、按插件持久化在 `PluginRecord.grantedPermissions`，注册扩展点时在 `PluginContextImpl` 强制校验；新增扩展点必须同时定义对应权限，不得把校验放到插件侧。读与写权限分开（`*_READ` / `*_WRITE`），破坏性操作（取消下载、写数据）使用独立的高风险权限。

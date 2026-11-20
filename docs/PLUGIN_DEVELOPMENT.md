@@ -4,6 +4,8 @@
 
 不熟悉 Java 时优先看 [JavaScript 插件](#javascript-插件) 或 [Lua 插件](#lua-插件)：两者都不需要编译，改完脚本重新打包即可。
 
+插件接口当前版本为 `3`，在版本 2 的基础上新增了[条目改写](#条目改写)与[界面页面](#界面页面)。只使用旧能力的插件继续声明 `apiVersion: 2` 即可，无需改动。
+
 > 安全边界见 [安全说明](SECURITY.md)。插件与服务同权限运行，**只安装你信任的插件**。用户视角的插件页说明见[使用指南 · 插件](USER_GUIDE.md#插件)，宿主接口清单见 [API 参考 · 插件](API.md#插件)。
 
 ## 本文目录
@@ -342,6 +344,66 @@ context.registerDownloadListener(new DownloadListener() {
 - 与下载拦截不同，监听器拿到的是最终任务，不能修改任何字段；需要改动请使用 `DownloadInterceptor`。
 - 单个监听器异常只记录日志，不影响下载与后续监听器。
 
+### 条目改写
+
+在过滤之后、重命名之前调整条目：
+
+```java
+context.registerItemTransformer(new ItemTransformer() {
+    @Override
+    public String id() {
+        return "my-transformer";
+    }
+
+    @Override
+    public int order() {
+        return 100;
+    }
+
+    @Override
+    public Item transform(ItemFilter.SubscriptionSnapshot ani, ItemFilter.ItemSnapshot item,
+                          Map<String, Object> ctx) {
+        if (item.title().contains("[简日]")) {
+            return Item.subgroup("简日双语");
+        }
+        return null; // 不修改
+    }
+});
+```
+
+- 只能修改标题与字幕组；返回 `null` 表示不修改，其余字段只读。
+- 改写字幕组会影响重命名、下载标签与保存路径，但不会修改订阅本身的字幕组设置。
+- 执行顺序在 `MatchRuleUtil` 与插件过滤器之后，不能绕过反匹配 > 全局匹配 > 排除的优先级。
+- 任一改写器异常只记录日志，沿用已有结果。
+
+### 界面页面
+
+插件可以在主程序界面注册自己的页面，宿主按白名单区块渲染：
+
+```java
+context.registerPage(new PluginPage(
+        "dashboard", "我的看板", "DataLine", "展示插件采集的数据",
+        List.of(
+                PluginPage.Block.text("说明", "下面的表格由插件接口提供数据。"),
+                PluginPage.Block.table("最近记录", "records", List.of(
+                        new PluginPage.Block.Column("time", "时间"),
+                        new PluginPage.Block.Column("title", "标题"))),
+                PluginPage.Block.form("设置", "save", List.of(
+                        new ConfigField("endpoint", "接口地址", ConfigField.FieldType.TEXT))),
+                PluginPage.Block.actions("操作", List.of(
+                        PluginPage.Block.Action.confirm("rescan", "重新扫描", "rescan", "确定要重新扫描吗？"))),
+                PluginPage.Block.divider()
+        )
+));
+```
+
+- 页面出现在插件卡片的「插件页面」按钮组里，点击进入 `#/plugins/{插件Id}/{页面Id}`。
+- 区块类型仅 `TEXT`、`FORM`、`TABLE`、`ACTIONS`、`DIVIDER`；插件不提供 HTML，也不执行脚本，宿主不会把插件内容当作页面标记注入。
+- `TABLE` 的 `source` 指向插件接口，宿主以 `GET` 调用并按列渲染返回的数组（或 `{items:[...]}`）。
+- `FORM` 提交时把字段值以 JSON `POST` 到 `source`；字段类型与设置区块相同。
+- `ACTIONS` 的每个按钮调用自己的 `source`，`confirm=true` 时先弹确认框。
+- 需要 `CUSTOM_PAGE` 权限；页面读取接口本身还需要 `HTTP_ENDPOINT`。
+
 ### 自定义 HTTP 接口
 
 插件可以对外提供接口，宿主负责鉴权与分发：
@@ -440,6 +502,9 @@ function onEnable() {
 | `settingsSection(obj)` | 注册设置区块 |
 | `templateVariables(obj)` | 注册模板变量 |
 | `downloadInterceptor(obj)` | 注册下载拦截 |
+| `downloadListener(obj)` | 注册下载事件 |
+| `itemTransformer(obj)` | 注册条目改写 |
+| `page(obj)` | 注册界面页面 |
 | `endpoint(obj)` | 注册自定义 HTTP 接口 |
 
 注册对象的字段：
@@ -474,6 +539,20 @@ function onEnable() {
 // 下载事件：只观察结果，不能修改任务
 {id, onAdded(task, context) {}, onCompleted(task, context) {}, onFailed(task, context) {}}
 // task: {hash, name, title, subgroup, episode, savePath, tags, size, subscription}
+
+// 条目改写：返回 {title, subgroup}，返回 null 表示不修改
+{id, order, transform(subscription, item, context) { return {subgroup: '简日双语'}; }}
+
+// 界面页面：区块类型 TEXT / FORM / TABLE / ACTIONS / DIVIDER
+{id, title, icon, description, blocks: [
+  {type: 'TEXT', title: '说明', text: '...'},
+  {type: 'TABLE', title: '记录', source: 'records', columns: [{key: 'time', label: '时间'}]},
+  {type: 'FORM', title: '设置', source: 'save', fields: [{key: 'endpoint', label: '接口地址', type: 'TEXT'}]},
+  {type: 'ACTIONS', title: '操作', actions: [
+    {id: 'rescan', label: '重新扫描', source: 'rescan', method: 'POST', confirm: true, confirmText: '确定？'}
+  ]},
+  {type: 'DIVIDER'}
+]}
 
 // 自定义接口：挂载在 /api/plugin/api/{插件id}/{path}
 {id, path, methods: ['GET', 'POST'], handle(request) { return 'JSON 字符串'; }}
@@ -510,12 +589,14 @@ cd examples/plugins/js-plugin
 | 订阅 | `ITEM_FILTER` | 过滤条目 | 在匹配规则之后接受或拒绝资源 | 中 | 是 |
 | 订阅 | `SUBSCRIPTION_EVENTS` | 订阅事件 | 接收订阅增删改事件 | 低 | 是 |
 | 订阅 | `TEMPLATE_VARIABLE` | 模板变量 | 向模板注入占位符 | 低 | 是 |
+| 订阅 | `ITEM_TRANSFORM` | 改写条目 | 在过滤之后改写标题或字幕组 | 中 | 是 |
 | 下载 | `NOTIFICATION` | 发送通知 | 注册通知渠道并投递 | 中 | 是 |
 | 下载 | `DOWNLOAD_INTERCEPT` | 下载拦截 | 修改保存位置或名称 | 高 | 是 |
 | 下载 | `DOWNLOAD_CANCEL` | 取消下载 | 直接取消下载任务 | 高 | 是 |
 | 下载 | `DOWNLOAD_EVENT` | 下载事件 | 接收任务提交、完成与失败事件 | 低 | 是 |
 | 任务 | `SCHEDULED_TASK` | 周期任务 | 后台定时执行 | 低 | 是 |
 | 接口 | `HTTP_ENDPOINT` | 自定义接口 | 提供 `/api/plugin/api/{id}/**` | 中 | 是 |
+| 界面 | `CUSTOM_PAGE` | 界面页面 | 在主程序界面注册只读页面 | 低 | 是 |
 | 配置 | `CONFIG_READ` | 读取配置 | 读取插件设置 | 低 | 是 |
 | 配置 | `CONFIG_WRITE` | 写入配置 | 保存插件设置 | 中 | 是 |
 | 数据 | `DATA_READ` | 读取数据 | 读取 `plugins/{id}/data` | 低 | 是 |
@@ -665,6 +746,8 @@ end
 | `api.register_template_variables(table)` | 注册模板变量 |
 | `api.register_download_interceptor(table)` | 注册下载拦截 |
 | `api.register_download_listener(table)` | 注册下载事件 |
+| `api.register_item_transformer(table)` | 注册条目改写 |
+| `api.register_page(table)` | 注册界面页面 |
 | `api.register_endpoint(table)` | 注册自定义 HTTP 接口 |
 
 注册表字段与 JavaScript 版一致，命名改用下划线：
@@ -706,6 +789,32 @@ api.register_download_listener({
     onAdded = function(task) end,
     onCompleted = function(task) end,
     onFailed = function(task) end
+})
+
+-- 条目改写：返回 {title, subgroup}，返回 nil 不修改
+api.register_item_transformer({
+    id = "demo-transform",
+    order = 300,
+    transform = function(subscription, item, context)
+        if string.find(item.title, "[简日]", 1, true) then
+            return {subgroup = "简日双语"}
+        end
+        return nil
+    end
+})
+
+-- 界面页面
+api.register_page({
+    id = "dashboard",
+    title = "Lua 看板",
+    blocks = {
+        {type = "TEXT", title = "说明", text = "数据来自插件接口"},
+        {type = "TABLE", title = "记录", source = "records",
+            columns = {{key = "time", label = "时间"}}},
+        {type = "ACTIONS", title = "操作", actions = {
+            {id = "rescan", label = "重新扫描", source = "rescan", method = "POST", confirm = true}
+        }}
+    }
 })
 
 -- 自定义接口

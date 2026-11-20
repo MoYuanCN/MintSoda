@@ -8,9 +8,12 @@ package ani.rss.plugin.api;
 public final class PluginApi {
 
     /**
-     * 当前插件接口版本
+     * 当前插件接口版本。
+     * <p>
+     * 版本 3 新增界面页面（{@code registerPage}）与条目改写（{@code registerItemTransformer}）；
+     * 只使用旧能力的插件保持 {@code apiVersion: 2} 即可。
      */
-    public static final int VERSION = 2;
+    public static final int VERSION = 3;
 
     /**
      * 插件描述文件名，安装时统一规范化为该名称

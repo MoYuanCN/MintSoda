@@ -26,6 +26,7 @@ import java.util.List;
  * @param config        插件配置 JSON
  * @param channels      提供的通知渠道
  * @param endpoints     提供的 HTTP 接口
+ * @param pages         提供的界面页面
  * @param runtime       运行时：JAVA / JAVASCRIPT / LUA
  * @param grantedPermissions 用户授予的权限；为空表示尚未单独配置
  */
@@ -49,6 +50,7 @@ public record PluginInfo(
         String config,
         List<ChannelView> channels,
         List<EndpointView> endpoints,
+        List<PageView> pages,
         String runtime,
         List<String> grantedPermissions
 ) {
@@ -57,6 +59,7 @@ public record PluginInfo(
         sections = sections == null ? List.of() : List.copyOf(sections);
         channels = channels == null ? List.of() : List.copyOf(channels);
         endpoints = endpoints == null ? List.of() : List.copyOf(endpoints);
+        pages = pages == null ? List.of() : List.copyOf(pages);
         grantedPermissions = grantedPermissions == null ? List.of() : List.copyOf(grantedPermissions);
     }
 
@@ -65,7 +68,7 @@ public record PluginInfo(
                 descriptor.id(), descriptor.name(), descriptor.version(), descriptor.apiVersion(),
                 descriptor.author(), descriptor.description(), descriptor.homepage(),
                 descriptor.permissions(), PluginState.DISABLED, "", "", 0L,
-                descriptor.updateUrl(), "", false, List.of(), "", List.of(), List.of(),
+                descriptor.updateUrl(), "", false, List.of(), "", List.of(), List.of(), List.of(),
                 descriptor.runtime(), List.of()
         );
     }
@@ -84,5 +87,31 @@ public record PluginInfo(
         public EndpointView {
             methods = methods == null ? List.of() : List.copyOf(methods);
         }
+    }
+
+    /**
+     * 插件页面的展示模型。区块类型与字段沿用设置页的白名单结构，
+     * 前端不会把插件返回值当作 HTML 渲染。
+     */
+    public record PageView(String id, String title, String icon, String description, List<BlockView> blocks) {
+        public PageView {
+            blocks = blocks == null ? List.of() : List.copyOf(blocks);
+        }
+    }
+
+    public record BlockView(String type, String title, String text, List<FieldView> fields,
+                            String source, List<ColumnView> columns, List<ActionView> actions) {
+        public BlockView {
+            fields = fields == null ? List.of() : List.copyOf(fields);
+            columns = columns == null ? List.of() : List.copyOf(columns);
+            actions = actions == null ? List.of() : List.copyOf(actions);
+        }
+    }
+
+    public record ColumnView(String key, String label) {
+    }
+
+    public record ActionView(String id, String label, String source, String method,
+                             boolean confirm, String confirmText) {
     }
 }

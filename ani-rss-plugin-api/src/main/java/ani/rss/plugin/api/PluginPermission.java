@@ -26,6 +26,8 @@ public enum PluginPermission {
             "SUBSCRIPTION_LISTENER", "SUBSCRIPTION_EVENT"),
     TEMPLATE_VARIABLE("TEMPLATE_VARIABLE", "模板变量", "向通知、重命名与下载路径模板追加占位符", Group.SUBSCRIPTION, Risk.LOW, true,
             "TEMPLATE_VARIABLES"),
+    ITEM_TRANSFORM("ITEM_TRANSFORM", "改写条目", "在过滤之后改写条目的标题或字幕组，影响重命名与下载标签", Group.SUBSCRIPTION, Risk.MEDIUM, true,
+            "ITEM_TRANSFORMER", "TRANSFORM"),
 
     // ---- 下载与通知 ----
 
@@ -41,10 +43,12 @@ public enum PluginPermission {
     SCHEDULED_TASK("SCHEDULED_TASK", "周期任务", "按固定间隔在后台运行插件逻辑", Group.TASK, Risk.LOW, true,
             "TASK", "SCHEDULE"),
 
-    // ---- 接口 ----
+    // ---- 接口与页面 ----
 
     HTTP_ENDPOINT("HTTP_ENDPOINT", "自定义接口", "对外提供 /api/plugin/api/{id}/** 接口（仍需登录）", Group.API, Risk.MEDIUM, true,
             "ENDPOINT"),
+    CUSTOM_PAGE("CUSTOM_PAGE", "界面页面", "在主程序界面注册只读页面，由宿主按白名单类型渲染", Group.UI, Risk.LOW, true,
+            "PAGE", "UI_PAGE"),
 
     // ---- 配置与数据 ----
 
@@ -71,7 +75,8 @@ public enum PluginPermission {
      * 权限分组，供设置界面分栏展示
      */
     public enum Group {
-        SUBSCRIPTION("订阅"), DOWNLOAD("下载与通知"), TASK("任务"), API("接口"), STORAGE("配置与数据"), SYSTEM("系统");
+        SUBSCRIPTION("订阅"), DOWNLOAD("下载与通知"), TASK("任务"), API("接口"),
+        UI("界面"), STORAGE("配置与数据"), SYSTEM("系统");
 
         private final String label;
 

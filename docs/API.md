@@ -214,7 +214,7 @@ curl -s -X POST http://127.0.0.1:17789/api/listAni \
 | `/api/plugin/checkUpdate` / `update` | POST | 检查 / 应用单个插件更新，请求体 `id`、`marketUrl` |
 | `/api/plugin/checkAll` | POST | 检查全部插件更新 |
 | `/api/plugin/marketUrl` / `setMarketUrl` | POST | 读取 / 保存市场地址 |
-| `/api/plugin/api/{pluginId}/**` | 任意 | 插件自定义接口，方法与路径由插件声明 |
+| `/api/plugin/api/{pluginId}/**` | 任意 | 插件自定义接口，方法与路径由插件声明；插件页面的表格、表单与操作也走这里 |
 
 插件接口的返回值是插件自己生成的字符串，原样放进 `Result.data`；不是所有插件都返回 JSON。
 

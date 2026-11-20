@@ -100,6 +100,44 @@ function on_enable()
         api.log("第 " .. tostring(count + 1) .. " 次启用，数据文件：" .. table.concat(api.list_data_files("state"), ","))
     end
 
+    -- 条目改写：过滤之后、重命名之前调整标题或字幕组
+    api.register_item_transformer({
+        id = "lua-demo-transformer",
+        order = 300,
+        transform = function(subscription, item, context)
+            local title = item.title or ""
+            if string.find(title, "[简日]", 1, true) then
+                return {subgroup = "简日双语"}
+            end
+            return nil
+        end
+    })
+
+    -- 界面页面：出现在插件卡片的「插件页面」里
+    api.register_page({
+        id = "dashboard",
+        title = "Lua 示例页面",
+        description = "宿主按白名单区块渲染，插件不提供 HTML。",
+        blocks = {
+            {type = "TEXT", title = "说明", text = "表格数据来自 records 接口。"},
+            {
+                type = "TABLE", title = "记录", source = "records",
+                columns = {{key = "time", label = "时间"}, {key = "title", label = "内容"}}
+            },
+            {
+                type = "ACTIONS", title = "操作",
+                actions = {{id = "noop", label = "示例操作", source = "status", method = "POST", confirm = true}}
+            }
+        }
+    })
+
+    -- 页面表格数据：返回数组
+    api.register_endpoint({
+        path = "records",
+        methods = {"GET"},
+        handle = function() return '[{"time":"示例","title":"示例记录"}]' end
+    })
+
     -- 自定义接口：/api/plugin/api/lua-demo-plugin/status
     api.register_endpoint({
         path = "status",

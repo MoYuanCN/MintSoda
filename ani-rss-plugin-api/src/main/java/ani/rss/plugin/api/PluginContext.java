@@ -149,5 +149,24 @@ public interface PluginContext {
      */
     void registerEndpoint(PluginEndpoint endpoint);
 
+    /**
+     * 注册在主程序界面展示的页面。需要 {@code CUSTOM_PAGE}。
+     * <p>
+     * 页面只包含白名单区块，宿主不会渲染插件提供的 HTML 或脚本；
+     * 动态数据通过区块的 {@code source} 调用插件自己的接口。
+     * <p>
+     * 默认实现为空，保证只实现旧版接口的宿主不会因新增方法而编译失败。
+     */
+    default void registerPage(PluginPage page) {
+    }
+
+    /**
+     * 注册条目改写器，可在过滤之后调整标题或字幕组。需要 {@code ITEM_TRANSFORM}。
+     * <p>
+     * 默认实现为空，保证只实现旧版接口的宿主不会因新增方法而编译失败。
+     */
+    default void registerItemTransformer(ItemTransformer transformer) {
+    }
+
     List<NotificationChannel> notificationChannels();
 }

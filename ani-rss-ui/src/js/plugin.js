@@ -49,6 +49,19 @@ export const setPluginMarketUrl = url => api.post('api/plugin/setMarketUrl', {ur
 
 export const getPluginPermissions = () => api.post('api/plugin/permissions')
 
+/**
+ * 调用插件自定义接口，路径为 /api/plugin/api/{id}/{path}。
+ */
+export const callPlugin = (id, path, body, method = 'POST') => {
+  const normalized = String(path || '').replace(/^\/+/, '')
+  const url = `api/plugin/api/${encodeURIComponent(id)}/${normalized}`
+  const name = String(method || 'POST').toUpperCase()
+  if (name === 'GET') return api.get(url)
+  if (name === 'PUT') return api.put(url, body || {})
+  if (name === 'DELETE') return api.del(url, body || {})
+  return api.post(url, body || {})
+}
+
 export const setPluginPermissions = (id, permissions) => api.post('api/plugin/setPermissions', {
     id,
     permissions: permissions || []

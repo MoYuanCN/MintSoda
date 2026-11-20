@@ -71,7 +71,9 @@ public class PluginManager {
             List<DownloadInterceptor> interceptors,
             List<DownloadListener> downloadListeners,
             Map<String, Boolean> cancelAllowed,
-            Map<String, Map<String, PluginEndpoint>> endpoints
+            Map<String, Map<String, PluginEndpoint>> endpoints,
+            List<ItemTransformer> transformers,
+            Map<String, List<PluginPage>> pages
     ) {
     }
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2, runnable -> {
@@ -369,7 +371,8 @@ public class PluginManager {
      */
     public record PluginStats(int total, int enabled, int disabled, int error, int incompatible,
                               int filters, int listeners, int downloadInterceptors, int downloadListeners,
-                              int channels, int variableProviders, int endpoints, int scheduledTasks) {
+                              int channels, int variableProviders, int endpoints, int scheduledTasks,
+                              int transformers, int pages) {
     }
 
     /**
@@ -392,11 +395,12 @@ public class PluginManager {
         Extensions current = extensions();
         int endpoints = current.endpoints().values().stream().mapToInt(value -> value.size()).sum();
         int taskCount = this.scheduledTasks.values().stream().mapToInt(List::size).sum();
+        int pageCount = current.pages().values().stream().mapToInt(List::size).sum();
         return new PluginStats(infos.size(), enabled, disabled, error, incompatible,
                 current.filters().size(), current.listeners().size(),
                 current.interceptors().size(), current.downloadListeners().size(),
                 current.channels().size(), current.variableProviders().size(),
-                endpoints, taskCount);
+                endpoints, taskCount, current.transformers().size(), pageCount);
     }
 
     public PluginInfo describe(String id) {
@@ -416,7 +420,7 @@ public class PluginManager {
                     record == null ? "" : StrUtil.nullToEmpty(record.getLatestVersion()),
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     sections(context.sections()), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
-                    channels(context.notificationChannels()), endpoints(context.endpoints()),
+                    channels(context.notificationChannels()), endpoints(context.endpoints()), pages(context.pages()),
                     descriptor.runtime(),
                     record == null || record.getGrantedPermissions() == null
                             ? ani.rss.plugin.api.PluginPermission.sanitize(descriptor.permissions())
@@ -428,7 +432,7 @@ public class PluginManager {
             descriptorCache.remove(id);
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "缺少 plugin.json", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of(), "", List.of());
+                    List.of(), "", List.of(), List.of(), List.of(), "", List.of());
         }
         try {
             PluginDescriptor descriptor = cachedDescriptor(id, descriptorFile);
@@ -442,15 +446,54 @@ public class PluginManager {
                     descriptor.updateUrl(), record == null ? "" : StrUtil.nullToEmpty(record.getLatestVersion()),
                     record != null && Boolean.TRUE.equals(record.getUpdateAvailable()),
                     List.of(), record == null ? "" : StrUtil.nullToEmpty(record.getConfig()),
-                    List.of(), List.of(), descriptor.runtime(),
+                    List.of(), List.of(), List.of(), descriptor.runtime(),
                     record == null || record.getGrantedPermissions() == null
                             ? ani.rss.plugin.api.PluginPermission.sanitize(descriptor.permissions())
                             : record.getGrantedPermissions());
         } catch (Exception e) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "plugin.json 解析失败", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of(), "", List.of());
+                    List.of(), "", List.of(), List.of(), List.of(), "", List.of());
         }
+    }
+
+    /**
+     * 把插件声明的页面转换为前端展示模型；只保留白名单字段，不传递任意对象。
+     */
+    private static List<PluginInfo.PageView> pages(List<PluginPage> pages) {
+        if (pages == null || pages.isEmpty()) {
+            return List.of();
+        }
+        List<PluginInfo.PageView> result = new ArrayList<>();
+        for (PluginPage page : pages) {
+            if (page == null) {
+                continue;
+            }
+            List<PluginInfo.BlockView> blocks = new ArrayList<>();
+            for (PluginPage.Block block : page.blocks()) {
+                if (block == null || block.type() == null) {
+                    continue;
+                }
+                List<PluginInfo.FieldView> fields = new ArrayList<>();
+                for (ConfigField field : block.fields()) {
+                    fields.add(new PluginInfo.FieldView(field.key(), field.label(), field.type().name(),
+                            field.placeholder(), field.required(), field.options()));
+                }
+                List<PluginInfo.ColumnView> columns = block.columns().stream()
+                        .map(column -> new PluginInfo.ColumnView(column.key(), column.label()))
+                        .toList();
+                List<PluginInfo.ActionView> actions = block.actions().stream()
+                        .map(action -> new PluginInfo.ActionView(action.id(), action.label(), action.source(),
+                                action.method(), action.confirm(), action.confirmText()))
+                        .toList();
+                blocks.add(new PluginInfo.BlockView(block.type().name(), StrUtil.nullToEmpty(block.title()),
+                        StrUtil.nullToEmpty(block.text()), fields, StrUtil.strip(StrUtil.nullToEmpty(block.source()), "/"),
+                        columns, actions));
+            }
+            result.add(new PluginInfo.PageView(StrUtil.nullToEmpty(page.id()), StrUtil.nullToEmpty(page.title()),
+                    StrUtil.nullToEmpty(page.icon()), StrUtil.nullToEmpty(page.description()), blocks));
+        }
+        return List.copyOf(result);
     }
 
     /**
@@ -623,6 +666,8 @@ public class PluginManager {
         List<DownloadListener> downloadListeners = new ArrayList<>();
         Map<String, Boolean> cancelAllowed = new HashMap<>();
         Map<String, Map<String, PluginEndpoint>> endpoints = new HashMap<>();
+        List<ItemTransformer> transformers = new ArrayList<>();
+        Map<String, List<PluginPage>> pages = new HashMap<>();
 
         for (LoadedPlugin plugin : loaded.values()) {
             PluginContextImpl context = plugin.context();
@@ -648,10 +693,16 @@ public class PluginManager {
             if (!pluginEndpoints.isEmpty()) {
                 endpoints.put(plugin.descriptor().id(), Map.copyOf(pluginEndpoints));
             }
+            transformers.addAll(context.itemTransformers());
+            List<PluginPage> pluginPages = context.pages();
+            if (!pluginPages.isEmpty()) {
+                pages.put(plugin.descriptor().id(), List.copyOf(pluginPages));
+            }
         }
 
         filters.sort(Comparator.comparingInt(ItemFilter::order));
         interceptors.sort(Comparator.comparingInt(DownloadInterceptor::order));
+        transformers.sort(Comparator.comparingInt(ItemTransformer::order));
 
         Extensions snapshot = new Extensions(
                 List.copyOf(filters),
@@ -661,7 +712,9 @@ public class PluginManager {
                 List.copyOf(interceptors),
                 List.copyOf(downloadListeners),
                 Map.copyOf(cancelAllowed),
-                Map.copyOf(endpoints)
+                Map.copyOf(endpoints),
+                List.copyOf(transformers),
+                Map.copyOf(pages)
         );
         extensions = snapshot;
         return snapshot;
@@ -720,6 +773,20 @@ public class PluginManager {
      */
     public List<DownloadListener> downloadListeners() {
         return extensions().downloadListeners();
+    }
+
+    /**
+     * 所有已启用插件的条目改写器，按 order 排序。
+     */
+    public List<ItemTransformer> itemTransformers() {
+        return extensions().transformers();
+    }
+
+    /**
+     * 已启用插件注册的界面页面，key 为插件标识。
+     */
+    public Map<String, List<PluginPage>> pages() {
+        return extensions().pages();
     }
 
     /**

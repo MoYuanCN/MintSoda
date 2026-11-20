@@ -55,6 +55,23 @@ public final class PluginHooks {
     }
 
     /**
+     * 插件条目改写，失败时返回原始条目，不影响下载流程。
+     */
+    public static Item transform(Ani ani, Item item) {
+        PluginHook current = hook();
+        if (current == null) {
+            return item;
+        }
+        try {
+            return current.transform(ani, item);
+        } catch (Exception e) {
+            log.error("插件条目改写执行失败");
+            log.error(e.getMessage(), e);
+            return item;
+        }
+    }
+
+    /**
      * 插件模板变量，失败时返回空 Map，模板保持内置字段。
      */
     public static java.util.Map<String, String> templateVariables(Ani ani) {

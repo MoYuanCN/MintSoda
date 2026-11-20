@@ -35,7 +35,8 @@
                 enabled: stats.enabled,
                 error: stats.error,
                 points: stats.filters + stats.listeners + stats.downloadInterceptors
-                    + stats.downloadListeners + stats.channels + stats.variableProviders + stats.endpoints
+                    + stats.downloadListeners + stats.channels + stats.variableProviders
+                    + stats.endpoints + stats.transformers + stats.pages
               }) }}
             </el-text>
           </el-card>
@@ -92,6 +93,15 @@
                     <el-text v-if="plugin.endpoints?.length" size="small" type="info">
                       {{ $t('endpoints') }}{{ plugin.endpoints.map(it => `/${it.path}`).join(', ') }}
                     </el-text>
+                    <el-text v-if="plugin.pages?.length" size="small" type="info">
+                      {{ $t('pluginpages') }}: {{ plugin.pages.map(it => it.title || it.id).join(', ') }}
+                    </el-text>
+                  </div>
+                  <div v-if="plugin.pages?.length" class="plugin-pages">
+                    <el-button v-for="page in plugin.pages" :key="page.id" bg text type="primary"
+                               @click="openPage(plugin, page)">
+                      {{ page.title || page.id }}
+                    </el-button>
                   </div>
 
                   <el-collapse class="plugin-sections">
@@ -185,12 +195,14 @@
 <script setup>
 import {useI18n} from "vue-i18n"
 import {computed, defineComponent, h, onActivated, onMounted, ref, reactive} from 'vue'
+import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox, ElInput, ElInputNumber, ElSelect, ElOption, ElSwitch} from 'element-plus'
 import PageHeaderView from '@/view/custom/PageHeaderView.vue'
 import UploadView from '@/view/custom/UploadView.vue'
 import PopconfirmView from '@/view/custom/PopconfirmView.vue'
 import * as http from '@/js/plugin.js'
 const {t} = useI18n()
+const router = useRouter()
 // 插件字段只支持有限类型，按 type 渲染，避免插件注入任意 HTML。
 const PluginFieldInput = defineComponent({
   props: {field: {type: Object, required: true}, model: {type: Object, required: true}},
@@ -243,6 +255,14 @@ const savingPermissions = ref('')
 const marketPlugins = ref([])
 const marketUrl = ref('')
 const sectionModels = reactive({})
+
+const openPage = (plugin, page) => {
+  if (plugin.state !== 'ENABLED') {
+    ElMessage.warning(t('pluginpagenotfound'))
+    return
+  }
+  router.push({path: `/plugins/${plugin.id}/${page.id}`})
+}
 
 const runtimeLabel = runtime => ({
   JAVASCRIPT: 'JavaScript',
@@ -601,6 +621,13 @@ onActivated(() => loadPlugins(true))
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 6px;
+}
+
+.plugin-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .plugin-sections {

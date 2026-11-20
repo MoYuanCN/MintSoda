@@ -32,6 +32,8 @@ public class PluginContextImpl implements PluginContext {
     private final List<DownloadInterceptor> downloadInterceptors = new CopyOnWriteArrayList<>();
     private final List<DownloadListener> downloadListeners = new CopyOnWriteArrayList<>();
     private final List<PluginEndpoint> endpoints = new CopyOnWriteArrayList<>();
+    private final List<PluginPage> pages = new CopyOnWriteArrayList<>();
+    private final List<ItemTransformer> itemTransformers = new CopyOnWriteArrayList<>();
     private volatile boolean enabled;
 
     public PluginContextImpl(PluginDescriptor descriptor, PluginRegistry registry, String appVersion) {
@@ -296,6 +298,22 @@ public class PluginContextImpl implements PluginContext {
     }
 
     @Override
+    public void registerPage(PluginPage page) {
+        if (!require(PluginPermission.CUSTOM_PAGE)) {
+            return;
+        }
+        pages.add(page);
+    }
+
+    @Override
+    public void registerItemTransformer(ItemTransformer transformer) {
+        if (!require(PluginPermission.ITEM_TRANSFORM)) {
+            return;
+        }
+        itemTransformers.add(transformer);
+    }
+
+    @Override
     public List<NotificationChannel> notificationChannels() {
         return List.copyOf(channels);
     }
@@ -332,6 +350,14 @@ public class PluginContextImpl implements PluginContext {
         return List.copyOf(endpoints);
     }
 
+    public List<PluginPage> pages() {
+        return List.copyOf(pages);
+    }
+
+    public List<ItemTransformer> itemTransformers() {
+        return List.copyOf(itemTransformers);
+    }
+
     /**
      * 停用时清空注册表；调度线程由管理器负责停止。
      */
@@ -345,5 +371,7 @@ public class PluginContextImpl implements PluginContext {
         downloadInterceptors.clear();
         downloadListeners.clear();
         endpoints.clear();
+        pages.clear();
+        itemTransformers.clear();
     }
 }

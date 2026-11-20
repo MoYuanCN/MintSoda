@@ -5,6 +5,7 @@ import ani.rss.entity.Item;
 import ani.rss.plugin.api.DownloadInterceptor;
 import ani.rss.plugin.api.DownloadListener;
 import ani.rss.plugin.api.ItemFilter;
+import ani.rss.plugin.api.ItemTransformer;
 import ani.rss.plugin.api.TemplateVariableProvider;
 import cn.hutool.core.util.StrUtil;
 import lombok.RequiredArgsConstructor;
@@ -95,6 +96,51 @@ public class PluginHook {
             }
         }
         return true;
+    }
+
+    /**
+     * 依次执行条目改写器。
+     * <p>
+     * 只允许修改标题与字幕组；任一改写器异常只记录日志并沿用已有结果，
+     * 保证插件问题不会阻断下载流程。
+     *
+     * @param ani   订阅
+     * @param item  资源项
+     * @return 可能已被修改的资源项
+     */
+    public Item transform(Ani ani, Item item) {
+        List<ItemTransformer> transformers = pluginManager.itemTransformers();
+        if (transformers.isEmpty()) {
+            return item;
+        }
+        ItemFilter.SubscriptionSnapshot subscription = subscription(ani);
+        ItemFilter.ItemSnapshot snapshot = item(item);
+        for (ItemTransformer transformer : transformers) {
+            try {
+                ItemTransformer.Item result = transformer.transform(subscription, snapshot, Map.of());
+                if (result == null) {
+                    continue;
+                }
+                String title = StrUtil.blankToDefault(result.title(), snapshot.title());
+                String subgroup = StrUtil.blankToDefault(result.subgroup(), snapshot.subgroup());
+                if (!title.equals(snapshot.title())) {
+                    // 标题与重命名后的名称同步，避免后续流程仍使用旧标题。
+                    item.setTitle(title);
+                    if (StrUtil.isBlank(item.getReName()) || item.getReName().equals(snapshot.title())) {
+                        item.setReName(title);
+                    }
+                }
+                if (!subgroup.equals(snapshot.subgroup())) {
+                    item.setSubgroup(subgroup);
+                }
+                snapshot = new ItemFilter.ItemSnapshot(title, item.getReName(), subgroup,
+                        snapshot.episode(), snapshot.master(), snapshot.size(), snapshot.magnet());
+            } catch (Exception e) {
+                log.error("插件条目改写失败 {}", transformer.id());
+                log.error(e.getMessage(), e);
+            }
+        }
+        return item;
     }
 
     public void fire(PluginManager.SubscriptionEvent event, Ani ani) {

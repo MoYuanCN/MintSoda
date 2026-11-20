@@ -13,7 +13,7 @@
         <span>ANI-RSS-Yuri</span>
       </div>
       <el-menu
-          :default-active="route.path"
+          :default-active="activeMenu"
           :ellipsis="false"
           class="app-menu"
           router>
@@ -63,6 +63,8 @@ import LocaleSwitcher from "@/view/custom/LocaleSwitcher.vue";
 import {initLayout, uiCustomization, uiAssetUrl} from "@/js/global.js";
 
 const route = useRoute()
+// 插件页面挂在 /plugins/:pluginId/:pageId，导航仍高亮“插件”。
+const activeMenu = computed(() => route.path.startsWith('/plugins') ? '/plugins' : route.path)
 const appLogo = computed(() => uiCustomization.value.appLogoImage
     ? uiAssetUrl(uiCustomization.value.appLogoImage)
     : '/icon.png')

@@ -4,12 +4,14 @@ import ani.rss.plugin.api.ConfigField;
 import ani.rss.plugin.api.DownloadInterceptor;
 import ani.rss.plugin.api.DownloadListener;
 import ani.rss.plugin.api.ItemFilter;
+import ani.rss.plugin.api.ItemTransformer;
 import ani.rss.plugin.api.NotificationChannel;
 import ani.rss.plugin.api.NotificationPayload;
 import ani.rss.plugin.api.Plugin;
 import ani.rss.plugin.api.PluginContext;
 import ani.rss.plugin.api.PluginDescriptor;
 import ani.rss.plugin.api.PluginEndpoint;
+import ani.rss.plugin.api.PluginPage;
 import ani.rss.plugin.api.ScheduledPluginTask;
 import ani.rss.plugin.api.SettingsSection;
 import ani.rss.plugin.api.SubscriptionListener;
@@ -300,6 +302,10 @@ public class LuaPlugin implements Plugin {
                 value -> context.registerDownloadListener(downloadListener(value))));
         api.set("register_endpoint", registrar(
                 value -> context.registerEndpoint(endpoint(value))));
+        api.set("register_item_transformer", registrar(
+                value -> context.registerItemTransformer(transformer(value))));
+        api.set("register_page", registrar(
+                value -> context.registerPage(page(value))));
         return api;
     }
 
@@ -738,6 +744,72 @@ public class LuaPlugin implements Plugin {
         snapshot.put("size", task.size());
         snapshot.put("subscription", task.subscription() == null ? null : subscriptionMap(task.subscription()));
         return snapshot;
+    }
+
+    private ItemTransformer transformer(LuaValue value) {
+        LuaTable table = value.checktable();
+        return new ItemTransformer() {
+            @Override
+            public String id() {
+                return table.get("id").tojstring();
+            }
+
+            @Override
+            public int order() {
+                return intOf(map(value), "order", 100);
+            }
+
+            @Override
+            public ItemTransformer.Item transform(ItemFilter.SubscriptionSnapshot ani,
+                                                  ItemFilter.ItemSnapshot item, Map<String, Object> context) {
+                LuaValue result = callFn(table, "transform",
+                        fromJava(subscriptionMap(ani)), fromJava(itemMap(item)), fromJava(context));
+                if (result.isnil()) {
+                    return null;
+                }
+                Map<String, Object> changed = map(result);
+                return new ItemTransformer.Item(str(changed, "title"), str(changed, "subgroup"));
+            }
+        };
+    }
+
+    private static PluginPage page(LuaValue value) {
+        Map<String, Object> map = map(value);
+        List<PluginPage.Block> blocks = new ArrayList<>();
+        for (Map<String, Object> block : mapListOf(map, "blocks")) {
+            blocks.add(new PluginPage.Block(blockType(str(block, "type")), str(block, "title"),
+                    str(block, "text"), fields(block), str(block, "source"),
+                    columns(block), actions(block)));
+        }
+        return new PluginPage(str(map, "id"), str(map, "title"), str(map, "icon"),
+                str(map, "description"), blocks);
+    }
+
+    private static PluginPage.Block.Type blockType(String value) {
+        try {
+            String name = StrUtil.trimToEmpty(value).toUpperCase(java.util.Locale.ROOT);
+            return name.isEmpty() ? PluginPage.Block.Type.TEXT : PluginPage.Block.Type.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return PluginPage.Block.Type.TEXT;
+        }
+    }
+
+    private static List<PluginPage.Block.Column> columns(Map<String, Object> block) {
+        List<PluginPage.Block.Column> columns = new ArrayList<>();
+        for (Map<String, Object> column : mapListOf(block, "columns")) {
+            columns.add(new PluginPage.Block.Column(str(column, "key"), str(column, "label")));
+        }
+        return columns;
+    }
+
+    private static List<PluginPage.Block.Action> actions(Map<String, Object> block) {
+        List<PluginPage.Block.Action> actions = new ArrayList<>();
+        for (Map<String, Object> action : mapListOf(block, "actions")) {
+            actions.add(new PluginPage.Block.Action(str(action, "id"), str(action, "label"),
+                    str(action, "source"), str(action, "method"),
+                    boolOf(action, "confirm", false), str(action, "confirmText")));
+        }
+        return actions;
     }
 
     private PluginEndpoint endpoint(LuaValue value) {

@@ -106,6 +106,46 @@ function onEnable() {
         }
     });
 
+    // ---- 条目改写：过滤之后、重命名之前调整标题或字幕组 ----
+    __api.itemTransformer({
+        id: 'js-demo-transformer',
+        order: 200,
+        transform: function (subscription, item, context) {
+            if (item.title && item.title.indexOf('[简日]') >= 0) {
+                return {subgroup: '简日双语'};
+            }
+            return null;
+        }
+    });
+
+    // ---- 界面页面：出现在插件卡片的「插件页面」里 ----
+    __api.page({
+        id: 'dashboard',
+        title: 'JavaScript 示例页面',
+        icon: 'DataLine',
+        description: '宿主按白名单区块渲染，插件不提供 HTML。',
+        blocks: [
+            {type: 'TEXT', title: '说明', text: '表格数据来自 records 接口。'},
+            {
+                type: 'TABLE', title: '记录', source: 'records',
+                columns: [{key: 'time', label: '时间'}, {key: 'title', label: '内容'}]
+            },
+            {
+                type: 'ACTIONS', title: '操作',
+                actions: [{id: 'noop', label: '示例操作', source: 'status', method: 'POST', confirm: true}]
+            }
+        ]
+    });
+
+    // ---- 页面表格数据：返回数组或 {items: [...]} ----
+    __api.endpoint({
+        path: 'records',
+        methods: ['GET'],
+        handle: function () {
+            return JSON.stringify([{time: new Date().toISOString(), title: '示例记录'}]);
+        }
+    });
+
     // ---- 自定义接口：/api/plugin/api/js-demo-plugin/status ----
     __api.endpoint({
         path: 'status',
