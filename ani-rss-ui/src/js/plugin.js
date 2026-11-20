@@ -52,11 +52,11 @@ export const getPluginPermissions = () => api.post('api/plugin/permissions')
 /**
  * 调用插件自定义接口，路径为 /api/plugin/api/{id}/{path}。
  */
-export const callPlugin = (id, path, body, method = 'POST') => {
+export const callPlugin = (id, path, body, method = 'POST', options = {}) => {
   const normalized = String(path || '').replace(/^\/+/, '')
   const url = `api/plugin/api/${encodeURIComponent(id)}/${normalized}`
   const name = String(method || 'POST').toUpperCase()
-  if (name === 'GET') return api.get(url)
+  if (name === 'GET') return api.get(url, options)
   if (name === 'PUT') return api.put(url, body || {})
   if (name === 'DELETE') return api.del(url, body || {})
   return api.post(url, body || {})

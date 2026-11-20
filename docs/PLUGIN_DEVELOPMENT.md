@@ -397,12 +397,17 @@ context.registerPage(new PluginPage(
 ));
 ```
 
-- 页面出现在插件卡片的「插件页面」按钮组里，点击进入 `#/plugins/{插件Id}/{页面Id}`。
+- 页面出现在插件卡片的「插件页面」按钮组里，点击进入 `#/plugins/{插件Id}/{页面Id}`；一个插件可以有多个页面，页面标题与图标来自 `PluginPage`。
 - 区块类型仅 `TEXT`、`FORM`、`TABLE`、`ACTIONS`、`DIVIDER`；插件不提供 HTML，也不执行脚本，宿主不会把插件内容当作页面标记注入。
-- `TABLE` 的 `source` 指向插件接口，宿主以 `GET` 调用并按列渲染返回的数组（或 `{items:[...]}`）。
-- `FORM` 提交时把字段值以 JSON `POST` 到 `source`；字段类型与设置区块相同。
-- `ACTIONS` 的每个按钮调用自己的 `source`，`confirm=true` 时先弹确认框。
-- 需要 `CUSTOM_PAGE` 权限；页面读取接口本身还需要 `HTTP_ENDPOINT`。
+- `TEXT` 显示标题与段落，`DIVIDER` 只是分隔线，两者都不需要 `source`。
+- `TABLE` 的 `source` 指向插件接口，宿主以 `GET` 调用并按列渲染返回的数组（或 `{items:[...]}`）；列 `key` 对应数组元素的字段名，`label` 是表头。表格下方有刷新按钮，`ACTIONS` 执行成功后也会自动刷新本页所有表格。
+- `FORM` 提交时把字段值以 JSON `POST` 到 `source`；进入页面时先用 `GET` 读取初值，返回对象中同名键会填入表单。字段类型与设置区块相同（`TEXT`、`PASSWORD`、`NUMBER`、`SWITCH`、`SELECT`）。
+- `ACTIONS` 的每个按钮调用自己的 `source`，默认 `POST`；`confirm=true` 时先弹确认框，`confirmText` 为提示文案。
+- 所有接口调用都带登录态，走 `/api/plugin/api/{pluginId}/**`，插件无需自行鉴权。
+- 需要 `CUSTOM_PAGE` 权限；页面读取与提交接口本身还需要 `HTTP_ENDPOINT`。缺少权限时页面不会出现在插件卡片里。
+- 页面只做展示与轻量操作。需要复杂交互时拆成多个页面或复用设置区块，不要在页面里嵌外部脚本。
+
+最小可运行示例见 `examples/plugins/hello-plugin/`（Java）、`examples/plugins/js-plugin/` 与 `examples/plugins/lua-plugin/`，三者都注册了一个 `dashboard` 页面，包含文本、表格与操作区块，表格数据来自同插件的 `records` 接口。
 
 ### 自定义 HTTP 接口
 

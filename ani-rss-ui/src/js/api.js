@@ -6,8 +6,8 @@ let post = async (url, body, options = {}) => {
     return await fetch_(url, 'POST', body, options);
 }
 
-let get = async (url) => {
-    return await fetch_(url, 'GET', '');
+let get = async (url, options = {}) => {
+    return await fetch_(url, 'GET', '', options);
 }
 
 let del = async (url, body) => {

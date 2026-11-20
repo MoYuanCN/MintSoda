@@ -6,13 +6,13 @@
       "id": "hello-plugin",
       "name": "示例插件",
       "version": "1.0.0",
-      "description": "演示通知渠道、订阅过滤、周期任务与设置区块。",
+      "description": "演示通知渠道、订阅过滤、条目改写、界面页面、周期任务与设置区块。",
       "author": "ANI-RSS-Yuri",
       "homepage": "",
       "downloadUrl": "https://example.com/plugins/hello-plugin-1.0.0.jar",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 12345,
-      "apiVersion": 2,
+      "apiVersion": 3,
       "permissions": [
         "notification",
         "item-filter",
@@ -26,7 +26,9 @@
         "config-write",
         "data-read",
         "data-write",
-        "log"
+        "log",
+        "item-transform",
+        "custom-page"
       ],
       "updateUrl": ""
     },
@@ -34,13 +36,13 @@
       "id": "js-demo-plugin",
       "name": "JavaScript 示例插件",
       "version": "1.0.0",
-      "description": "演示用 JavaScript 编写通知渠道、订阅过滤、模板变量、下载拦截、周期任务与自定义接口。",
+      "description": "演示用 JavaScript 编写通知渠道、订阅过滤、条目改写、界面页面、模板变量、下载拦截、周期任务与自定义接口。",
       "author": "ANI-RSS-Yuri",
       "homepage": "",
       "downloadUrl": "https://example.com/plugins/js-demo-plugin-1.0.0.zip",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 4096,
-      "apiVersion": 2,
+      "apiVersion": 3,
       "permissions": [
         "notification",
         "item-filter",
@@ -54,7 +56,9 @@
         "config-write",
         "data-read",
         "data-write",
-        "log"
+        "log",
+        "item-transform",
+        "custom-page"
       ],
       "updateUrl": ""
     },
@@ -62,13 +66,13 @@
       "id": "lua-demo-plugin",
       "name": "Lua 示例插件",
       "version": "1.0.0",
-      "description": "演示用 Lua 编写通知渠道、订阅过滤、模板变量、下载拦截、周期任务与自定义接口。",
+      "description": "演示用 Lua 编写通知渠道、订阅过滤、条目改写、界面页面、模板变量、下载拦截、周期任务与自定义接口。",
       "author": "ANI-RSS-Yuri",
       "homepage": "",
       "downloadUrl": "https://example.com/plugins/lua-demo-plugin-1.0.0.zip",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 3072,
-      "apiVersion": 2,
+      "apiVersion": 3,
       "permissions": [
         "notification",
         "item-filter",
@@ -82,7 +86,9 @@
         "config-write",
         "data-read",
         "data-write",
-        "log"
+        "log",
+        "item-transform",
+        "custom-page"
       ],
       "updateUrl": ""
     }

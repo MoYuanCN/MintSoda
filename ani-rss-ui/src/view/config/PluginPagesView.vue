@@ -161,7 +161,7 @@ const loadForm = async (block, key) => {
   const entry = activeEntry()
   if (!entry || !block.source) return
   try {
-    const response = await http.callPlugin(entry.pluginId, block.source, null, 'GET')
+    const response = await http.callPlugin(entry.pluginId, block.source, null, 'GET', {silent: true})
     const data = parseData(response.data)
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       Object.entries(data).forEach(([name, value]) => {
@@ -179,7 +179,7 @@ const loadTable = async block => {
   const key = blockKey(block)
   loadingBlock.value = key
   try {
-    const response = await http.callPlugin(entry.pluginId, block.source, null, 'GET')
+    const response = await http.callPlugin(entry.pluginId, block.source, null, 'GET', {silent: true})
     const data = parseData(response.data)
     tableData[key] = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : [])
   } catch {

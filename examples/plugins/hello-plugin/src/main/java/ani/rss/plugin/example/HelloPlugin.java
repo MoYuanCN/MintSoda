@@ -3,11 +3,13 @@ package ani.rss.plugin.example;
 import ani.rss.plugin.api.ConfigField;
 import ani.rss.plugin.api.DownloadInterceptor;
 import ani.rss.plugin.api.ItemFilter;
+import ani.rss.plugin.api.ItemTransformer;
 import ani.rss.plugin.api.NotificationChannel;
 import ani.rss.plugin.api.NotificationPayload;
 import ani.rss.plugin.api.Plugin;
 import ani.rss.plugin.api.PluginContext;
 import ani.rss.plugin.api.PluginEndpoint;
+import ani.rss.plugin.api.PluginPage;
 import ani.rss.plugin.api.SettingsSection;
 import ani.rss.plugin.api.TemplateVariableProvider;
 
@@ -111,6 +113,79 @@ public class HelloPlugin implements Plugin {
             public DownloadCandidate intercept(DownloadCandidate candidate, Map<String, Object> ctx) {
                 // 演示改写：只读透传，实际插件可返回 withSavePath / withName，或返回 null 取消。
                 return candidate;
+            }
+        });
+
+        context.registerItemTransformer(new ItemTransformer() {
+            @Override
+            public String id() {
+                return "hello-transform";
+            }
+
+            @Override
+            public Item transform(ItemFilter.SubscriptionSnapshot ani, ItemFilter.ItemSnapshot item,
+                                  Map<String, Object> ctx) {
+                // 返回 null 表示不修改；示例只在标题含 [简日] 时改写字幕组。
+                if (item.title() != null && item.title().contains("[简日]")) {
+                    return Item.subgroup("简日双语");
+                }
+                return null;
+            }
+        });
+
+        // 插件自有页面：宿主按白名单区块渲染，插件只提供结构化描述。
+        context.registerPage(new PluginPage(
+                "dashboard",
+                "示例页面",
+                "DataLine",
+                "演示文本、表格、表单与操作按钮四种区块。",
+                List.of(
+                        PluginPage.Block.text("说明", "表格数据来自 records 接口，表单提交到 save 接口。"),
+                        PluginPage.Block.table("最近记录", "records", List.of(
+                                new PluginPage.Block.Column("time", "时间"),
+                                new PluginPage.Block.Column("title", "内容"))),
+                        PluginPage.Block.form("页面设置", "save", List.of(
+                                new ConfigField("endpoint", "接收地址", ConfigField.FieldType.TEXT,
+                                        "https://example.com/hook", false, List.of()),
+                                new ConfigField("enabled", "启用", ConfigField.FieldType.SWITCH))),
+                        PluginPage.Block.actions("操作", List.of(
+                                PluginPage.Block.Action.confirm("rescan", "重新扫描", "status",
+                                        "确定要重新扫描吗？"))),
+                        PluginPage.Block.divider()
+                )
+        ));
+
+        context.registerEndpoint(new PluginEndpoint() {
+            @Override
+            public String path() {
+                return "records";
+            }
+
+            @Override
+            public Set<String> methods() {
+                return Set.of("GET");
+            }
+
+            @Override
+            public String handle(EndpointRequest request) {
+                return "[{\"time\":\"示例\",\"title\":\"示例记录\"}]";
+            }
+        });
+
+        context.registerEndpoint(new PluginEndpoint() {
+            @Override
+            public String path() {
+                return "save";
+            }
+
+            @Override
+            public Set<String> methods() {
+                return Set.of("POST");
+            }
+
+            @Override
+            public String handle(EndpointRequest request) {
+                return "{\"ok\":true}";
             }
         });
 
