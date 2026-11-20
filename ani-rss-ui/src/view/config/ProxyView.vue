@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="proxy-settings">
     <SettingsItem label="IP">
       <el-input v-model:model-value="props.config.proxyHost" :disabled="!props.config.proxy"
                 placeholder="192.168.0.x"/>

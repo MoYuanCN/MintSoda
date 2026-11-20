@@ -33,7 +33,7 @@
             </span>
           </template>
           <el-scrollbar class="config-scrollbar">
-            <div class="tab-scroll-content">
+            <div class="tab-scroll-content" :class="`tab-body tab-${tab.name}`">
               <DownloadView v-if="tab.name === 'download'" v-model:config="config"/>
               <BasicView v-else-if="tab.name === 'basic'" v-model:config="config"/>
               <ExcludeView
@@ -431,10 +431,46 @@ onActivated(() => {
 }
 
 .tab-scroll-content {
-  width: min(100%, 920px);
+  width: 100%;
+  max-width: 1180px;
   min-width: 0;
   margin: 0 auto;
   padding: 24px 28px 40px;
+}
+
+/* 宽屏下把设置项排成两列，避免内容被窄栏居中后在左右留下大片空白。 */
+@media (min-width: 1280px) {
+  .tab-scroll-content {
+    max-width: 1520px;
+    padding: 24px 32px 40px;
+  }
+
+  .tab-download :deep(.settings-section),
+  .tab-basic :deep(.el-collapse-item__content),
+  .tab-proxy :deep(.proxy-settings),
+  .tab-security {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 44px;
+    align-items: start;
+  }
+
+  .tab-download :deep(.settings-section) > *,
+  .tab-basic :deep(.el-collapse-item__content) > *,
+  .tab-proxy :deep(.proxy-settings) > *,
+  .tab-security > * {
+    min-width: 0;
+  }
+
+  /* 分组标题、折叠面板与整块内容跨满两列。 */
+  .tab-download :deep(.settings-section-heading),
+  .tab-download :deep(.settings-section > .el-collapse) {
+    grid-column: 1 / -1;
+  }
+
+  .tab-basic :deep(.el-collapse-item__content > .content) {
+    grid-column: 1 / -1;
+  }
 }
 
 .config-tabs :deep(.el-alert) {
