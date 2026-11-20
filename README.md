@@ -4,8 +4,6 @@
 
 <h1 align="center">ANI-RSS-Yuri</h1>
 
-<p align="center">通过 RSS 订阅番剧，统一匹配规则后交给 qBittorrent 下载</p>
-
 <p align="center">
   <img alt="java" src="https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white">
   <img alt="vue" src="https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white">
