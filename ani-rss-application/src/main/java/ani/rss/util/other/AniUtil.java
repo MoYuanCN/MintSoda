@@ -123,6 +123,9 @@ public class AniUtil {
             }
         }
         ani.setReverseMatchKeywords(new ArrayList<>());
+        if (ani.getReverseMatchSubgroupOffsets() == null) {
+            ani.setReverseMatchSubgroupOffsets(new java.util.LinkedHashMap<>());
+        }
         // 空值表示跟随设置中的全局默认。
         if (ani.getReverseMatchMissBehavior() == null) ani.setReverseMatchMissBehavior("");
         if (ani.getGlobalReverseMatch() == null) ani.setGlobalReverseMatch(false);

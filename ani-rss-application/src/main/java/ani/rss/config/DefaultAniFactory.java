@@ -8,6 +8,7 @@ import wushuo.tmdb.api.entity.Tmdb;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,6 +74,7 @@ public class DefaultAniFactory {
         if (ani.getCustomPriorityKeywords() == null) ani.setCustomPriorityKeywords(new ArrayList<>());
         if (ani.getReverseMatchRules() == null) ani.setReverseMatchRules(new ArrayList<>());
         if (ani.getReverseMatchAssignments() == null) ani.setReverseMatchAssignments(new ArrayList<>());
+        if (ani.getReverseMatchSubgroupOffsets() == null) ani.setReverseMatchSubgroupOffsets(new LinkedHashMap<>());
         if (ani.getReverseMatchKeywords() == null) ani.setReverseMatchKeywords(List.of());
         if (ani.getMatch() == null) ani.setMatch(List.of());
         if (ani.getExclude() == null) ani.setExclude(List.of());
@@ -105,6 +107,7 @@ public class DefaultAniFactory {
                 .setReverseMatchKeywords(List.of())
                 .setReverseMatchRules(new ArrayList<>())
                 .setReverseMatchAssignments(new ArrayList<>())
+                .setReverseMatchSubgroupOffsets(new LinkedHashMap<>())
                 // 留空表示跟随设置中的全局默认，避免新建订阅时固化旧默认值。
                 .setReverseMatchMissBehavior("")
                 .setExclude(List.of("720[Pp]", "\\d-\\d", "合集", "特别篇"))

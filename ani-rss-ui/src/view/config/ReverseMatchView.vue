@@ -10,7 +10,22 @@
       <el-switch v-model="props.ani.globalReverseMatch"/>
       <el-text size="small" type="info">{{ $t('alsouseglobalreversematchrulesfromsettings') }}</el-text>
     </div>
-    <div v-if="props.ani.reverseMatchEnabled || props.ani.globalReverseMatch" class="reverse-match-miss">
+    <div v-if="succeededSubgroups.length" class="reverse-match-succeeded">
+      <el-text size="small" type="info">{{ $t('reversematchedsubgroups') }}</el-text>
+      <el-table :data="succeededSubgroups" size="small">
+        <el-table-column prop="subgroup" :label="$t('subgroup')" min-width="120"/>
+        <el-table-column prop="episodes" :label="$t('episodes')" min-width="120"/>
+        <el-table-column :label="$t('extraepisodeoffset')" width="160">
+          <template #default="{row}">
+            <el-input-number size="small" :model-value="offsetOf(row.subgroup)"
+                             @update:model-value="value => setOffset(row.subgroup, value)"/>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-text size="small" type="info">{{ $t('reversematchedsubgroupoffsethelp') }}</el-text>
+    </div>
+    <el-text v-if="reverseMarker" size="small" type="success">{{ $t('subgroupisreversemarker') }}</el-text>
+    <div v-if="reverseEnabled" class="reverse-match-miss">
       <el-text size="small">{{ $t('whenreversematchdoesnothit') }}</el-text>
       <el-select v-model="props.ani.reverseMatchMissBehavior" size="small" class="miss-select">
         <el-option value="" :label="$t('followglobaldefault')"/>
@@ -19,7 +34,7 @@
         <el-option value="ALLOW" :label="$t('allowasis')"/>
       </el-select>
     </div>
-    <template v-if="props.ani.reverseMatchEnabled">
+    <template v-if="reverseEnabled">
       <el-alert :closable="false" show-icon type="info"
                 :title="$t('eachrulehasaregexandatargetsubgroupwhenatitl')"/>
       <div class="reverse-rule-list">
@@ -68,8 +83,57 @@ if (props.ani.reverseMatchMissBehavior === undefined || props.ani.reverseMatchMi
   props.ani.reverseMatchMissBehavior = ''
 }
 if (typeof props.ani.globalReverseMatch !== 'boolean') props.ani.globalReverseMatch = false
+if (!Array.isArray(props.ani.reverseMatchAssignments)) props.ani.reverseMatchAssignments = []
+if (!props.ani.reverseMatchSubgroupOffsets || typeof props.ani.reverseMatchSubgroupOffsets !== 'object') {
+  props.ani.reverseMatchSubgroupOffsets = {}
+}
 
 const rules = computed(() => props.ani.reverseMatchRules)
+
+// 字幕组填成「反匹配」时同样按反匹配模式展示规则与未命中行为。
+const reverseMarker = computed(() => {
+  const value = String(props.ani.subgroup || '').trim()
+  return value === '反匹配' || value.toUpperCase() === 'REVERSE_MATCH'
+})
+
+const reverseEnabled = computed(() => Boolean(props.ani.reverseMatchEnabled)
+    || Boolean(props.ani.globalReverseMatch)
+    || reverseMarker.value)
+
+// 已命中的字幕组：按字幕组汇总集数与区间，供单独设置偏移。
+const succeededSubgroups = computed(() => {
+  const map = new Map()
+  ;(props.ani.reverseMatchAssignments || []).forEach(item => {
+    const subgroup = String(item?.subgroup || '').trim()
+    if (!subgroup) return
+    const episode = Number(item.episode)
+    const entry = map.get(subgroup) || {subgroup, count: 0, min: Infinity, max: -Infinity}
+    entry.count += 1
+    if (Number.isFinite(episode)) {
+      entry.min = Math.min(entry.min, episode)
+      entry.max = Math.max(entry.max, episode)
+    }
+    map.set(subgroup, entry)
+  })
+  return [...map.values()].map(entry => ({
+    subgroup: entry.subgroup,
+    episodes: Number.isFinite(entry.min)
+        ? (entry.min === entry.max ? String(entry.min) : `${entry.min} - ${entry.max} (${entry.count})`)
+        : String(entry.count)
+  }))
+})
+
+const offsetOf = subgroup => Number(props.ani.reverseMatchSubgroupOffsets?.[subgroup] || 0)
+
+const setOffset = (subgroup, value) => {
+  const offsets = props.ani.reverseMatchSubgroupOffsets || (props.ani.reverseMatchSubgroupOffsets = {})
+  const number = Number(value)
+  if (!Number.isFinite(number) || number === 0) {
+    delete offsets[subgroup]
+    return
+  }
+  offsets[subgroup] = number
+}
 const testTitles = ref('')
 const testResults = ref([])
 
@@ -122,6 +186,7 @@ const runTest = () => {
 .reverse-match { display: grid; gap: 8px; }
 .reverse-match-toggle { display: flex; align-items: center; gap: 8px; }
 .reverse-match-miss { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.reverse-match-succeeded { display: grid; gap: 6px; }
 .miss-select { width: min(100%, 240px); }
 .reverse-rule-list { display: grid; gap: 8px; }
 .reverse-rule-card :deep(.el-card__body) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }

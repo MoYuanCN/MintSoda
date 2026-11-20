@@ -12,6 +12,7 @@ import wushuo.tmdb.api.entity.Tmdb;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订阅
@@ -153,6 +154,10 @@ public class Ani implements Serializable {
     /** 反匹配路由记录，按集数长效保存命中结果。 */
     @Schema(description = "反匹配路由记录")
     private List<ReverseMatchAssignment> reverseMatchAssignments;
+
+    /** 反匹配命中字幕组的独立集数偏移，键为字幕组，值为相对订阅偏移的增量。 */
+    @Schema(description = "反匹配字幕组集数偏移")
+    private Map<String, Integer> reverseMatchSubgroupOffsets;
 
     /**
      * 排除

@@ -117,6 +117,7 @@
 - 把订阅字幕组填为 `反匹配`（或 `REVERSE_MATCH`）即可进入反匹配模式，无需再单独开启开关；该标识只作开关，不会写入标签、重命名或保存路径。
 - 命中规则的字幕组按集数记录在 `reverseMatchAssignments`（`episode`、`subgroup`、`title`、`updatedAt`），刷新结束后持久化；同一集数再次命中时覆盖，超过 500 条时淘汰最旧记录。
 - 新增全局默认字段 `reverseMatchMissBehavior`，订阅的 `reverseMatchMissBehavior` 留空表示跟随全局默认。
+- 新增 `reverseMatchSubgroupOffsets`：按字幕组设置独立集数偏移，叠加在订阅的 `offset` 之上，只作用于该字幕组的条目；订阅的「反匹配」页会列出已命中的字幕组与集数范围，便于逐个调整。
 
 ## 通知
 

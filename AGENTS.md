@@ -87,6 +87,7 @@ bash ./package.sh
 - 唯一判定入口是 `util/other/MatchRuleUtil#evaluate`；RSS 下载、RSS 预览、合集预览必须走同一实现，不要在别处复制判定逻辑。
 - 优先级固定为：反匹配 > 全局匹配 > 排除；本地匹配是普通路径的必要条件。
 - 反匹配命中时使用规则指定的字幕组；启用反匹配但未命中时按订阅的 `reverseMatchMissBehavior`（`SKIP` 默认、`NORMAL`、`ALLOW`）处理。
+- 反匹配命中的条目仍要走完集数解析与后续集数规则（偏移、`notDownload`、去重、`skip5`）；每个字幕组的独立偏移存在 `Ani.reverseMatchSubgroupOffsets`，由 `RenameUtil` 叠加到订阅偏移上，不要另写一套集数计算。
 - 规则语法：`{{字幕组}}:正则` 限定来源字幕组；反匹配规则由 `pattern` + `subgroup` 组成。
 - 改动判定顺序、迁移方式或规则格式时，同步更新 `docs/USER_GUIDE.md` 与两个前端测试区（`ReverseMatchView.vue`、`GlobalReverseMatchView.vue`）。
 

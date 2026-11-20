@@ -20,7 +20,7 @@ public class RenameUtil {
     public static final String REG_STR = "(.*|\\[.*])(( - |Vol |[Ee][Pp]?)\\d+(\\.5)?( ?\\(\\d+\\))?|【\\d+(\\.5)?】|\\[\\d+(\\.5)?( ?\\(\\d+\\))?( ?[vV]\\d)?( ?END)?( ?完)?( ?FIN)?]|第\\d+(\\.5)?[话話集]( - END)?|^\\[TOC].* \\d+|^六四位元字幕组.*★\\d+(\\.5)?★)";
 
     public static Boolean rename(Ani ani, Item item) {
-        int offset = ani.getOffset();
+        int offset = ani.getOffset() + reverseSubgroupOffset(ani, item.getSubgroup());
         int season = ani.getSeason();
         String title = ani.getTitle();
         Boolean ova = ani.getOva();
@@ -118,6 +118,27 @@ public class RenameUtil {
         item
                 .setReName(reName);
         return true;
+    }
+
+    /**
+     * 反匹配命中的字幕组可以有独立的集数偏移，叠加在订阅偏移之上。
+     * <p>
+     * 反匹配标记本身不是字幕组，也不应参与偏移，避免开关值被当成键。
+     *
+     * @param ani      订阅
+     * @param subgroup 资源项字幕组
+     * @return 该字幕组的额外偏移，未配置时为 0
+     */
+    private static int reverseSubgroupOffset(Ani ani, String subgroup) {
+        if (StrUtil.isBlank(subgroup) || MatchRuleUtil.isReverseMarker(subgroup)) {
+            return 0;
+        }
+        Map<String, Integer> offsets = ani.getReverseMatchSubgroupOffsets();
+        if (offsets == null || offsets.isEmpty()) {
+            return 0;
+        }
+        Integer offset = offsets.get(subgroup.trim());
+        return offset == null ? 0 : offset;
     }
 
     /**
