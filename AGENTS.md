@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本文件面向在本仓库工作的 AI 编码代理与协作者，说明项目定位、构建方式与必须遵守的约定。用户功能说明见 `docs/USER_GUIDE.md`，开发与提交流程见 `docs/DEVELOPMENT.md`、`docs/CONTRIBUTING.md`，安全要求见 `docs/SECURITY.md`，相对上游的差异见 `docs/SPECIAL_FEATURE.md`。
+本文件面向在本仓库工作的 AI 编码代理与协作者，说明项目定位、构建方式与必须遵守的约定。文档总索引见 `docs/README.md`；用户功能说明见 `docs/USER_GUIDE.md`，接口清单见 `docs/API.md`，配置字段清单见 `docs/CONFIG.md`，开发与提交流程见 `docs/DEVELOPMENT.md`、`docs/CONTRIBUTING.md`，安全要求见 `docs/SECURITY.md`，相对上游的差异见 `docs/SPECIAL_FEATURE.md`，多语言流程见 `docs/I18N.md`。
 
 ## 项目定位
 
@@ -20,7 +20,7 @@ ANI-RSS-Yuri 是 ANI-RSS 的 Fork：通过 RSS 订阅番剧，统一匹配规则
 | `linux/` | Linux 安装、控制、卸载脚本 |
 | `ani-rss-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖，不应引入宿主内部类 |
 | `examples/plugins/` | 示例插件与市场索引，不参与正式构建 |
-| `docs/` | 用户指南、开发指南、分支特性、贡献规范、安全说明、插件开发指南 |
+| `docs/` | 文档索引、用户指南、API 参考、配置参考、开发指南、分支特性、贡献规范、安全说明、插件开发指南、多语言说明 |
 | `.github/workflows/` | 手动触发的构建检查与 Release 发布 |
 
 后端入口为 `ani-rss-application/src/main/java/ani/rss/AniRssApplication.java`；默认端口 17789，接口统一挂在 `/api` 前缀下。
@@ -73,7 +73,7 @@ bash ./package.sh
 3. 旧配置补齐与迁移：`util/other/ConfigUtil.java` 的 `format` 及相关迁移方法。
 4. 前端默认对象：`ani-rss-ui/src/js/config.js`。
 5. 设置界面：对应的 `ani-rss-ui/src/view/config/*.vue`。
-6. 文档：`docs/USER_GUIDE.md`，必要时 `docs/DEVELOPMENT.md`。
+6. 文档：`docs/USER_GUIDE.md` 与 `docs/CONFIG.md` 的字段表，必要时 `docs/DEVELOPMENT.md`。
 
 规则：
 

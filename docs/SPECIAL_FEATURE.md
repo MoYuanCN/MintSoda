@@ -6,7 +6,26 @@
 - 本分支版本：`3.3.0`。
 - 定位：面向 Windows 与 Linux 的自托管版本，按本分支目标“做减法”——单一下载器、可预期的匹配规则、更自由的外观与更轻的部署方式。常规订阅与下载流程尽量与上游保持一致。
 
-> 功能范围说明见 [使用指南](USER_GUIDE.md)，构建与协作见 [开发指南](DEVELOPMENT.md) 与 [贡献指南](CONTRIBUTING.md)，安全边界见 [安全说明](SECURITY.md)。
+> 功能范围说明见 [使用指南](USER_GUIDE.md)，接口清单见 [API 参考](API.md)，字段与迁移见 [配置参考](CONFIG.md)，构建与协作见 [开发指南](DEVELOPMENT.md) 与 [贡献指南](CONTRIBUTING.md)，多语言见 [多语言与翻译贡献](I18N.md)，安全边界见 [安全说明](SECURITY.md)。
+
+## 本文目录
+
+- [功能边界总览](#功能边界总览)
+- [订阅与下载](#订阅与下载)
+- [匹配规则](#匹配规则)
+- [通知](#通知)
+- [认证与安全](#认证与安全)
+- [外观与主题](#外观与主题)
+- [插件系统](#插件系统)
+- [多语言](#多语言)
+- [缓存自动清理](#缓存自动清理)
+- [性能与前端](#性能与前端)
+- [数据与接口](#数据与接口)
+- [标识与兼容](#标识与兼容)
+- [部署](#部署)
+- [移除的功能](#移除的功能)
+- [配置兼容](#配置兼容)
+- [与上游同步的注意事项](#与上游同步的注意事项)
 
 ## 功能边界总览
 
@@ -193,6 +212,13 @@ Body 只有两种来源，语义明确：
 - 新增配置项 `pluginMarketUrl`（默认空）。市场为 JSON 索引，插件也可通过 `updateUrl` 提供自身更新条目。
 - 前端新增侧栏“插件”页与通知编辑中的“插件渠道”选择；文档新增 `docs/PLUGIN_DEVELOPMENT.md`，示例见 `examples/plugins/`。
 
+## 多语言
+
+- WebUI 使用 `vue-i18n` 管理文案，内置 `zh-CN`、`zh-TW`、`zh-MS`、`en-US` 四种语言，词条位于 `ani-rss-ui/src/i18n/locales/`，`zh-CN` 为唯一事实来源。
+- 语言选择保存在浏览器本地，首次访问按浏览器语言自动匹配；切换语言刷新页面以重建模块级常量，同时切换 Element Plus 与 dayjs 语言包。
+- 侧栏底部、登录页与初始化页右上角提供语言选择器；切换只影响界面文案，不写入服务端配置。
+- 新增或修改文案的完整流程见 [多语言与翻译贡献](I18N.md)。
+
 ## 缓存自动清理
 
 - 新增 `cacheAutoClear`（默认关闭）、`cacheAutoClearHours`（默认 72，范围 1-720）、`cacheLastClearTime`。
@@ -217,6 +243,7 @@ Body 只有两种来源，语义明确：
 - 新增 `/api/setupStatus`、`/api/setup`、`/api/verifyDeveloperCredentials`、`/api/setDeveloperSettings`、`/api/collectionDownloadPath`、`/api/uiAsset` 与 `/api/uiAsset/upload`。
 - 删除 `/api/trackersUpdate`、`/api/verifyNo`（捐赠）、`/api/embyWebHook`、`/api/rate`、`/api/setRate`，以及播放、刮削、AnimeGarden、任务进度相关的控制器。
 - `/api/publicSettings` 为新增的公开接口，只返回登录页渲染所需的外观字段。
+- 接口清单、鉴权方式与调用示例统一整理在 [API 参考](API.md)，新增或删除接口时同步更新。
 - `/api/file` 只允许图片；上传类接口保留原有行为，外观图片走独立白名单校验。
 
 ## 标识与兼容

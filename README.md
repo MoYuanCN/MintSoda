@@ -4,8 +4,7 @@
 
 <h1 align="center">ANI-RSS-Yuri</h1>
 
-<p align="center">
-</p>
+<p align="center">通过 RSS 订阅番剧，统一匹配规则后交给 qBittorrent 下载</p>
 
 <p align="center">
   <img alt="java" src="https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white">
@@ -17,17 +16,18 @@
 <p align="center">
   <a href="#-快速开始">快速开始</a> ·
   <a href="#-分支特色">分支特色</a> ·
-  <a href="#-外观与主题">外观与主题</a> ·
+  <a href="#-插件系统">插件系统</a> ·
+  <a href="#-本地构建">本地构建</a> ·
+  <a href="docs/README.md">文档导航</a> ·
   <a href="docs/USER_GUIDE.md">使用指南</a> ·
-  <a href="docs/DEVELOPMENT.md">开发指南</a> ·
-  <a href="docs/SPECIAL_FEATURE.md">分支特性</a>
+  <a href="docs/API.md">API 参考</a>
 </p>
 
 ---
 
 ## 项目简介
 
-**ANI-RSS-Yuri** 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的 分支项目，基于本分支开发者个人需求进行了深度魔改
+**ANI-RSS-Yuri** 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的分支项目，围绕自托管场景做了取舍：只保留 qBittorrent 下载器，收敛通知渠道，重写匹配规则与通知模板，补齐插件系统与多语言 WebUI。常规订阅与下载流程尽量与上游保持一致，差异集中在这些自有能力上。
 
 ## 🚀 快速开始
 
@@ -68,13 +68,17 @@ assyuri uninstall  # 卸载服务
 
 ## ✨ 分支特色
 
-- **匹配规则**：本地匹配 + 全局匹配 + 全局排除 + 反匹配，优先级固定，下载与预览共用同一判定。
-- **插件系统**：Java / JavaScript / Lua 三种运行时，支持市场安装、逐项权限开关与插件私有数据持久化。
-- **通知模板**：多套可命名模板，独立选择文本或 JSON，变量直接渲染。
-- **外观与主题**：主题色与动态取色、模糊与不透明度、自定义背景与 Logo、自定义 CSS/JS。
-- **导出导入**：设置、订阅、封面、插件与插件私有数据一次打包。
+| 能力 | 说明 |
+| --- | --- |
+| 匹配规则 | 反匹配 > 全局匹配 > 排除，本地匹配为普通路径必要条件；下载、预览、合集预览共用同一判定 |
+| 下载 | 仅 qBittorrent，支持 API Key 与用户名密码两种认证，备用 RSS 与洗版可预期 |
+| 通知 | Telegram、自定义 HTTP 请求、媒体库刷新，多套命名模板直接渲染字段变量 |
+| 插件 | Java / JavaScript / Lua 三种运行时，细粒度权限、私有数据、市场安装 |
+| 外观 | 主题色与动态取色、亚克力与模糊、自定义背景与 Logo、自定义 CSS/JS |
+| 部署 | Windows EXE 便携配置，Linux 一键安装并注册 systemd |
+| 多语言 | 简中、繁中、Microsoft 风格简中与英文，切换不影响服务端配置 |
 
-完整的功能清单、配置说明与行为差异见 [分支特性](docs/SPECIAL_FEATURE.md)；使用方式见 [使用指南](docs/USER_GUIDE.md)。
+完整的功能清单、配置说明与行为差异见 [分支特性](docs/SPECIAL_FEATURE.md)；日常使用见 [使用指南](docs/USER_GUIDE.md)；对接脚本见 [API 参考](docs/API.md)。
 
 ## 🎨 外观与主题
 
@@ -87,7 +91,7 @@ assyuri uninstall  # 卸载服务
 
 - 独立接口模块 `ani-rss-plugin-api`，插件以单独 JAR 加载，宿主与插件只共享稳定接口。
 - Java 插件以 JAR 分发；**JavaScript / Lua 插件**只需一个 `plugin.json` 加一个脚本打成 ZIP。
-- 扩展点：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、自定义 HTTP 接口。
+- 扩展点：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、下载事件、自定义 HTTP 接口。
 - 每个插件的能力按组逐项授权，可随时调整并立即生效；插件可在私有目录持久化数据，升级不受影响。
 - 支持插件市场：填写 JSON 索引地址即可浏览、安装与检查更新。
 - 安装与更新校验 `sha256` 与文件大小，地址限公网 `http`/`https`。
@@ -112,15 +116,32 @@ bash ./package.sh
 | 路径 | 说明 |
 | --- | --- |
 | `ani-rss-application/` | Spring Boot 后端：订阅、匹配、下载、通知与配置 |
-| `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端 |
-| `ani-rss-plugin-api/` | 稳定的插件接口模块 |
-| `linux/` | Linux 安装、控制与卸载脚本 |
-| `docs/` | 用户指南、开发指南、分支特性、贡献规范与安全说明 |
+| `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端，含四种语言的词条 |
+| `ani-rss-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖 |
+| `examples/plugins/` | 三种运行时的示例插件与市场索引，不参与正式构建 |
+| `linux/` | Linux 安装、管理菜单与控制脚本 |
+| `docs/` | 使用、开发、插件、API、配置、安全与多语言文档 |
+| `.github/workflows/` | 手动触发的构建检查与 Release 发布 |
+
+## 📚 文档导航
+
+| 我想… | 看这里 |
+| --- | --- |
+| 安装并跑起来 | [使用指南 · 运行与配置文件](docs/USER_GUIDE.md#运行与配置文件) |
+| 了解本分支改了什么 | [分支特性](docs/SPECIAL_FEATURE.md) |
+| 写脚本调用接口 | [API 参考](docs/API.md) |
+| 排查或迁移配置 | [配置参考](docs/CONFIG.md) |
+| 编写插件 | [插件开发指南](docs/PLUGIN_DEVELOPMENT.md) |
+| 参与开发 | [开发指南](docs/DEVELOPMENT.md) · [贡献指南](docs/CONTRIBUTING.md) |
+| 翻译界面 | [多语言与翻译贡献](docs/I18N.md) |
+| 部署安全与已知限制 | [安全说明](docs/SECURITY.md) |
+
+全部文档的索引见 [docs/README.md](docs/README.md)。
 
 ## 📄 许可
 
 本项目沿用上游的 **GPL-2.0** 许可证，详见 [LICENSE](LICENSE)。
 
 <p align="center">
-  <sub>如果这个项目对你有帮助，欢迎点个 ⭐ Star</sub>
+  <sub>欢迎提交 Issue 与 PR，也欢迎点个 ⭐ Star</sub>
 </p>
