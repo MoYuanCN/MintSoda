@@ -129,6 +129,7 @@
 | `globalReverseMatchRules` | `List<ReverseMatchRule>` | `[]` | 全局反匹配规则，每项含 `id`、`pattern`、`subgroup` |
 | `enabledGlobalReverseMatch` | `Boolean` | `false` | 添加订阅时默认启用全局反匹配 |
 | `importGlobalReverseMatch` | `Boolean` | `false` | 添加订阅时默认导入全局反匹配 |
+| `reverseMatchMissBehavior` | `String` | `SKIP` | 反匹配未命中默认行为：`SKIP` 跳过、`NORMAL` 继续普通匹配、`ALLOW` 直接放行；订阅未单独指定时生效 |
 | `standbyRss` | `Boolean` | `false` | 备用RSS |
 | `coexist` | `Boolean` | `false` | 多字幕组共存模式 |
 | `subtitleIndependentFolderEnabled` | `Boolean` | `false` | 启用 字幕独立文件夹 |

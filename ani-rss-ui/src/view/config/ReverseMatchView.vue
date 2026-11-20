@@ -1,5 +1,7 @@
 <template>
   <div class="reverse-match full-width">
+    <el-alert :closable="false" show-icon type="info"
+              :title="$t('setsubgrouptoreversemarkertorouteitems')"/>
     <div class="reverse-match-toggle">
       <el-switch v-model="props.ani.reverseMatchEnabled"/>
       <el-text size="small" type="info">{{ $t('usethissubscriptionsreversematchrules') }}</el-text>
@@ -11,6 +13,7 @@
     <div v-if="props.ani.reverseMatchEnabled || props.ani.globalReverseMatch" class="reverse-match-miss">
       <el-text size="small">{{ $t('whenreversematchdoesnothit') }}</el-text>
       <el-select v-model="props.ani.reverseMatchMissBehavior" size="small" class="miss-select">
+        <el-option value="" :label="$t('followglobaldefault')"/>
         <el-option value="SKIP" :label="$t('skipdonotdownload')"/>
         <el-option value="NORMAL" :label="$t('continuewithnormalrules')"/>
         <el-option value="ALLOW" :label="$t('allowasis')"/>
@@ -61,7 +64,9 @@ import {ElMessage} from 'element-plus'
 const {t} = useI18n()
 const props = defineProps({ani: {type: Object, required: true}})
 if (!Array.isArray(props.ani.reverseMatchRules)) props.ani.reverseMatchRules = []
-if (!props.ani.reverseMatchMissBehavior) props.ani.reverseMatchMissBehavior = 'SKIP'
+if (props.ani.reverseMatchMissBehavior === undefined || props.ani.reverseMatchMissBehavior === null) {
+  props.ani.reverseMatchMissBehavior = ''
+}
 if (typeof props.ani.globalReverseMatch !== 'boolean') props.ani.globalReverseMatch = false
 
 const rules = computed(() => props.ani.reverseMatchRules)

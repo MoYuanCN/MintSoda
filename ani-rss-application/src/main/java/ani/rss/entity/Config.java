@@ -368,6 +368,10 @@ public class Config implements Serializable {
     private Boolean importGlobalReverseMatch;
     private Boolean enabledGlobalReverseMatch;
 
+    /** 反匹配未命中时的全局默认行为：SKIP、NORMAL 或 ALLOW。 */
+    @Schema(description = "反匹配未命中默认行为")
+    private String reverseMatchMissBehavior;
+
     /**
      * BGM日语标题
      */

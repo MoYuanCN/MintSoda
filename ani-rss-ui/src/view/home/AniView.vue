@@ -62,6 +62,13 @@
                 <div class="flex full-width">
                   <el-input v-model:model-value="props.ani.subgroup" style="width: 140px" :placeholder="$t('subgroup')"/>
                   <div style="width: 6px;"></div>
+                  <el-tooltip :content="$t('reversematchtip')">
+                    <el-button :type="reverseMarker ? 'primary' : ''" bg text
+                               @click="toggleReverseMarker">
+                      {{ $t('reversematchmode') }}
+                    </el-button>
+                  </el-tooltip>
+                  <div style="width: 6px;"></div>
                   <el-input v-model:model-value="props.ani.url" placeholder="https://xxx.xxx"/>
                 </div>
                 <div style="justify-content: end;" class="flex full-width margin-top-4">
@@ -279,7 +286,7 @@ import ExcludeView from "@/view/config/ExcludeView.vue";
 import ReverseMatchView from "@/view/config/ReverseMatchView.vue";
 import PrioKeysView from "@/view/config/PrioKeysView.vue";
 import PreviewView from "./PreviewView.vue";
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 import {ElMessage, ElMessageBox, ElText} from "element-plus";
 import StandbyRssView from "./StandbyRssView.vue";
 import MikanView from "./MikanView.vue";
@@ -292,6 +299,15 @@ import AniBTView from "@/view/home/AniBTView.vue";
 import DisableView from "@/view/custom/DisableView.vue";
 const {t} = useI18n()
 const activeName = ref('base')
+
+const reverseMarker = computed(() => {
+  const value = String(props.ani.subgroup || '').trim()
+  return value === '反匹配' || value.toUpperCase() === 'REVERSE_MATCH'
+})
+
+const toggleReverseMarker = () => {
+  props.ani.subgroup = reverseMarker.value ? '' : '反匹配'
+}
 
 const aniBTRef = ref()
 const mikanRef = ref()

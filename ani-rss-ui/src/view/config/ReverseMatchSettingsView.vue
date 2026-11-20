@@ -7,6 +7,19 @@
     <el-card shadow="never">
       <div class="section-heading">
         <div>
+          <strong>{{ $t('reversematchdefaultbehavior') }}</strong>
+          <el-text class="section-hint" size="small" type="info">{{ $t('appliedwhenasubscriptionusesdefaultforme') }}</el-text>
+        </div>
+      </div>
+      <el-select v-model="props.config.reverseMatchMissBehavior" class="miss-select">
+        <el-option value="SKIP" :label="$t('skipdonotdownload')"/>
+        <el-option value="NORMAL" :label="$t('continuewithnormalrules')"/>
+        <el-option value="ALLOW" :label="$t('allowasis')"/>
+      </el-select>
+    </el-card>
+    <el-card shadow="never">
+      <div class="section-heading">
+        <div>
           <strong>{{ $t('globalreversematchrules') }}</strong>
           <el-text class="section-hint" size="small" type="info">{{ $t('subscriptionsthatenableuseglobalreversematch') }}</el-text>
         </div>
@@ -75,6 +88,7 @@ onMounted(load)
 }
 
 .section-heading { display: grid; gap: 4px; margin-bottom: 12px; }
+.section-heading .miss-select { margin-top: 8px; max-width: 260px; }
 .section-hint { display: block; margin-top: 4px; }
 
 .reverse-match-settings-toolbar {

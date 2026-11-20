@@ -132,6 +132,7 @@ public class DefaultConfigFactory {
                 .setEnabledGlobalMatch(false)
                 .setImportGlobalReverseMatch(false)
                 .setEnabledGlobalReverseMatch(false)
+                .setReverseMatchMissBehavior("SKIP")
                 .setTmdb(true)
                 .setBgmJpName(false)
                 .setTmdbId(false)

@@ -146,9 +146,13 @@ public class Ani implements Serializable {
     @Schema(description = "是否应用全局反匹配规则")
     private Boolean globalReverseMatch;
 
-    /** 反匹配未命中后的处理：SKIP、NORMAL 或 ALLOW。 */
+    /** 反匹配未命中后的处理：SKIP、NORMAL 或 ALLOW；留空跟随设置中的全局默认。 */
     @Schema(description = "反匹配未命中行为")
     private String reverseMatchMissBehavior;
+
+    /** 反匹配路由记录，按集数长效保存命中结果。 */
+    @Schema(description = "反匹配路由记录")
+    private List<ReverseMatchAssignment> reverseMatchAssignments;
 
     /**
      * 排除

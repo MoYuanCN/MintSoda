@@ -204,6 +204,12 @@ public class ConfigUtil {
         config.setCustomUserAgent(StrUtil.maxLength(userAgent, 256));
         if (config.getDevHttpTrace() == null) config.setDevHttpTrace(false);
         if (config.getCollectionDownloadPathTemplate() == null) config.setCollectionDownloadPathTemplate("");
+        String reverseMissBehavior = StrUtil.trimToEmpty(config.getReverseMatchMissBehavior())
+                .toUpperCase(java.util.Locale.ROOT);
+        if (!Set.of("SKIP", "NORMAL", "ALLOW").contains(reverseMissBehavior)) {
+            reverseMissBehavior = "SKIP";
+        }
+        config.setReverseMatchMissBehavior(reverseMissBehavior);
         if (config.getRssConcurrency() == null) config.setRssConcurrency(4);
         config.setRssConcurrency(Math.max(1, Math.min(16, config.getRssConcurrency())));
         if (config.getRssTimeout() == null) config.setRssTimeout(20);

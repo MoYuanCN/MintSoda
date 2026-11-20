@@ -123,7 +123,8 @@ public class AniUtil {
             }
         }
         ani.setReverseMatchKeywords(new ArrayList<>());
-        if (ani.getReverseMatchMissBehavior() == null) ani.setReverseMatchMissBehavior("SKIP");
+        // 空值表示跟随设置中的全局默认。
+        if (ani.getReverseMatchMissBehavior() == null) ani.setReverseMatchMissBehavior("");
         if (ani.getGlobalReverseMatch() == null) ani.setGlobalReverseMatch(false);
     }
 

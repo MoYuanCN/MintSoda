@@ -68,6 +68,7 @@ export let configData = {
     "enabledGlobalMatch": false,
     "importGlobalReverseMatch": false,
     "enabledGlobalReverseMatch": false,
+    "reverseMatchMissBehavior": "SKIP",
     "bgmJpName": false,
     "tmdb": false,
     "tmdbId": false,

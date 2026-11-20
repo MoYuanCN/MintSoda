@@ -101,8 +101,8 @@
 固定为 **反匹配 > 全局匹配 > 排除**，本地匹配是普通路径的必要条件：
 
 1. 本地反匹配命中 → 直接接收，使用规则指定的字幕组。
-2. 全局反匹配命中 → 同上（需订阅启用）。
-3. 反匹配已启用但未命中 → 按 `reverseMatchMissBehavior`：`SKIP`（默认）、`NORMAL`、`ALLOW`。
+2. 全局反匹配命中 → 同上（需订阅启用全局反匹配，或字幕组填为 `反匹配` 标记）。
+3. 反匹配已启用但未命中 → 按 `reverseMatchMissBehavior`：`SKIP`（默认）、`NORMAL`、`ALLOW`；订阅留空时跟随设置中的全局默认。
 4. 本地匹配规则 → 每条都必须命中。
 5. 全局匹配 → 每条适用规则都必须命中，通过后优先于排除。
 6. 本地与全局排除 → 命中即拒绝。
@@ -111,6 +111,12 @@
 
 - 新增 `enabledGlobalMatch` / `importGlobalMatch` 与 `enabledGlobalReverseMatch` / `importGlobalReverseMatch`：新订阅可选择默认启用全局规则，或把当前规则复制为本地规则，二者互斥。
 - 旧全局反匹配字符串会迁移为结构化的 `globalReverseMatchRules`；订阅内的旧 `reverseMatchKeywords` 迁移为 `reverseMatchRules` 后清空。
+
+### 字幕组标记与路由记录
+
+- 把订阅字幕组填为 `反匹配`（或 `REVERSE_MATCH`）即可进入反匹配模式，无需再单独开启开关；该标识只作开关，不会写入标签、重命名或保存路径。
+- 命中规则的字幕组按集数记录在 `reverseMatchAssignments`（`episode`、`subgroup`、`title`、`updatedAt`），刷新结束后持久化；同一集数再次命中时覆盖，超过 500 条时淘汰最旧记录。
+- 新增全局默认字段 `reverseMatchMissBehavior`，订阅的 `reverseMatchMissBehavior` 留空表示跟随全局默认。
 
 ## 通知
 
@@ -199,10 +205,13 @@ Body 只有两种来源，语义明确：
 - 设置备份包含整个 `plugins/` 目录但不含 `installed.json`；导入时逐条校验路径并在临时目录完成后整体替换，导入后 `PluginManager.rescan()` 按目录重建安装状态，插件默认停用。
 - 开发者选项新增自定义 User-Agent（拒绝控制字符并限长）、出站请求日志（只记方法、地址、状态码与耗时）与网络自检，均需先验证当前账号。
 - 插件生命周期为加载、启用、停用、重载与卸载，失败只影响该插件。
-- 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截与插件自定义接口；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后执行。
+- 扩展点包括通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、下载事件、条目改写、界面页面与插件自定义接口；订阅事件在增删改订阅时触发，插件过滤在匹配规则之后、条目改写之前执行。
 - 模板变量由 `TemplateVariables` 统一应用，通知、重命名与下载路径共用同一批字段；插件可通过 `TemplateVariableProvider` 追加或覆盖字段。
 - 下载拦截在种子提交给下载器之前执行，可改写保存位置与名称，或返回 `null` 取消任务。
 - 新增下载事件扩展点：`DownloadListener` 在任务提交成功、下载完成与提交失败时回调，只读快照不可修改任务；对应权限 `DOWNLOAD_EVENT`（低风险）。
+- 新增条目改写扩展点：`ItemTransformer` 在过滤之后、重命名之前调整标题或字幕组；对应权限 `ITEM_TRANSFORM`（中风险）。
+- 新增界面页面扩展点：`PluginPage` 用白名单区块（文本、表单、表格、操作、分隔线）在主程序界面注册只读页面，页面直接调用插件接口取数；对应权限 `CUSTOM_PAGE`（低风险）。插件内容不按 HTML 渲染，也不执行脚本。
+- 插件接口版本升至 `3`，`PluginContext` 的新增注册方法都有默认实现，只声明 `apiVersion: 2` 的旧插件不受影响。
 - 插件自定义接口挂在 `/api/plugin/api/{pluginId}/{path}`，由 `PluginEndpointController` 统一鉴权与分发，请求体上限 256KB。
 - 新增通知类型 `PLUGIN`，插件渠道的字段与值保存在 `NotificationConfig` 的 `pluginChannelId` 与 `pluginOptions`。
 - 新增 `/api/plugin/*` 接口：列表、运行概览、详情、启用/停用/重载/卸载、配置读写、上传与链接安装、市场获取、市场安装、单条与全部更新检查、更新与市场地址管理。全部接口都要求登录；请求体使用 `entity/dto` 下带类型的 DTO。
@@ -214,7 +223,7 @@ Body 只有两种来源，语义明确：
 
 ## 多语言
 
-- WebUI 使用 `vue-i18n` 管理文案，内置 `zh-CN`、`zh-TW`、`zh-MS`、`en-US` 四种语言，词条位于 `ani-rss-ui/src/i18n/locales/`，`zh-CN` 为唯一事实来源。
+- WebUI 使用 `vue-i18n` 管理文案，内置 `zh-CN`、`zh-TW`、`en-US` 三种语言，词条位于 `ani-rss-ui/src/i18n/locales/`，`zh-CN` 为唯一事实来源。
 - 语言选择保存在浏览器本地，首次访问按浏览器语言自动匹配；切换语言刷新页面以重建模块级常量，同时切换 Element Plus 与 dayjs 语言包。
 - 侧栏底部、登录页与初始化页右上角提供语言选择器；切换只影响界面文案，不写入服务端配置。
 - 新增或修改文案的完整流程见 [多语言与翻译贡献](I18N.md)。

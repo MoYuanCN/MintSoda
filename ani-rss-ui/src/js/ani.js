@@ -15,7 +15,8 @@ export let aniData = {
     "reverseMatchEnabled": false,
     "reverseMatchKeywords": [],
     "reverseMatchRules": [],
-    "reverseMatchMissBehavior": "SKIP",
+    "reverseMatchAssignments": [],
+    "reverseMatchMissBehavior": "",
     "globalReverseMatch": false,
     "exclude": [
         "720[Pp]",

@@ -422,6 +422,10 @@ public class DownloadService {
         String name = item.getReName();
         Boolean master = item.getMaster();
         String subgroup = item.getSubgroup();
+        if (MatchRuleUtil.isReverseMarker(subgroup)) {
+            // 反匹配标记本身不是字幕组，优先使用已保存的命中结果。
+            subgroup = MatchRuleUtil.storedSubgroup(ani, item.getEpisode());
+        }
         subgroup = StrUtil.blankToDefault(subgroup, "未知字幕组");
         ani.setSubgroup(subgroup);
 

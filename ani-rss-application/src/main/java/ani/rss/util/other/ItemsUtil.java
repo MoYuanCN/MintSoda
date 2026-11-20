@@ -187,6 +187,10 @@ public class ItemsUtil {
         Node channel = document.getElementsByTagName("channel").item(0);
         NodeList childNodes = channel.getChildNodes();
 
+        // 反匹配命中的条目与目标字幕组，等解析出集数后再写入路由记录。
+        Map<Item, String> reverseTargets = new IdentityHashMap<>();
+        // 本轮是否新增了反匹配路由记录，结束时统一写盘。
+        boolean assignmentChanged = false;
         for (int i = childNodes.getLength() - 1; i >= 0; i--) {
             Node item = childNodes.item(i);
             String nodeName = item.getNodeName();
@@ -319,9 +323,15 @@ public class ItemsUtil {
                 continue;
             }
             addNewItem.setSubgroup(match.subgroup());
+            // 集数要等重命名解析后才可知，这里先记录目标字幕组。
+            if (match.reverseMatched()) {
+                reverseTargets.put(addNewItem, match.subgroup());
+            }
             if (!PluginHooks.accepts(ani, addNewItem)) {
                 continue;
             }
+            // 改写发生在过滤之后、重命名之前，改后的字幕组会进入标签与保存路径。
+            PluginHooks.transform(ani, addNewItem);
             items.add(addNewItem);
         }
 
@@ -335,6 +345,14 @@ public class ItemsUtil {
                     }
                     return false;
                 }).toList();
+        // 集数在重命名阶段才解析，命中结果此时才能按集数记录。
+        for (Map.Entry<Item, String> entry : reverseTargets.entrySet()) {
+            assignmentChanged |= MatchRuleUtil.rememberAssignment(ani, entry.getKey(), entry.getValue());
+        }
+        if (assignmentChanged) {
+            // 反匹配路由记录随订阅持久化，刷新结束后仍能保留已命中的字幕组。
+            AniUtil.sync();
+        }
         return CollUtil.distinct(items, item -> item.getEpisode().toString(), true);
     }
 
