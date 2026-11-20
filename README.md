@@ -76,7 +76,7 @@ assyuri uninstall  # 卸载服务
 | 插件 | Java / JavaScript / Lua 三种运行时，细粒度权限、私有数据、市场安装 |
 | 外观 | 主题色与动态取色、亚克力与模糊、自定义背景与 Logo、自定义 CSS/JS |
 | 部署 | Windows EXE 便携配置，Linux 一键安装并注册 systemd |
-| 多语言 | 简中、繁中、Microsoft 风格简中与英文，切换不影响服务端配置 |
+| 多语言 | 简体中文、繁体中文与英文，切换不影响服务端配置 |
 
 完整的功能清单、配置说明与行为差异见 [分支特性](docs/SPECIAL_FEATURE.md)；日常使用见 [使用指南](docs/USER_GUIDE.md)；对接脚本见 [API 参考](docs/API.md)。
 
@@ -116,7 +116,7 @@ bash ./package.sh
 | 路径 | 说明 |
 | --- | --- |
 | `ani-rss-application/` | Spring Boot 后端：订阅、匹配、下载、通知与配置 |
-| `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端，含四种语言的词条 |
+| `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端，含三种语言的词条 |
 | `ani-rss-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖 |
 | `examples/plugins/` | 三种运行时的示例插件与市场索引，不参与正式构建 |
 | `linux/` | Linux 安装、管理菜单与控制脚本 |

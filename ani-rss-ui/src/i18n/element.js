@@ -8,14 +8,12 @@ import 'dayjs/locale/en'
 const ELEMENT_LOCALES = {
   'zh-CN': zhCn,
   'zh-TW': zhTw,
-  'zh-MS': zhCn,
   'en-US': en
 }
 
 const DAYJS_LOCALES = {
   'zh-CN': 'zh-cn',
   'zh-TW': 'zh-tw',
-  'zh-MS': 'zh-cn',
   'en-US': 'en'
 }
 

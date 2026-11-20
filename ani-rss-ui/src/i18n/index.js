@@ -4,7 +4,6 @@ import dayjs from 'dayjs'
 import {dayjsLocale} from './element.js'
 import zhCn from './locales/zh-CN.js'
 import zhTw from './locales/zh-TW.js'
-import zhMs from './locales/zh-MS.js'
 import enUs from './locales/en-US.js'
 
 /**
@@ -13,7 +12,6 @@ import enUs from './locales/en-US.js'
 export const locales = [
   {code: 'zh-CN', label: '简体中文（中国大陆）'},
   {code: 'zh-TW', label: '繁體中文（台灣）'},
-  {code: 'zh-MS', label: '简体中文（Microsoft）'},
   {code: 'en-US', label: 'English'}
 ]
 
@@ -22,7 +20,6 @@ export const locale = useLocalStorage('locale', '')
 const normalize = value => {
   const tag = String(value || '').replace('_', '-').toLowerCase()
   if (!tag) return ''
-  if (tag.startsWith('zh-ms')) return 'zh-MS'
   if (tag.startsWith('zh-tw') || tag.startsWith('zh-hk') || tag.startsWith('zh-mo') || tag.startsWith('zh-hant')) {
     return 'zh-TW'
   }
@@ -54,7 +51,6 @@ export const i18n = createI18n({
   messages: {
     'zh-CN': zhCn,
     'zh-TW': zhTw,
-    'zh-MS': zhMs,
     'en-US': enUs
   }
 })
