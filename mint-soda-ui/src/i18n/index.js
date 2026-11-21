@@ -10,9 +10,9 @@ import enUs from './locales/en-US.js'
  * 内置语言，按顺序展示在语言选择器中。
  */
 export const locales = [
-  {code: 'zh-CN', label: '简体中文（中国大陆）'},
-  {code: 'zh-TW', label: '繁體中文（台灣）'},
-  {code: 'en-US', label: 'English'}
+  {code: 'zh-CN', label: '简体中文（中国大陆）', short: '简体中文'},
+  {code: 'zh-TW', label: '繁體中文（台灣）', short: '繁體中文'},
+  {code: 'en-US', label: 'English', short: 'English'}
 ]
 
 export const locale = useLocalStorage('locale', '')
@@ -84,5 +84,14 @@ export const setLocale = code => {
 }
 
 export const localeLabel = code => locales.find(item => item.code === code)?.label || code
+
+/**
+ * 侧栏与窄屏使用的短名称，避免长文案在窄容器里被截断。
+ *
+ * @param {string} code 语言代码
+ * @returns {string} 短名称
+ */
+export const localeShortLabel = code => locales.find(item => item.code === code)?.short
+  || localeLabel(code)
 
 export default i18n

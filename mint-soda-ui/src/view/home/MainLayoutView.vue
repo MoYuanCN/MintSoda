@@ -51,14 +51,14 @@
         </el-menu-item>
       </el-menu>
       <div class="app-locale">
-        <LocaleSwitcher class="app-locale-inner" show-label/>
+        <LocaleSwitcher class="app-locale-inner" :show-label="hasRoomForLocaleLabel"/>
       </div>
     </aside>
   </div>
 </template>
 
 <script setup>
-import {computed, onMounted} from "vue";
+import {computed, onMounted, ref} from "vue";
 import {RouterView, useRoute} from "vue-router";
 import {Collection, Grid, House, Setting, Tickets} from "@element-plus/icons-vue";
 import LocaleSwitcher from "@/view/custom/LocaleSwitcher.vue";
@@ -71,7 +71,17 @@ const appLogo = computed(() => uiCustomization.value.appLogoImage
     ? uiAssetUrl(uiCustomization.value.appLogoImage)
     : '/icon.png')
 
+// 窄屏侧栏会让语言名称挤成省略号，因此只在桌面宽度显示文字。
+const hasRoomForLocaleLabel = ref(true)
+const syncLocaleLabel = () => {
+  hasRoomForLocaleLabel.value = window.innerWidth > 800
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', syncLocaleLabel, {passive: true})
+}
+
 onMounted(() => {
+  syncLocaleLabel()
   initLayout()
 })
 </script>
@@ -158,7 +168,7 @@ onMounted(() => {
 
 .app-locale {
   flex-shrink: 0;
-  padding: 8px 12px 12px;
+  padding: 8px 10px 12px;
 }
 
 .app-locale-inner {
@@ -233,16 +243,20 @@ onMounted(() => {
   .app-locale {
     position: fixed;
     right: 12px;
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
     z-index: 11;
+    max-width: calc(100% - 24px);
     padding: 0;
   }
 
+  /* 悬浮按钮按内容收缩，短名称不会被挤压截断。 */
   .app-locale-inner {
     width: auto;
-    border-radius: 50%;
-    background: var(--el-bg-color-overlay);
+    min-width: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--el-bg-color-overlay) 92%, transparent);
     box-shadow: var(--el-box-shadow-light);
+    backdrop-filter: blur(10px);
   }
 
   .app-main {
