@@ -1,33 +1,33 @@
 # AGENTS.md
 
-本文件面向在本仓库工作的 AI 编码代理与协作者，说明项目定位、构建方式与必须遵守的约定。文档总索引见 `docs/README.md`；用户功能说明见 `docs/USER_GUIDE.md`，接口清单见 `docs/API.md`，配置字段清单见 `docs/CONFIG.md`，开发与提交流程见 `docs/DEVELOPMENT.md`、`docs/CONTRIBUTING.md`，安全要求见 `docs/SECURITY.md`，相对上游的差异见 `docs/SPECIAL_FEATURE.md`，多语言流程见 `docs/I18N.md`。
+本文件面向在本仓库工作的 AI 编码代理与协作者，说明项目定位、构建方式与必须遵守的约定。文档总索引见 `docs/README.md`；用户功能说明见 `docs/USER_GUIDE.md`，接口清单见 `docs/API.md`，配置字段清单见 `docs/CONFIG.md`，开发与提交流程见 `docs/DEVELOPMENT.md`、`docs/CONTRIBUTING.md`，安全要求见 `docs/SECURITY.md`，功能边界与实现约定见 `docs/SPECIAL_FEATURE.md`，多语言流程见 `docs/I18N.md`。
 
 ## 项目定位
 
-ANI-RSS-Yuri 是 ANI-RSS 的 Fork：通过 RSS 订阅番剧，统一匹配规则后调用 qBittorrent 下载，并提供 Vue WebUI 管理订阅、规则与通知。
+MintSoda 是独立演进的番剧订阅与下载服务：通过 RSS 订阅番剧，统一匹配规则后调用 qBittorrent 下载，并提供 Vue WebUI 管理订阅、规则与通知。
 
 - 运行平台：Linux 与 Windows（JAR；Windows 另有 EXE）。
 - 不维护 Docker、容器发布与 macOS 打包，不要重新引入。
-- 默认订阅与下载流程尽量与上游 ANI-RSS 保持一致；Fork 的差异集中在匹配规则、通知模板、qBittorrent 认证、外观设置与 Windows 便携配置。
+- 对外可见的标识、包名、Maven 坐标与目录统一使用 MintSoda / mint.soda / mint-soda，不再沿用历史名称；功能取舍集中在单一 qBittorrent 下载器、匹配规则、通知模板与外观设置。
 
 ## 技术栈与目录
 
 | 位置 | 说明 |
 | --- | --- |
 | `pom.xml` | Maven reactor，Java 25，Spring Boot 父工程 |
-| `ani-rss-application/` | 后端：`controller`、`service`、`task`、`download`、`notification`、`entity`、`util`、`config` |
-| `ani-rss-ui/` | 前端：Vue 3 + Vite + Element Plus，`src/view` 页面、`src/js` 工具与默认配置 |
+| `mint-soda-application/` | 后端：`controller`、`service`、`task`、`download`、`notification`、`entity`、`util`、`config` |
+| `mint-soda-ui/` | 前端：Vue 3 + Vite + Element Plus，`src/view` 页面、`src/js` 工具与默认配置 |
 | `linux/` | Linux 安装、控制、卸载脚本 |
-| `ani-rss-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖，不应引入宿主内部类 |
+| `mint-soda-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖，不应引入宿主内部类 |
 | `examples/plugins/` | 示例插件与市场索引，不参与正式构建 |
-| `docs/` | 文档索引、用户指南、API 参考、配置参考、开发指南、分支特性、贡献规范、安全说明、插件开发指南、多语言说明 |
+| `docs/` | 文档索引、用户指南、API 参考、配置参考、开发指南、功能与实现、贡献规范、安全说明、插件开发指南、多语言说明 |
 | `.github/workflows/` | 手动触发的构建检查与 Release 发布 |
 
-后端入口为 `ani-rss-application/src/main/java/ani/rss/AniRssApplication.java`；默认端口 17789，接口统一挂在 `/api` 前缀下。
+后端入口为 `mint-soda-application/src/main/java/mint/soda/MintSodaApplication.java`；默认端口 17789，接口统一挂在 `/api` 前缀下。
 
 ## 构建与运行
 
-依赖 Java 25。Maven 前端插件会把 Node.js 与 pnpm 安装到 `ani-rss-ui/node/`，依赖缓存写入 `ani-rss-ui/.tools/pnpm-store/`，两者均已被忽略，不需要系统级 Node 环境。
+依赖 Java 25。Maven 前端插件会把 Node.js 与 pnpm 安装到 `mint-soda-ui/node/`，依赖缓存写入 `mint-soda-ui/.tools/pnpm-store/`，两者均已被忽略，不需要系统级 Node 环境。
 
 ```bash
 # 只构建 JAR（含前端资源）
@@ -37,11 +37,11 @@ mvn -B package -DskipTests --file pom.xml
 bash ./package.sh
 ```
 
-- `package.sh` 使用 Maven `windows` profile，同时产出 `ani-rss-application/target/ani-rss-Yuri.jar` 与 `ani-rss-application/target/ani-rss-Yuri.exe`。
-- `linux/install-yuri.sh` 是一键安装入口（安装到当前目录并注册 systemd），`linux/assyuri` 是配套的交互菜单脚本；`linux/install-yuri-legacy.sh` 保留为安装到 `/opt/ani-rss-yuri` 的旧方式。
+- `package.sh` 使用 Maven `windows` profile，同时产出 `mint-soda-application/target/MintSoda.jar` 与 `mint-soda-application/target/MintSoda.exe`。
+- `linux/install.sh` 是一键安装入口（安装到当前目录并注册 systemd），`linux/mintsoda` 是配套的交互菜单脚本；`linux/install-legacy.sh` 保留为安装到 `/opt/mint-soda` 的旧方式。
 - Windows profile 的 `generate-resources` 阶段需要 `bash` 与 `curl`；CI 在 Ubuntu 上执行同一脚本。
-- 前端单独调试：在 `ani-rss-ui/` 下用 `pnpm install` 与 `pnpm dev`（可使用 Maven 下载到 `ani-rss-ui/node/` 的 pnpm），Vite 端口 37789，并将 `/api` 代理到本地后端。
-- 运行时可用的环境变量/参数：`CONFIG`/`--config=` 指定配置目录；`MCP_ENABLED`/`--mcp-enabled=` 与 `SWAGGER_ENABLED`/`--swagger-enabled=` 打开默认关闭的 MCP 与 Swagger；`--setup` 仅在尚未配置账号时强制在 WebUI 完成首次初始化（已配置时完全失效）；`ANI_RSS_USERNAME`/`ANI_RSS_PASSWORD` 覆盖登录凭据；`SERVER_PORT` 等 Spring 标准配置可覆盖端口（默认 17789）。
+- 前端单独调试：在 `mint-soda-ui/` 下用 `pnpm install` 与 `pnpm dev`（可使用 Maven 下载到 `mint-soda-ui/node/` 的 pnpm），Vite 端口 37789，并将 `/api` 代理到本地后端。
+- 运行时可用的环境变量/参数：`CONFIG`/`--config=` 指定配置目录；`MCP_ENABLED`/`--mcp-enabled=` 与 `SWAGGER_ENABLED`/`--swagger-enabled=` 打开默认关闭的 MCP 与 Swagger；`--setup` 仅在尚未配置账号时强制在 WebUI 完成首次初始化（已配置时完全失效）；`MINT_SODA_USERNAME`/`MINT_SODA_PASSWORD` 覆盖登录凭据；`SERVER_PORT` 等 Spring 标准配置可覆盖端口（默认 17789）。
 
 不要改动默认的 `SWAGGER_ENABLED=false`、`MCP_ENABLED=false`；需要调试时通过环境变量临时开启。
 
@@ -62,7 +62,7 @@ bash ./package.sh
 - `.vue` 模板与脚本缩进为 2 空格；`src/js/config.js` 等配置文件沿用 4 空格。
 - 请求统一走 `src/js/api.js` / `src/js/http.js`，不要在组件里直接拼 `fetch`。
 - 新增设置项时同步更新 `src/js/config.js` 的默认对象，否则 `setConfig` 会缺失字段。
-- 界面文案统一通过 `vue-i18n` 的 `$t` / `t` 获取，禁止在模板与脚本中硬编码中文；词条按 `zh-CN` 为源写入 `ani-rss-ui/src/i18n/locales/`，新增或修改流程见 `docs/I18N.md`。
+- 界面文案统一通过 `vue-i18n` 的 `$t` / `t` 获取，禁止在模板与脚本中硬编码中文；词条按 `zh-CN` 为源写入 `mint-soda-ui/src/i18n/locales/`，新增或修改流程见 `docs/I18N.md`。
 
 ## 配置变更清单
 
@@ -71,8 +71,8 @@ bash ./package.sh
 1. 实体：`entity/Config.java`（或对应实体）。
 2. 默认值：`config/DefaultConfigFactory.java`。
 3. 旧配置补齐与迁移：`util/other/ConfigUtil.java` 的 `format` 及相关迁移方法。
-4. 前端默认对象：`ani-rss-ui/src/js/config.js`。
-5. 设置界面：对应的 `ani-rss-ui/src/view/config/*.vue`。
+4. 前端默认对象：`mint-soda-ui/src/js/config.js`。
+5. 设置界面：对应的 `mint-soda-ui/src/view/config/*.vue`。
 6. 文档：`docs/USER_GUIDE.md` 与 `docs/CONFIG.md` 的字段表，必要时 `docs/DEVELOPMENT.md`。
 
 规则：
@@ -110,14 +110,14 @@ bash ./package.sh
 - 文件读写必须基于固定根目录：先 `normalize()`，再做 `startsWith(root)` 校验；上传只接受白名单扩展名并校验文件头（参考 `UploadController`、`FileController#uiAsset`）。
 - 保持更新包的 `size` + `sha256` 双重校验；WebUI 更新同样校验，不要跳过。
 - 默认安全开关不能被放松：`allowCors=false`、`innerIP` 默认关闭但启用时行为不得削弱、`limitLoginAttempts` 保持生效、密码/API Key 变更后必须轮换 `tokenId` 与 JWT 会话。
-- 不要恢复内置的 `admin/admin` 默认凭据：`LoginBootstrapUtil` 负责首次启动（Windows 引导设置、Linux 生成随机强密码只输出一次、`ANI_RSS_USERNAME`/`ANI_RSS_PASSWORD` 覆盖），凭据强度规则在 `commons/CredentialUtils`，前后端需保持一致。
+- 不要恢复内置的 `admin/admin` 默认凭据：`LoginBootstrapUtil` 负责首次启动（Windows 引导设置、Linux 生成随机强密码只输出一次、`MINT_SODA_USERNAME`/`MINT_SODA_PASSWORD` 覆盖），凭据强度规则在 `commons/CredentialUtils`，前后端需保持一致。
 - 主题相关设置（`accentColor`、`themeDynamicColor`、导航栏/弹窗的模糊度与不透明度）只用于 CSS 变量与强调色，不得写入任何主题样式文件或独立资源；预设仅写回已有配置字段。
-- 前端图标只在模板中以名称使用（`icon="Search"` 或无 import 的 `<Search/>`）时才需要加入 `ani-rss-ui/src/js/icons.js` 的全局注册表；显式 `import` 的图标不要重复注册，也不要恢复 `@element-plus/icons-vue` 的全量导入。
+- 前端图标只在模板中以名称使用（`icon="Search"` 或无 import 的 `<Search/>`）时才需要加入 `mint-soda-ui/src/js/icons.js` 的全局注册表；显式 `import` 的图标不要重复注册，也不要恢复 `@element-plus/icons-vue` 的全量导入。
 - 前端 `v-html` 只能用于可信内容；`AboutView` 渲染的 Release 说明来自 GitHub API，属于外部内容，改动渲染链路时要考虑净化。`/api/custom.js`、`/api/custom.css` 会注入页面，视为管理员可信输入。
 
 ## 插件系统
 
-- 唯一接口模块是 `ani-rss-plugin-api`；接口破坏性变更必须提升 `PluginApi.VERSION`，不得在插件 API 中引用 `ani.rss.application` 的内部类型。
+- 唯一接口模块是 `mint-soda-plugin-api`；接口破坏性变更必须提升 `PluginApi.VERSION`，不得在插件 API 中引用 `mint.soda.application` 的内部类型。
 - 插件运行时通过 `plugin/runtime/PluginSource` 抽象；新增语言只加一个 `PluginSource` 实现与 `PluginSources` 分支，不要改 `PluginManager` 的加载逻辑。
 - JavaScript 插件运行在 `ScriptSandbox`：必须保持 `ClassShutter` 全拒绝、`initSafeStandardObjects` 与调用超时，不得为兼容放开 Java 类访问；传给脚本的宿主数据必须先转成原生对象。
 - Lua 插件运行在 `LuaPlugin` 自建的安全 `Globals`：只装基础库，不装 `IoLib`/`OsLib`/`luajava`，并移除 `dofile`/`loadfile`/`require`/`package.loadlib`；新增库或加载入口前必须确认不引入文件与进程访问。
@@ -137,17 +137,17 @@ bash ./package.sh
 
 ## 不要做的事
 
-- 对外可见的标识统一使用 `ani-rss-Yuri`（产物名、User-Agent、日志、服务名、标签、备份与 ICS 名称），不要改回 `ani-rss`；涉及历史数据的过滤（如 qBittorrent 分类与标签）必须同时兼容旧值。
+- 对外可见的标识统一使用 `MintSoda`（产物名、User-Agent、日志、服务名、标签、备份与 ICS 名称），命名空间统一为 `mint.soda`，Maven 坐标为 `mint.soda:mint-soda-*`，不要改回任何历史名称。
 - 不要恢复已移除的功能：邮件/QQ/Server 酱/Bark 通知、Aria2/Transmission 下载器、qBittorrent 任务进度页、内置播放与刮削、OpenList 上传、AnimeGarden、Bangumi 点格子、摸鱼检测、trackers 更新、Docker、macOS。
 - 不要把下载器默认值或配置迁移方向改为 qBittorrent 之外的类型；`ConfigUtil.format` 会强制归一化为 qBittorrent。
 - 不要重新引入 `UPDATE.md` 依赖，Release 说明由 GitHub 自动生成。
-- 不要在关于页或文档中指向非本 Fork 的仓库与社群链接。
+- 不要在关于页或文档中指向非本仓库的仓库与社群链接。
 - 不要修改构建工具版本（Java 25、Node v26.12.1、pnpm 12.15.0）而不验证 JAR 与 EXE 同时可用。
 - 不要提交本地工具目录、忽略文件或本机环境相关内容。
 
 ## 测试
 
-- 现有测试仅 `ani-rss-application/src/test/java/ani/rss/AniRssApplicationTests.java`，会访问 Bangumi 接口，依赖网络。
+- 现有测试仅 `mint-soda-application/src/test/java/mint/soda/MintSodaApplicationTests.java`，会访问 Bangumi 接口，依赖网络。
 - 用户未要求测试时，不要主动新增或运行测试；需要验证时优先选择配置迁移、模板渲染、匹配优先级这类可离线覆盖的点。
 - 提交前至少保证 `mvn -B package -DskipTests` 通过；改动了工作流则同时做 YAML 校验。
 

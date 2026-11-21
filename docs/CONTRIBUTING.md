@@ -1,6 +1,6 @@
 # 贡献指南
 
-本文说明 ANI-RSS-Yuri 的开发、评审与发布约定。功能说明见 [用户指南](USER_GUIDE.md)，目录与构建细节见 [开发指南](DEVELOPMENT.md)，接口约定见 [API 参考](API.md)，安全要求见 [安全说明](SECURITY.md)。全部文档见 [文档导航](README.md)。
+本文说明 MintSoda 的开发、评审与发布约定。功能说明见 [用户指南](USER_GUIDE.md)，目录与构建细节见 [开发指南](DEVELOPMENT.md)，接口约定见 [API 参考](API.md)，安全要求见 [安全说明](SECURITY.md)。全部文档见 [文档导航](README.md)。
 
 ## 本文目录
 
@@ -18,7 +18,7 @@
 
 - 提交前先确认问题能在最新发布版本复现，并使用 Issue 模板说明运行平台（Linux / Windows）、程序版本和日志。
 - 功能改动先描述使用场景与行为，再实现；涉及配置格式或匹配语义的改动需要在说明中写清兼容策略。
-- 本项目是 Fork，未特别说明时保持与上游一致的订阅与下载行为，差异集中在 Fork 自有功能上。
+- 订阅与下载行为以本仓库现有实现为准，调整前先确认 `MatchRuleUtil` 与下载链路的既有约定。
 
 ## 分支与提交
 
@@ -30,7 +30,7 @@
   - 示例：`feat(match): 支持全局反匹配规则`、`fix(config): 保留旧的分钟字段`、`docs(plugin): 补充 Lua 与权限说明`。
 - 摘要不超过约 72 个字符（按显示宽度计），句末不加句号；正文同样使用中文，说明动机、兼容影响与验证方式。
 - 一次提交只解决一件事；功能改动与配置迁移、格式化、依赖升级分开提交。
-- 不要提交 `.tools/`、`ani-rss-ui/node/`、`ani-rss-ui/.tools/`、`target/`、`dist/`、`node_modules/`、配置目录、日志、备份或本机交接文件。
+- 不要提交 `.tools/`、`mint-soda-ui/node/`、`mint-soda-ui/.tools/`、`target/`、`dist/`、`node_modules/`、配置目录、日志、备份或本机交接文件。
 
 ## 代码风格
 
@@ -45,11 +45,11 @@
 
 配置以 JSON 持久化（默认 `config.v2.json`），升级用户可能保留任意旧版本文件。新增或修改配置字段时必须同时处理：
 
-1. 实体：`ani-rss-application/.../entity/Config.java`（或对应实体）。
+1. 实体：`mint-soda-application/.../entity/Config.java`（或对应实体）。
 2. 默认值：`config/DefaultConfigFactory.java`。
 3. 旧配置补齐与迁移：`util/other/ConfigUtil.java` 的 `format` 及相关方法。
-4. 前端默认对象：`ani-rss-ui/src/js/config.js`。
-5. 设置界面：`ani-rss-ui/src/view/config/` 下对应视图。
+4. 前端默认对象：`mint-soda-ui/src/js/config.js`。
+5. 设置界面：`mint-soda-ui/src/view/config/` 下对应视图。
 6. 文档：`docs/USER_GUIDE.md`，必要时同步 `docs/DEVELOPMENT.md`。
 
 约束：
@@ -76,7 +76,7 @@ bash ./package.sh                            # JAR + Windows EXE
 
 - 环境要求 Java 25；前端工具链由 Maven 插件下载到忽略目录，无需系统安装 Node。
 - Windows profile 的 `generate-resources` 阶段需要 `bash` 与 `curl`。
-- 现有自动化测试仅 `AniRssApplicationTests`，且会访问外部接口；除非任务要求，不要为小改动新增测试。
+- 现有自动化测试仅 `MintSodaApplicationTests`，且会访问外部接口；除非任务要求，不要为小改动新增测试。
 - 改动工作流后，用 YAML 校验工具检查 `.github/workflows/*.yml`。
 - 交付前至少确认：项目可打包、旧配置可加载、下载与预览判定一致、日志无敏感信息、文档已同步。
 
@@ -96,7 +96,7 @@ bash ./package.sh                            # JAR + Windows EXE
 1. 更新版本号：`./new_version.sh <x.y.z>`（同步 reactor 与子模块版本）。
 2. 确认 `README.md`、`docs/USER_GUIDE.md`、`docs/API.md` 的行为描述与当前实现一致。
 3. 触发 `build-test` 工作流验证打包，再触发 `build` 工作流生成 Release。
-4. Release 附加 `ani-rss-Yuri.jar` 与 `ani-rss-Yuri.exe`，说明由 GitHub 自动生成；仓库中不维护独立的更新说明文件。
+4. Release 附加 `MintSoda.jar` 与 `MintSoda.exe`，说明由 GitHub 自动生成；仓库中不维护独立的更新说明文件。
 5. 旧 Release 由 `delete-old-releases` 工作流手动清理，保留策略在脚本中定义。
 
 ## 安全问题

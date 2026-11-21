@@ -1,4 +1,4 @@
-# ANI-RSS-Yuri 开发指南
+# MintSoda 开发指南
 
 本指南面向在本仓库提交代码的开发者，说明模块划分、构建调试、代码约定与发布流程。CI、插件、接口与多语言各有独立文档，见文末链接。
 
@@ -22,9 +22,9 @@
 
 ## 目录
 
-- `ani-rss-application/`：Java 应用、服务、任务、接口和打包配置。
-- `ani-rss-ui/`：Vue 页面和前端资源。
-- `ani-rss-plugin-api/`：稳定的插件接口模块，插件以 `provided` 依赖。
+- `mint-soda-application/`：Java 应用、服务、任务、接口和打包配置。
+- `mint-soda-ui/`：Vue 页面和前端资源。
+- `mint-soda-plugin-api/`：稳定的插件接口模块，插件以 `provided` 依赖。
 - `examples/plugins/`：示例插件与市场索引，不参与正式构建。
 - `linux/`：Linux JAR 的 systemd 安装、控制与卸载脚本。
 - `.github/workflows/`：构建检查、Release 发布与旧版本清理。
@@ -64,7 +64,7 @@
 前端可以脱离 Maven 单独调试：
 
 ```bash
-cd ani-rss-ui
+cd mint-soda-ui
 ./node/pnpm.cmd install     # Windows；Linux 使用 ./node/pnpm
 ./node/pnpm.cmd dev         # Vite 端口 37789，/api 代理到 127.0.0.1:17789
 ```
@@ -79,12 +79,12 @@ cd ani-rss-ui
 | `--setup` | 尚未配置账号时强制进入 WebUI 初始化，已配置时无效 |
 | `SWAGGER_ENABLED=true` | 临时开启 Swagger，默认关闭 |
 | `MCP_ENABLED=true` | 临时开启 MCP 端点，默认关闭 |
-| `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` | 覆盖登录凭据，每次启动生效 |
+| `MINT_SODA_USERNAME` / `MINT_SODA_PASSWORD` | 覆盖登录凭据，每次启动生效 |
 | `SERVER_PORT` | 覆盖端口，默认 `17789` |
 
 ### 构建
 
-需要 Java 25。Maven 前端插件会把 Node.js 和 pnpm 下载到 `ani-rss-ui/node/`，pnpm 依赖缓存写入 `ani-rss-ui/.tools/pnpm-store/`；两处都由 `.gitignore` 排除，不需要安装到系统目录。前端依赖使用 `pnpm-lock.yaml` 锁定。
+需要 Java 25。Maven 前端插件会把 Node.js 和 pnpm 下载到 `mint-soda-ui/node/`，pnpm 依赖缓存写入 `mint-soda-ui/.tools/pnpm-store/`；两处都由 `.gitignore` 排除，不需要安装到系统目录。前端依赖使用 `pnpm-lock.yaml` 锁定。
 
 只构建 JAR：
 
@@ -100,12 +100,12 @@ bash ./package.sh
 
 `package.sh` 使用 Maven `windows` profile 生成 EXE，并保留 JAR。CI 的 `build-test.yml` 执行相同打包脚本；`build.yml` 将 JAR 与 EXE 附加到 GitHub Release，不发布容器镜像。
 
-Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向安装目录。手动运行时可通过 `CONFIG=/path/to/config java -jar ani-rss-Yuri.jar` 指定配置目录。
+Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向安装目录。手动运行时可通过 `CONFIG=/path/to/config java -jar MintSoda.jar` 指定配置目录。
 
 ## 代码约定
 
 - Java 使用现有包结构和 Lombok 实体风格；前端使用 Vue 3 `<script setup>` 与现有组件样式。
-- 界面文案统一通过 `ani-rss-ui/src/i18n/` 的 `$t` / `t` 获取，新增文案需同步 `locales` 下三种语言；流程见[多语言与翻译贡献](I18N.md)。
+- 界面文案统一通过 `mint-soda-ui/src/i18n/` 的 `$t` / `t` 获取，新增文案需同步 `locales` 下三种语言；流程见[多语言与翻译贡献](I18N.md)。
 - 配置字段需覆盖六处：实体类、后端默认值、旧配置补齐与迁移、前端默认对象、对应设置界面、用户指南；清单见 [配置变更清单](#配置变更清单)。
 - 一轮 RSS 刷新用 `AniUtil.beginDeferredSync` / `endDeferredSync` 包裹，期间 `AniUtil.sync` 只标记待保存，结束时写一次 `ani.v2.json`；新增的刷新入口要保持同样包裹，否则会退化为逐条写盘。
 - 复用通知模板使用 `id / name / type / content` 字段；`type` 为 `TEXT` 或 `JSON`。更改持久化格式时，保留旧字段读取能力并在 `ConfigUtil.format` 中迁移已有配置。
@@ -117,7 +117,7 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 - 短间隔轮询依赖单轮缓存：`ItemsUtil#beginRssBatch`/`endRssBatch`、`TorrentUtil#beginPass`/`endPass`、`DownloadService#beginPass`/`endPass` 分别缓存 RSS 响应、下载器任务列表和本地目录列表。新增轮次入口时要成对调用，避免使用过期数据。
 - 下载路径计算较重，单轮内会按订阅字段做记忆化；修改路径模板相关字段时同步检查缓存键。
 - 修改配置语义时更新用户指南；修改发布流程时同步检查 workflow、安装脚本、README 和更新说明。
-- 保持上游配置字段兼容。已有 JSON 中缺少新字段时应采用安全默认值，不要求用户手工重建配置。
+- 保持配置字段向后兼容。已有 JSON 中缺少新字段时应采用安全默认值，不要求用户手工重建配置。
 - 提交遵循 Conventional Commits，例如 `feat(match): add global reverse rules`、`docs: document fork-specific behavior`、`build: remove container publishing`。
 
 ## 配置变更清单
@@ -127,8 +127,8 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 1. 实体：`entity/Config.java`（或对应实体）。
 2. 默认值：`config/DefaultConfigFactory.java`。
 3. 旧配置补齐与迁移：`util/other/ConfigUtil.java` 的 `format` 及相关方法。
-4. 前端默认对象：`ani-rss-ui/src/js/config.js`。
-5. 设置界面：`ani-rss-ui/src/view/config/*.vue`。
+4. 前端默认对象：`mint-soda-ui/src/js/config.js`。
+5. 设置界面：`mint-soda-ui/src/view/config/*.vue`。
 6. 文档：`docs/USER_GUIDE.md` 与 `docs/CONFIG.md` 的字段表，必要时同步本文件与 `docs/SPECIAL_FEATURE.md`。
 
 规则：
@@ -140,7 +140,7 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 
 ## 测试与自检
 
-- 现有自动化测试只有 `ani-rss-application/src/test/java/ani/rss/AniRssApplicationTests.java`，会访问 Bangumi 接口，依赖网络。
+- 现有自动化测试只有 `mint-soda-application/src/test/java/mint/soda/MintSodaApplicationTests.java`，会访问 Bangumi 接口，依赖网络。
 - 用户未要求测试时不要主动新增测试；需要验证时优先选择可离线覆盖的点：配置迁移、模板渲染、匹配优先级、插件权限解析。
 - 提交前至少运行 `mvn -B package -DskipTests --file pom.xml`；改动了前端则先执行一次 `pnpm build`。改动工作流时用 YAML 校验工具检查 `.github/workflows/*.yml`。
 
@@ -151,7 +151,7 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 ## CI 与发布
 
 - `build-test.yml`：手动触发，运行 Java 25 Maven 打包并生成 Linux 可构建的 JAR 与 Windows EXE。
-- `build.yml`：手动触发，构建后创建 GitHub Release，发布 `ani-rss-Yuri.jar` 和 `ani-rss-Yuri.exe`。
+- `build.yml`：手动触发，构建后创建 GitHub Release，发布 `MintSoda.jar` 和 `MintSoda.exe`。
 - 变更 Maven profile 或构建工具版本时，确认 JAR 与 EXE 都仍包含前端资源；不要恢复 Docker 镜像或 macOS 打包步骤。
 - 工作流权限按实际操作设置最小范围：构建检查只需读取仓库，发布流程需要 `contents: write`。
 - `delete-old-releases.yml`：手动触发，按脚本中的保留策略清理旧 Release。

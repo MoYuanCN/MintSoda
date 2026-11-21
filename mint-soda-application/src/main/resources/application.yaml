@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: MintSoda
+  ai:
+    mcp:
+      server:
+        enabled: ${MCP_ENABLED:false}
+        protocol: streamable
+        streamable-http:
+          mcp-endpoint: /api/mcp
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  servlet:
+    multipart:
+      max-request-size: 200MB
+      max-file-size: 200MB
+      enabled: true
+  jmx:
+    enabled: false
+  web:
+    resources:
+      # 前端资源带内容哈希，可长期缓存；入口文件按约定不缓存。
+      chain:
+        cache: true
+        compressed: true
+server:
+  port: 17789
+  address: 0.0.0.0
+  tomcat:
+    threads:
+      max: 100
+      min-spare: 5
+  # 前端资源为文本类，开启 gzip 后首屏传输量明显下降。
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,application/javascript,application/json,image/svg+xml
+    min-response-size: 1024
+
+springdoc:
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  default-produces-media-type: application/json

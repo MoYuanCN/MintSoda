@@ -141,6 +141,7 @@
 | --- | --- | --- | --- |
 | `notificationConfigList` | `List<NotificationConfig>` | `[]` | 通知配置列表 |
 | `notificationTemplateList` | `List<NotificationTemplate>` | 内置“默认文本”“默认 JSON” | 共享通知模板，字段为 `id / name / type / content` |
+| `notificationStatusStyles` | `Map<String, NotificationStatusStyle>` | 五种状态的默认表情、名称与事件模板 | 通知状态样式，键为 `DOWNLOAD_START`、`DOWNLOAD_END`、`OMIT`、`ERROR`、`COMPLETED`；字段为 `emoji / label / template` |
 | `notificationTemplate` | `String` | 空 | 旧版消息模板，仅用于迁移 |
 
 ### 认证与安全
@@ -293,8 +294,8 @@
 1. `entity/Config.java` 增加字段与 `@Schema` 说明。
 2. `config/DefaultConfigFactory.java` 给出默认值。
 3. `util/other/ConfigUtil.java#format` 补齐旧配置并做范围校正。
-4. `ani-rss-ui/src/js/config.js` 同步默认对象。
-5. 在对应 `ani-rss-ui/src/view/config/*.vue` 增加控件与词条。
+4. `mint-soda-ui/src/js/config.js` 同步默认对象。
+5. 在对应 `mint-soda-ui/src/view/config/*.vue` 增加控件与词条。
 6. 更新本文档与[使用指南](USER_GUIDE.md)。
 
 密码类字段保持“前端传空表示不修改”的语义；`format` 只补默认值与迁移，不丢弃已有数据。

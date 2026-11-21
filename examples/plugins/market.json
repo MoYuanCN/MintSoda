@@ -1,5 +1,5 @@
 {
-  "name": "ANI-RSS-Yuri 插件市场示例",
+  "name": "MintSoda 插件市场示例",
   "updatedAt": "2026-01-01",
   "plugins": [
     {
@@ -7,12 +7,12 @@
       "name": "示例插件",
       "version": "1.0.0",
       "description": "演示通知渠道、订阅过滤、条目改写、界面页面、周期任务与设置区块。",
-      "author": "ANI-RSS-Yuri",
+      "author": "MintSoda",
       "homepage": "",
       "downloadUrl": "https://example.com/plugins/hello-plugin-1.0.0.jar",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 12345,
-      "apiVersion": 3,
+      "apiVersion": 4,
       "permissions": [
         "notification",
         "item-filter",
@@ -37,12 +37,12 @@
       "name": "JavaScript 示例插件",
       "version": "1.0.0",
       "description": "演示用 JavaScript 编写通知渠道、订阅过滤、条目改写、界面页面、模板变量、下载拦截、周期任务与自定义接口。",
-      "author": "ANI-RSS-Yuri",
+      "author": "MintSoda",
       "homepage": "",
       "downloadUrl": "https://example.com/plugins/js-demo-plugin-1.0.0.zip",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 4096,
-      "apiVersion": 3,
+      "apiVersion": 4,
       "permissions": [
         "notification",
         "item-filter",
@@ -67,12 +67,12 @@
       "name": "Lua 示例插件",
       "version": "1.0.0",
       "description": "演示用 Lua 编写通知渠道、订阅过滤、条目改写、界面页面、模板变量、下载拦截、周期任务与自定义接口。",
-      "author": "ANI-RSS-Yuri",
+      "author": "MintSoda",
       "homepage": "",
       "downloadUrl": "https://example.com/plugins/lua-demo-plugin-1.0.0.zip",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 3072,
-      "apiVersion": 3,
+      "apiVersion": 4,
       "permissions": [
         "notification",
         "item-filter",

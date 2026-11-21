@@ -127,6 +127,10 @@ function onEnable() {
         blocks: [
             {type: 'TEXT', title: '说明', text: '表格数据来自 records 接口。'},
             {
+                type: 'STATS', title: '概览',
+                stats: [{label: '示例指标', value: '42', hint: '静态值'}, {label: '记录数', value: '0'}]
+            },
+            {
                 type: 'TABLE', title: '记录', source: 'records',
                 columns: [{key: 'time', label: '时间'}, {key: 'title', label: '内容'}]
             },

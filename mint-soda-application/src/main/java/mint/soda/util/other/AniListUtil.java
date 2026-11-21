@@ -1,0 +1,48 @@
+package mint.soda.util.other;
+
+import mint.soda.commons.GsonStatic;
+import mint.soda.util.basic.HttpReq;
+import cn.hutool.core.text.StrFormatter;
+import cn.hutool.core.util.StrUtil;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+public class AniListUtil {
+    /**
+     * 获取罗马音
+     *
+     * @param title 标题
+     * @return 罗马音
+     */
+    public static String getRomaji(String title) {
+        if (StrUtil.isBlank(title)) {
+            return "";
+        }
+
+        String body = StrFormatter.format("""
+                {
+                    "query": "query ($search: String) { Page (page: 1, perPage: 1) { media (search: $search, type: ANIME) { title { romaji native } } } }",
+                    "variables": {
+                        "search": "{}"
+                    }
+                }
+                """, title);
+
+        return HttpReq.post("https://graphql.anilist.co", body)
+                .timeout(5000)
+                .thenFunction(res -> {
+                    HttpReq.assertStatus(res);
+                    JsonObject jsonObject = GsonStatic.fromJson(res.body(), JsonObject.class);
+                    JsonArray media = jsonObject.getAsJsonObject("data")
+                            .getAsJsonObject("Page")
+                            .getAsJsonArray("media");
+                    if (media.isEmpty()) {
+                        return "";
+                    }
+                    return media.get(0)
+                            .getAsJsonObject()
+                            .getAsJsonObject("title")
+                            .get("romaji").getAsString();
+                });
+    }
+}

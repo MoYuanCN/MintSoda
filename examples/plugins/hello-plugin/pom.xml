@@ -6,13 +6,13 @@
 
     <!-- 示例插件独立构建；父工程指向本仓库根 pom，以便解析接口模块。 -->
     <parent>
-        <groupId>ani.rss</groupId>
-        <artifactId>ani-rss</artifactId>
+        <groupId>mint.soda</groupId>
+        <artifactId>mint-soda</artifactId>
         <version>3.3.0</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
-    <groupId>ani.rss.plugin.example</groupId>
+    <groupId>mint.soda.plugin.example</groupId>
     <artifactId>hello-plugin</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
@@ -25,8 +25,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>ani.rss</groupId>
-            <artifactId>ani-rss-plugin-api</artifactId>
+            <groupId>mint.soda</groupId>
+            <artifactId>mint-soda-plugin-api</artifactId>
             <version>3.3.0</version>
             <scope>provided</scope>
         </dependency>

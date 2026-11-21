@@ -1,0 +1,655 @@
+package mint.soda.util.other;
+
+import mint.soda.cache.CacheUtils;
+import mint.soda.commons.GsonStatic;
+import mint.soda.entity.*;
+import mint.soda.entity.web.ContentType;
+import mint.soda.entity.web.Header;
+import mint.soda.enums.OffsetTypeEnum;
+import mint.soda.service.DownloadService;
+import mint.soda.service.MikanService;
+import mint.soda.util.basic.HttpReq;
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.Opt;
+import cn.hutool.core.net.url.UrlBuilder;
+import cn.hutool.core.text.StrFormatter;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.*;
+import cn.hutool.extra.spring.SpringUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.json.JSONUtil;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import lombok.extern.slf4j.Slf4j;
+import wushuo.tmdb.api.entity.Tmdb;
+
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+
+/**
+ * BGM
+ */
+@Slf4j
+public class BgmUtil {
+    private static final Config CONFIG = ConfigUtil.CONFIG;
+
+    /**
+     * 获取bgm名称
+     *
+     * @param bgmInfo bgm信息
+     * @return 名称
+     */
+    public static String getFinalName(BgmInfo bgmInfo) {
+        Boolean bgmJpName = CONFIG.getBgmJpName();
+
+        String name = bgmInfo.getName();
+        String nameCn = bgmInfo.getNameCn();
+        String title = StrUtil.blankToDefault(nameCn, name);
+
+        if (bgmJpName) {
+            title = name;
+        }
+
+        if (StrUtil.isBlank(title)) {
+            title = "无标题";
+        }
+
+        return title.trim();
+    }
+
+    /**
+     * 获取bgm名称
+     *
+     * @param bgmInfo bgm信息
+     * @param tmdb    tmdb信息
+     * @return 名称
+     */
+    public static String getFinalName(BgmInfo bgmInfo, Tmdb tmdb) {
+        Boolean titleYear = CONFIG.getTitleYear();
+
+        String title = getFinalName(bgmInfo);
+
+        Date date = bgmInfo.getDate();
+
+        if (titleYear) {
+            title = StrFormatter.format("{} ({})", title, DateUtil.year(date));
+        }
+
+        return TmdbUtils.getFinalName(title, tmdb);
+    }
+
+    /**
+     * 搜索番剧
+     *
+     * @param name 名称
+     * @return 番剧列表
+     */
+    public static List<BgmInfo> search(String name) {
+        if (StrUtil.isBlank(name)) {
+            return new ArrayList<>();
+        }
+
+        name = name.replace("1/2", "½");
+
+        String bgmApi = CONFIG.getBgmApi();
+
+        String url = UrlBuilder.of(bgmApi + "/search/subject/" + name)
+                .addQuery("type", 2)
+                .addQuery("max_results", 25)
+                .addQuery("responseGroup", "small")
+                .toString();
+
+        HttpRequest httpRequest = HttpReq.get(url);
+
+        return setToken(httpRequest)
+                .thenFunction(res -> {
+                    if (!res.isOk()) {
+                        return new ArrayList<>();
+                    }
+                    String body = res.body();
+                    if (!JSONUtil.isTypeJSON(body)) {
+                        return new ArrayList<>();
+                    }
+
+                    JsonObject jsonObject = GsonStatic.fromJson(body, JsonObject.class);
+                    JsonElement code = jsonObject.get("code");
+                    if (Objects.nonNull(code)) {
+                        if (code.getAsInt() == 404) {
+                            return new ArrayList<>();
+                        }
+                    }
+                    JsonArray list = jsonObject.getAsJsonArray("list");
+                    List<BgmInfo> bgmInfos = GsonStatic.fromJsonList(list, BgmInfo.class);
+                    for (BgmInfo bgmInfo : bgmInfos) {
+                        Integer season = getSeasonByBgmInfo(bgmInfo);
+                        bgmInfo.setSeason(season);
+                    }
+                    return bgmInfos;
+                });
+    }
+
+    /**
+     * 查找番剧id
+     *
+     * @param bgmName 名称
+     * @param s       季度
+     * @return 番剧id
+     */
+    public static String getSubjectId(String bgmName, Integer s) {
+        if (StrUtil.isBlank(bgmName)) {
+            return "";
+        }
+
+        List<BgmInfo> list = search(bgmName);
+
+        // 仅保留季数一致
+        list = list.stream()
+                .filter(bgmInfo -> bgmInfo.getSeason() == s.intValue())
+                .toList();
+
+        if (list.isEmpty()) {
+            return "";
+        }
+
+        String id = "";
+        // 优先使用名称与季完全匹配的
+        for (BgmInfo bgmInfo : list) {
+            String name = bgmInfo.getName();
+            String nameCn = bgmInfo.getNameCn();
+
+            if (List.of(name, nameCn).contains(bgmName)) {
+                id = bgmInfo.getId();
+                break;
+            }
+        }
+        // 次之使用第一个
+        if (StrUtil.isBlank(id)) {
+            id = list.getFirst().getId();
+        }
+        ThreadUtil.sleep(1000);
+        return id;
+    }
+
+    /**
+     * 获取番剧id
+     *
+     * @param ani 订阅
+     * @return 番剧id
+     */
+    public static String getSubjectId(Ani ani) {
+        String bgmUrl = ani.getBgmUrl();
+        if (StrUtil.isBlank(bgmUrl) && "mikan".equals(ani.getType())) {
+            String bangumiId = AniUtil.getBangumiId(ani);
+            Assert.notBlank(bangumiId, "无法取得 bangumiId, {}", ani.getTitle());
+            MikanService.getMikanInfo(ani, "");
+            bgmUrl = ani.getUrl();
+        }
+        return getSubjectId(bgmUrl);
+    }
+
+    /**
+     * 获取番剧id
+     *
+     * @param bgmUrl bangmui链接
+     * @return 番剧id
+     */
+    public static String getSubjectId(String bgmUrl) {
+        Assert.notBlank(bgmUrl, "bgmUrl 不能为空");
+        String regStr = "^http(s)?://.+\\/(\\d+)(\\/)?$";
+        Assert.isTrue(ReUtil.contains(regStr, bgmUrl));
+        return ReUtil.get(regStr, bgmUrl, 2);
+    }
+
+    /**
+     * 获取视频列表
+     *
+     * @param subjectId 番剧id
+     * @param type      0正常 1番外
+     * @return 视频列表
+     */
+    public static List<BgmEpisodes.BgmEpisode> getEpisodes(String subjectId, Integer type) {
+        ThreadUtil.sleep(500);
+        Objects.requireNonNull(subjectId);
+        String bgmApi = CONFIG.getBgmApi();
+        HttpRequest httpRequest = HttpReq.get(bgmApi + "/v0/episodes");
+        setToken(httpRequest);
+
+        return httpRequest
+                .form("subject_id", subjectId)
+                .form("type", 0)
+                .form("limit", 1000)
+                .form("offset", 0)
+                .thenFunction(res -> {
+                    if (!res.isOk()) {
+                        return List.of();
+                    }
+
+                    String body = res.body();
+                    if (!JSONUtil.isTypeJSON(body)) {
+                        return List.of();
+                    }
+
+                    return GsonStatic.fromJson(body, BgmEpisodes.class)
+                            .getData()
+                            .stream()
+                            .filter(bgmEpisode -> {
+                                if (Objects.nonNull(type)) {
+                                    return type.intValue() == bgmEpisode.getType();
+                                }
+                                return true;
+                            })
+                            .toList();
+                });
+    }
+
+    /**
+     * 当前账号信息。账号与 Token 逻辑见 {@link BgmAuth}。
+     */
+    public static BgmMe me() {
+        return BgmAuth.me();
+    }
+
+    /**
+     * 获取用户名
+     *
+     * @return 用户名
+     */
+    public static String username() {
+        return BgmAuth.username();
+    }
+
+    /**
+     * 获取对应的bgm信息
+     *
+     * @param ani     订阅
+     * @param isCache 是否使用缓存
+     * @return bgm信息
+     */
+    public static BgmInfo getBgmInfo(Ani ani, Boolean isCache) {
+        String subjectId = getSubjectId(ani);
+        Assert.notBlank(subjectId, "无法取得 subjectId, {}", ani.getTitle());
+        return getBgmInfo(subjectId, isCache);
+    }
+
+    /**
+     * 获取对应的bgm信息
+     *
+     * @param ani 订阅
+     * @return bgm信息
+     */
+    public static BgmInfo getBgmInfo(Ani ani) {
+        String subjectId = getSubjectId(ani);
+        return getBgmInfo(subjectId);
+    }
+
+    /**
+     * 获取对应的bgm信息
+     *
+     * @param subjectId 番剧id
+     * @return bgm信息
+     */
+    public static BgmInfo getBgmInfo(String subjectId) {
+        return getBgmInfo(subjectId, false);
+    }
+
+    /**
+     * 获取对应的bgm信息
+     *
+     * @param subjectId 番剧id
+     * @param isCache   是否使用缓存
+     * @return bgm信息
+     */
+    public static BgmInfo getBgmInfo(String subjectId, Boolean isCache) {
+        String bgmApi = CONFIG.getBgmApi();
+
+        Function<HttpResponse, BgmInfo> fun = res -> {
+            HttpReq.assertStatus(res);
+            String body = res.body();
+            Assert.isTrue(JSONUtil.isTypeJSON(body), "no json");
+            BgmInfo bgmInfo = GsonStatic.fromJson(body, BgmInfo.class);
+
+            String name = bgmInfo.getName();
+            String nameCn = bgmInfo.getNameCn();
+
+            name = RenameUtil.getName(name);
+            nameCn = RenameUtil.getName(nameCn);
+
+            int season = getSeasonByBgmInfo(bgmInfo);
+
+            Date date = bgmInfo.getDate();
+            date = ObjectUtil.defaultIfNull(date, new Date());
+
+            return bgmInfo
+                    .setName(name)
+                    .setNameCn(nameCn)
+                    .setSeason(season)
+                    .setDate(date);
+        };
+
+        if (!isCache) {
+            // 不使用缓存
+            HttpRequest httpRequest = HttpReq.get(bgmApi + "/v0/subjects/" + subjectId);
+            return setToken(httpRequest).thenFunction(fun);
+        }
+
+        AtomicReference<BgmInfo> bgmInfoAR = new AtomicReference<>();
+        AtomicReference<BgmInfo> bgmInfoCacheAR = new AtomicReference<>();
+
+        // 并行获取bgm信息
+        CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> {
+                    // 不使用缓存
+                    HttpRequest httpRequest = HttpReq.get(bgmApi + "/v0/subjects/" + subjectId);
+                    try {
+                        BgmInfo bgmInfo = setToken(httpRequest)
+                                .thenFunction(fun);
+                        bgmInfoAR.set(bgmInfo);
+                    } catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                    }
+                }),
+                CompletableFuture.runAsync(() -> {
+                    HttpRequest httpRequest = HttpReq
+                            .get("https://cache.wushuo.top/bgm/subjects/" + subjectId);
+                    try {
+                        BgmInfo bgmInfo = httpRequest
+                                .thenFunction(fun);
+                        bgmInfoCacheAR.set(bgmInfo);
+                    } catch (Exception ignored) {
+                    }
+                })
+        ).join();
+
+        BgmInfo bgmInfo = bgmInfoAR.get();
+
+        bgmInfo = ObjectUtil.defaultIfNull(bgmInfo, bgmInfoCacheAR.get());
+
+        Assert.notNull(bgmInfo, "获取 bgmInfo 失败!");
+
+        return bgmInfo;
+    }
+
+    public static Integer getSeasonByBgmInfo(BgmInfo bgmInfo) {
+        String name = bgmInfo.getName();
+        String nameCn = bgmInfo.getNameCn();
+        List<BgmInfo.Tag> tags = bgmInfo.getTags();
+        tags = ObjectUtil.defaultIfNull(tags, new ArrayList<>());
+        List<JsonObject> infobox = bgmInfo.getInfobox();
+        infobox = ObjectUtil.defaultIfNull(infobox, new ArrayList<>());
+
+        // 从标签获取季
+        for (BgmInfo.Tag tag : tags) {
+            String tagName = tag.getName();
+            int season = getSeasonByName(tagName);
+            if (season > 1) {
+                return season;
+            }
+        }
+
+        // 从中文标题获取季
+        if (StrUtil.isNotBlank(nameCn)) {
+            int season = getSeasonByName(nameCn);
+            if (season > 1) {
+                return season;
+            }
+        }
+
+        // 从原标题获取季
+        if (StrUtil.isNotBlank(name)) {
+            int season = getSeasonByName(name);
+            if (season > 1) {
+                return season;
+            }
+        }
+
+        // 从别名获取
+        for (JsonObject jsonObject : infobox) {
+            String key = jsonObject.get("key").getAsString();
+            if (!key.equals("别名")) {
+                continue;
+            }
+            JsonArray value = jsonObject.getAsJsonArray("value");
+            for (JsonElement jsonElement : value.asList()) {
+                JsonObject item = jsonElement.getAsJsonObject();
+                String v = item.get("v").getAsString();
+                int season = getSeasonByName(v);
+                if (season > 1) {
+                    return season;
+                }
+            }
+        }
+
+        // 都未匹配到 返回季度1
+        return 1;
+    }
+
+    public static Integer getSeasonByName(String name) {
+        int season = 1;
+
+        List<String> regexList = List.of(
+                // 第一季 第一期
+                "第 ?([一二三四五六七八九十百千]+) ?[季期]",
+                // Season 1
+                "[Ss]eason ?(\\d+)",
+                // 1st Season
+                "(\\d+)(st|nd|rd|th) ?[Ss]eason",
+                // S1 S01
+                "[Ss](\\d+)$"
+        );
+
+        for (String regex : regexList) {
+            if (!ReUtil.contains(regex, name)) {
+                continue;
+            }
+
+            try {
+                String s = ReUtil.get(regex, name, 1);
+                if (NumberUtil.isInteger(s)) {
+                    season = Integer.parseInt(s);
+                } else {
+                    season = Convert.chineseToNumber(s);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return season;
+    }
+
+    /**
+     * 设置token
+     *
+     * @param httpRequest HttpRequest
+     * @return HttpRequest
+     */
+    public static HttpRequest setToken(HttpRequest httpRequest) {
+        return BgmAuth.setToken(httpRequest);
+    }
+
+    /**
+     * 获取剩余过期时间 单位: 天
+     *
+     * @return 天数
+     */
+    public static Integer getExpiresDays() {
+        return BgmAuth.getExpiresDays();
+    }
+
+    /**
+     * 刷新token
+     */
+    public static void refreshToken() {
+        BgmAuth.refreshToken();
+    }
+
+    /**
+     * 获取每集的标题
+     *
+     * @param ani 订阅
+     * @return 每集标题
+     */
+    public static Map<Integer, BgmEpisodes.BgmEpisode> getEpisodeTitleMap(Ani ani) {
+        Map<Integer, BgmEpisodes.BgmEpisode> episodeTitleMap = new HashMap<>();
+
+        if (Objects.isNull(ani)) {
+            return episodeTitleMap;
+        }
+
+        String subjectId = getSubjectId(ani);
+
+        if (StrUtil.isBlank(subjectId)) {
+            return episodeTitleMap;
+        }
+
+        if (ani.getOva()) {
+            return episodeTitleMap;
+        }
+
+        OffsetTypeEnum offsetType = CONFIG.getOffsetType();
+
+        String key = "BGM_getEpisodeTitleMap:" + subjectId + ":" + offsetType;
+
+        Map<Integer, BgmEpisodes.BgmEpisode> cacheMap = CacheUtils.get(key);
+        if (Objects.nonNull(cacheMap)) {
+            return cacheMap;
+        }
+
+        try {
+            List<BgmEpisodes.BgmEpisode> data = getEpisodes(subjectId, 0);
+            for (BgmEpisodes.BgmEpisode bgmEpisode : data) {
+                int ep = offsetType == OffsetTypeEnum.BGM_OFFSET ?
+                        bgmEpisode.getSort() :
+                        bgmEpisode.getEp();
+
+                String defaultEpisodeTitle = "第" + ep + "集";
+
+                String name = bgmEpisode.getName();
+                String nameCn = bgmEpisode.getNameCn();
+
+                nameCn = StrUtil.blankToDefault(nameCn, name);
+
+                nameCn = RenameUtil.getName(nameCn);
+                name = RenameUtil.getName(name);
+
+                nameCn = StrUtil.blankToDefault(nameCn, defaultEpisodeTitle);
+                name = StrUtil.blankToDefault(name, defaultEpisodeTitle);
+
+                bgmEpisode.setName(name)
+                        .setNameCn(nameCn);
+
+                episodeTitleMap.put(ep, bgmEpisode);
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        CacheUtils.put(key, episodeTitleMap, TimeUnit.MINUTES.toMillis(5));
+        return episodeTitleMap;
+    }
+
+    /**
+     * 获取集数 排除ova
+     *
+     * @param bgmInfo bgm信息
+     * @return 集数
+     */
+    public static Integer getEps(BgmInfo bgmInfo) {
+        int eps = bgmInfo.getEps();
+        String subjectId = bgmInfo.getId();
+        if (eps < 1) {
+            return 0;
+        }
+        try {
+            int size = BgmUtil.getEpisodes(subjectId, 0).size();
+            if (size > 0) {
+                // 获取集数不为零
+                eps = size;
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return eps;
+    }
+
+    /**
+     * bgm转ani
+     *
+     * @param bgmInfo bgm信息
+     * @param ani     订阅
+     * @return 订阅
+     */
+    public static Ani toAni(BgmInfo bgmInfo, Ani ani) {
+        String bgmImageSize = CONFIG.getBgmImageSize();
+        // 使用tmdb标题
+        Boolean tmdb = CONFIG.getTmdb();
+
+        String title = BgmUtil.getFinalName(bgmInfo);
+
+        int eps = getEps(bgmInfo);
+
+        BgmInfo.Images images = bgmInfo.getImages();
+
+        String image = (String) ReflectUtil.getFieldValue(images, bgmImageSize);
+
+        double score = Optional.ofNullable(bgmInfo.getRating())
+                .map(BgmInfo.Rating::getScore)
+                .orElse(0.0);
+
+        String platform = bgmInfo.getPlatform();
+
+        boolean ova = List.of("OVA", "剧场版").contains(platform.toUpperCase());
+
+        Date date = bgmInfo.getDate();
+
+        ani
+                .setBgmUrl("https://bgm.tv/subject/" + bgmInfo.getId())
+                // 标题
+                .setTitle(title)
+                .setJpTitle(bgmInfo.getName())
+                // 季
+                .setSeason(bgmInfo.getSeason())
+                // 总集数
+                .setTotalEpisodeNumber(eps)
+                // 剧场版
+                .setOva(ova)
+                // 评分
+                .setScore(score)
+                // 发布日期"
+                .setReleaseDate(date)
+                // 图片http地址
+                .setImage(image)
+                // 本地图片地址
+                .setCover(AniUtil.saveCover(image));
+
+        // 获取tmdb标题
+        String themoviedbName = TmdbUtils.getFinalName(ani);
+
+        // 是否使用tmdb标题
+        if (StrUtil.isNotBlank(themoviedbName) && tmdb) {
+            ani
+                    .setTitle(themoviedbName);
+        } else {
+            title = BgmUtil.getFinalName(bgmInfo, ani.getTmdb());
+            ani.setTitle(title);
+        }
+
+        // 下载位置
+        DownloadService downloadService = SpringUtil.getBean(DownloadService.class);
+        String downloadPath = downloadService.getDownloadPath(ani);
+
+        String completedPathTemplate = CONFIG.getCompletedPathTemplate();
+
+        return ani
+                // tmdb 标题
+                .setThemoviedbName(themoviedbName)
+                .setCustomDownloadPathTemplate(downloadPath)
+                .setCustomCompletedPathTemplate(completedPathTemplate);
+    }
+
+
+}

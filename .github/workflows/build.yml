@@ -29,5 +29,5 @@ jobs:
           append_body: false
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            ./ani-rss-application/target/ani-rss-Yuri.jar
-            ./ani-rss-application/target/ani-rss-Yuri.exe
+            ./mint-soda-application/target/MintSoda.jar
+            ./mint-soda-application/target/MintSoda.exe

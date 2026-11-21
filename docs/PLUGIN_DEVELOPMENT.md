@@ -1,10 +1,10 @@
 # 插件开发指南
 
-本文说明如何为 ANI-RSS-Yuri 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：Java 插件以独立 JAR 加载，JavaScript 与 Lua 插件以脚本目录解释执行，三者共用同一套扩展点——通知、订阅过滤、订阅事件、周期任务、设置界面、模板变量、下载拦截、下载事件与自定义 HTTP 接口。
+本文说明如何为 MintSoda 编写、打包、发布与更新插件。插件系统面向“扩展而不侵入”：Java 插件以独立 JAR 加载，JavaScript 与 Lua 插件以脚本目录解释执行，三者共用同一套扩展点——通知、订阅过滤、订阅事件、周期任务、设置界面、模板变量、下载拦截、下载事件与自定义 HTTP 接口。
 
 不熟悉 Java 时优先看 [JavaScript 插件](#javascript-插件) 或 [Lua 插件](#lua-插件)：两者都不需要编译，改完脚本重新打包即可。
 
-插件接口当前版本为 `3`，在版本 2 的基础上新增了[条目改写](#条目改写)与[界面页面](#界面页面)。只使用旧能力的插件继续声明 `apiVersion: 2` 即可，无需改动。
+插件接口当前版本为 `4`。版本 3 新增了[条目改写](#条目改写)与[界面页面](#界面页面)；版本 4 把接口包名迁移到 `mint.soda.plugin.api`，因此 Java 插件需要改用新坐标与新包名重新编译并声明 `apiVersion: 4`，JavaScript 与 Lua 插件只需把 `apiVersion` 改为 `4`。
 
 > 安全边界见 [安全说明](SECURITY.md)。插件与服务同权限运行，**只安装你信任的插件**。用户视角的插件页说明见[使用指南 · 插件](USER_GUIDE.md#插件)，宿主接口清单见 [API 参考 · 插件](API.md#插件)。
 
@@ -29,19 +29,20 @@
 
 | 组件 | 说明 |
 | --- | --- |
-| `ani-rss-plugin-api` | 稳定的插件接口模块，Java 插件以 `provided` 依赖编译。 |
+| `mint-soda-plugin-api` | 稳定的插件接口模块，Java 插件以 `provided` 依赖编译。 |
 | `PluginSource` | 插件来源抽象，`JavaPluginSource` 走类加载器，`ScriptPluginSource` 走脚本引擎。 |
 | `PluginManager` | 负责加载、启用、停用、重载与卸载插件，只依赖 `PluginSource`。 |
 | `PluginContext` | 宿主传给插件的能力入口：注册扩展点、读写插件配置与日志。 |
 | `PluginHook` | 宿主内部桥接，把匹配规则之后的条目交给插件过滤器。 |
 | 插件市场 | 可配置的 JSON 索引，支持列出、安装与更新插件。 |
 
-- 插件接口版本由 `PluginApi.VERSION` 表示，当前为 `2`。宿主只加载 `apiVersion` 不大于自身版本的插件，破坏性变更时提升该值。
+- 插件接口版本由 `PluginApi.VERSION` 表示，当前为 `4`。宿主只加载 `apiVersion` 不大于自身版本的插件，破坏性变更时提升该值。
+- 版本 4 是一次破坏性变更：接口包名与 Maven 坐标从 `ani.rss.plugin.api`、`ani.rss:ani-rss-plugin-api` 迁移为 `mint.soda.plugin.api`、`mint.soda:mint-soda-plugin-api`，旧 Java 插件必须重新编译。
 - 版本 2 新增模板变量、下载拦截与自定义接口三个扩展点；均为新增能力，不改变既有扩展点语义。
 - 下载事件（`registerDownloadListener`）是在版本 2 之上追加的可选能力：接口方法与注册入口都提供默认实现，未升级的插件无需改动即可继续使用。
 - 描述文件统一叫 `plugin.json`；为兼容常见习惯，包内只提供 `manifest.json` 也接受，安装后会改名为 `plugin.json`。
 - `runtime` 决定插件形态：`JAVA`（默认）是单个 JAR，根目录包含 `plugin.json` 与编译后的类；`JAVASCRIPT` 是 ZIP，根目录包含 `plugin.json` 与入口脚本。
-- Java 插件每个独立类加载器，`ani.rss.plugin.api.*` 与 JDK 类始终由宿主提供，避免类型不一致。
+- Java 插件每个独立类加载器，`mint.soda.plugin.api.*` 与 JDK 类始终由宿主提供，避免类型不一致。
 - JavaScript 与 Lua 插件运行在沙箱里：看不到任何 Java 类，也没有文件、网络与模块加载能力，单次调用超过 5 秒会被中断。
 - 每个插件的能力都要经过权限开关，详见 [权限管理](#权限管理)。
 - 插件加载、启用或运行失败只影响该插件，主程序继续运行。
@@ -69,7 +70,7 @@
   "id": "my-plugin",
   "name": "我的插件",
   "version": "1.0.0",
-  "apiVersion": 1,
+  "apiVersion": 4,
   "mainClass": "com.example.MyPlugin",
   "author": "you",
   "description": "一句话说明插件作用",
@@ -105,8 +106,8 @@
 ```java
 package com.example;
 
-import ani.rss.plugin.api.Plugin;
-import ani.rss.plugin.api.PluginContext;
+import mint.soda.plugin.api.Plugin;
+import mint.soda.plugin.api.PluginContext;
 
 public class MyPlugin implements Plugin {
 
@@ -398,11 +399,12 @@ context.registerPage(new PluginPage(
 ```
 
 - 页面出现在插件卡片的「插件页面」按钮组里，点击进入 `#/plugins/{插件Id}/{页面Id}`；一个插件可以有多个页面，页面标题与图标来自 `PluginPage`。
-- 区块类型仅 `TEXT`、`FORM`、`TABLE`、`ACTIONS`、`DIVIDER`；插件不提供 HTML，也不执行脚本，宿主不会把插件内容当作页面标记注入。
+- 区块类型仅 `TEXT`、`FORM`、`TABLE`、`ACTIONS`、`STATS`、`DIVIDER`；插件不提供 HTML，也不执行脚本，宿主不会把插件内容当作页面标记注入。
 - `TEXT` 显示标题与段落，`DIVIDER` 只是分隔线，两者都不需要 `source`。
 - `TABLE` 的 `source` 指向插件接口，宿主以 `GET` 调用并按列渲染返回的数组（或 `{items:[...]}`）；列 `key` 对应数组元素的字段名，`label` 是表头。表格下方有刷新按钮，`ACTIONS` 执行成功后也会自动刷新本页所有表格。
 - `FORM` 提交时把字段值以 JSON `POST` 到 `source`；进入页面时先用 `GET` 读取初值，返回对象中同名键会填入表单。字段类型与设置区块相同（`TEXT`、`PASSWORD`、`NUMBER`、`SWITCH`、`SELECT`）。
 - `ACTIONS` 的每个按钮调用自己的 `source`，默认 `POST`；`confirm=true` 时先弹确认框，`confirmText` 为提示文案。
+- `STATS` 在页面顶部渲染一组指标卡片，`stats` 每项为 `{label, value, hint}`；`hint` 可选，适合补充单位或时间范围。指标值由插件在注册页面时提供，需要实时数据时改用 `TABLE` 或 `FORM`。
 - 所有接口调用都带登录态，走 `/api/plugin/api/{pluginId}/**`，插件无需自行鉴权。
 - 需要 `CUSTOM_PAGE` 权限；页面读取与提交接口本身还需要 `HTTP_ENDPOINT`。缺少权限时页面不会出现在插件卡片里。
 - 页面只做展示与轻量操作。需要复杂交互时拆成多个页面或复用设置区块，不要在页面里嵌外部脚本。
@@ -450,7 +452,7 @@ context.registerEndpoint(new PluginEndpoint() {
   "id": "js-demo-plugin",
   "name": "JavaScript 示例插件",
   "version": "1.0.0",
-  "apiVersion": 2,
+  "apiVersion": 4,
   "runtime": "JAVASCRIPT",
   "entry": "main.js",
   "author": "you",
@@ -548,13 +550,17 @@ function onEnable() {
 // 条目改写：返回 {title, subgroup}，返回 null 表示不修改
 {id, order, transform(subscription, item, context) { return {subgroup: '简日双语'}; }}
 
-// 界面页面：区块类型 TEXT / FORM / TABLE / ACTIONS / DIVIDER
+// 界面页面：区块类型 TEXT / FORM / TABLE / ACTIONS / STATS / DIVIDER
 {id, title, icon, description, blocks: [
   {type: 'TEXT', title: '说明', text: '...'},
   {type: 'TABLE', title: '记录', source: 'records', columns: [{key: 'time', label: '时间'}]},
   {type: 'FORM', title: '设置', source: 'save', fields: [{key: 'endpoint', label: '接口地址', type: 'TEXT'}]},
   {type: 'ACTIONS', title: '操作', actions: [
     {id: 'rescan', label: '重新扫描', source: 'rescan', method: 'POST', confirm: true, confirmText: '确定？'}
+  ]},
+  {type: 'STATS', title: '概览', stats: [
+    {label: '订阅', value: '12', hint: '本周新增 2'},
+    {label: '下载', value: '48'}
   ]},
   {type: 'DIVIDER'}
 ]}
@@ -695,7 +701,7 @@ Lua 插件和 JavaScript 插件结构一致：`plugin.json` 加一个入口脚�
   "id": "lua-demo-plugin",
   "name": "Lua 示例插件",
   "version": "1.0.0",
-  "apiVersion": 2,
+  "apiVersion": 4,
   "runtime": "LUA",
   "entry": "main.lua",
   "permissions": ["notification", "item-filter"]
@@ -818,6 +824,10 @@ api.register_page({
             columns = {{key = "time", label = "时间"}}},
         {type = "ACTIONS", title = "操作", actions = {
             {id = "rescan", label = "重新扫描", source = "rescan", method = "POST", confirm = true}
+        }},
+        {type = "STATS", title = "概览", stats = {
+            {label = "订阅", value = "12", hint = "本周新增 2"},
+            {label = "下载", value = "48"}
         }}
     }
 })
@@ -854,8 +864,8 @@ cd examples/plugins/lua-plugin
 
 ```xml
 <dependency>
-    <groupId>ani.rss</groupId>
-    <artifactId>ani-rss-plugin-api</artifactId>
+    <groupId>mint.soda</groupId>
+    <artifactId>mint-soda-plugin-api</artifactId>
     <version>3.3.0</version>
     <scope>provided</scope>
 </dependency>
@@ -864,7 +874,7 @@ cd examples/plugins/lua-plugin
 打包要点：
 
 - `plugin.json` 必须位于 JAR 根目录（`manifest.json` 亦可，安装后会规范化）。
-- 不要把 `ani-rss-plugin-api` 打进插件包。
+- 不要把 `mint-soda-plugin-api` 打进插件包。
 - 示例见 `examples/plugins/hello-plugin/`，构建脚本会把 `plugin.json` 加入 JAR：
 
 ```bash
@@ -908,7 +918,7 @@ cd examples/plugins/hello-plugin
       "downloadUrl": "https://example.com/plugins/my-plugin-1.0.0.jar",
       "sha256": "<jar 的 sha256>",
       "size": 12345,
-      "apiVersion": 1,
+      "apiVersion": 4,
       "permissions": ["notification"],
       "updateUrl": ""
     }
@@ -937,7 +947,7 @@ cd examples/plugins/hello-plugin
 
 - 新增可选方法或字段：不提升 `PluginApi.VERSION`，插件保持兼容。
 - 删除或改变既有语义：提升 `PluginApi.VERSION`，旧插件在插件页显示“不兼容”。
-- 宿主核心类不属于接口，插件不得依赖 `ani.rss.*`（`plugin.api` 除外）；跨版本使用时宿主实现可能变化。
+- 宿主核心类不属于接口，插件不得依赖 `mint.soda.*`（`plugin.api` 除外）；跨版本使用时宿主实现可能变化。
 - 插件应自行兜底空值：快照字段可能为空字符串或 `null`。
 
 ## 最佳实践

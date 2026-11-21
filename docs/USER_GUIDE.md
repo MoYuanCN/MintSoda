@@ -1,4 +1,4 @@
-# ANI-RSS-Yuri 使用指南
+# MintSoda 使用指南
 
 本文面向使用者，按“装好 → 登录 → 配置下载器 → 添加订阅 → 调规则与通知”的顺序组织。开发与插件相关内容见[开发指南](DEVELOPMENT.md)与[插件开发指南](PLUGIN_DEVELOPMENT.md)。
 
@@ -22,12 +22,12 @@
 
 ## 运行与配置文件
 
-ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR，以及 Linux 使用的 JAR。运行 JAR 需要 Java 25。
+MintSoda 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR，以及 Linux 使用的 JAR。运行 JAR 需要 Java 25。
 
-- **Windows EXE**：配置文件保存在 EXE 同目录下的 `config/`。首次运行会创建该目录。检测到旧版 `%USERPROFILE%/ani-rss/` 配置且目标目录还没有配置文件时，程序会复制旧配置；原目录会保留。
-- **Windows 或 Linux 的 JAR**：若设置了 `CONFIG` 环境变量，则使用该目录；否则当前目录存在 `config/` 时使用它。Windows 没有上述目录时使用用户目录下的 `ani-rss-Yuri/`（检测到旧的 `ani-rss/` 配置会自动复制）；Linux 使用当前工作目录下的 `config/`。
-- **Linux 一键安装**：`curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | sudo bash` 会把 JAR 安装到执行命令时所在的目录（不新建子目录）并注册 systemd 服务。安装过程中会在终端依次询问用户名与两次密码（密码输入时不回显）：用户名需 3-32 位字母、数字、下划线或连字符，密码至少 8 位且包含大写字母、小写字母、数字、符号中的至少两类；直接回车跳过则由程序在首次启动生成随机凭据。也可用 `--username` / `--password` 直接传入，或用 `--setup` 在尚未配置账号时跳过询问并在 WebUI 中完成初始化，`--port` 修改端口，`--dir` 指定目录，`--yes` 跳过所有确认。安装完成后运行 `assyuri` 打开管理菜单，可查看运行状态、版本、更新、启停和日志，也可直接使用 `assyuri status` 等命令。
-- **Linux 固定目录安装**：`sudo bash linux/install-yuri-legacy.sh` 会把服务安装到 `/opt/ani-rss-yuri/`。安装脚本需要联网下载 JAR 和 Java 25。
+- **Windows EXE**：配置文件保存在 EXE 同目录下的 `config/`。首次运行会创建该目录。检测到旧版 `%USERPROFILE%/mint-soda/` 配置且目标目录还没有配置文件时，程序会复制旧配置；原目录会保留。
+- **Windows 或 Linux 的 JAR**：若设置了 `CONFIG` 环境变量，则使用该目录；否则当前目录存在 `config/` 时使用它。Windows 没有上述目录时使用用户目录下的 `MintSoda/`（检测到旧的 `mint-soda/` 配置会自动复制）；Linux 使用当前工作目录下的 `config/`。
+- **Linux 一键安装**：`curl -fsSL https://raw.githubusercontent.com/MoYuanCN/MintSoda/main/linux/install.sh | sudo bash` 会把 JAR 安装到执行命令时所在的目录（不新建子目录）并注册 systemd 服务。安装过程中会在终端依次询问用户名与两次密码（密码输入时不回显）：用户名需 3-32 位字母、数字、下划线或连字符，密码至少 8 位且包含大写字母、小写字母、数字、符号中的至少两类；直接回车跳过则由程序在首次启动生成随机凭据。也可用 `--username` / `--password` 直接传入，或用 `--setup` 在尚未配置账号时跳过询问并在 WebUI 中完成初始化，`--port` 修改端口，`--dir` 指定目录，`--yes` 跳过所有确认。安装完成后运行 `mintsoda` 打开管理菜单，可查看运行状态、版本、更新、启停和日志，也可直接使用 `mintsoda status` 等命令。
+- **Linux 固定目录安装**：`sudo bash linux/install-legacy.sh` 会把服务安装到 `/opt/mint-soda/`。安装脚本需要联网下载 JAR 和 Java 25。
 
 配置目录的位置取决于启动方式：
 
@@ -36,7 +36,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 | Windows EXE | EXE 同目录的 `config/` |
 | JAR，设置了 `CONFIG` | `CONFIG` 指向的目录 |
 | JAR，当前目录存在 `config/` | 当前目录的 `config/` |
-| Windows JAR，以上都没有 | 用户目录下的 `ani-rss-Yuri/`（检测到旧的 `ani-rss/` 会复制） |
+| Windows JAR，以上都没有 | 用户目录下的 `MintSoda/`（检测到旧的 `mint-soda/` 会复制） |
 | Linux JAR，以上都没有 | 当前工作目录的 `config/` |
 
 配置目录内包含 `config.v2.json`（设置）、`ani.v2.json`（订阅）、`plugins/`（插件与私有数据）、`logs/`（日志）、`files/`、`img/`、`ui-assets/`、`webui/` 等子目录。备份与迁移时整体复制该目录即可；各配置字段的含义见[配置参考](CONFIG.md)。
@@ -45,7 +45,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 
 - **Windows**：程序会自动打开浏览器并显示“初始化登录账号”页面，用户名需为 3-32 位字母、数字、下划线或连字符，密码至少 8 位并包含大写字母、小写字母、数字、符号中的至少两类。完成前无法登录。
 - **Linux**：启动时自动生成随机用户名与强密码，并只在首次启动的日志中输出一次；请立即保存，后续启动不会再次显示。
-- **环境变量覆盖**：设置 `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 可强制覆盖登录凭据，每次启动都会生效；密码不满足强度要求时程序拒绝启动。
+- **环境变量覆盖**：设置 `MINT_SODA_USERNAME` / `MINT_SODA_PASSWORD` 可强制覆盖登录凭据，每次启动都会生效；密码不满足强度要求时程序拒绝启动。
 
 初始化完成后即可登录，再配置 qBittorrent 的地址和认证方式。设置页同样会校验用户名与密码强度，修改后所有已登录会话失效。
 
@@ -68,7 +68,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 - **API Key**：用于支持 API Key 的 qBittorrent 服务。
 - **用户名密码**：用于未提供 API Key 的服务，程序使用 qBittorrent WebUI 登录认证。
 
-两种方式互斥。此 Fork 不包含其他下载器，也不提供集成的任务进度页面；任务和进度请在 qBittorrent 中查看。
+两种方式互斥。MintSoda 只支持 qBittorrent，也不提供集成的任务进度页面；任务和进度请在 qBittorrent 中查看。
 
 ## 添加订阅
 
@@ -104,7 +104,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 - **三种运行时**：Java 插件功能最全；JavaScript 与 Lua 插件不需要编译，适合改模板、加通知渠道与简单过滤。
 - **权限**：每个插件卡片有“权限”一栏，按「订阅 / 下载与通知 / 任务 / 接口 / 配置与数据 / 系统」分组逐项开关，读与写分开授权（例如插件可以只读数据不能写入）。取消下载是独立权限，未授权时插件无法中断下载。保存后已启用的插件会立即按新权限重载；关闭的权限对应功能会停止工作，插件其余部分继续运行。安装时按插件声明初始化，升级不会重置你的调整。
 - **插件数据**：插件可在自己的 `plugins/{插件标识}/data` 目录保存状态，升级与重装都不会丢失；卸载会连同数据一起删除，需要保留时先导出备份。
-- **备份**：导出的设置备份同时包含插件与插件私有数据；导入会整体替换插件目录，插件按备份内容恢复但默认停用，权限仍以本机记录为准。备份文件名形如 `ani-rss-Yuri.backup.<版本>.zip`，日志文件位于配置目录的 `logs/ani-rss-Yuri.log`。
+- **备份**：导出的设置备份同时包含插件与插件私有数据；导入会整体替换插件目录，插件按备份内容恢复但默认停用，权限仍以本机记录为准。备份文件名形如 `MintSoda.backup.<版本>.zip`，日志文件位于配置目录的 `logs/MintSoda.log`。
 - **市场**：市场地址保存在设置中，是一个 JSON 索引；检查更新时优先使用市场条目，缺少条目时回退到插件自带的更新地址。
 - **更新**：插件卡片显示“可更新”与最新版本，可单个更新或一次检查全部插件。
 - **配置**：插件可以在插件页声明设置项，保存后会写入插件配置。
@@ -133,7 +133,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 
 ## 重命名和保存路径
 
-全局重命名模板和下载路径可在“设置 → 基本设置 / 下载设置”中修改；单条订阅可以启用自定义重命名模板或自定义保存路径。模板至少保留集数标记 `S${seasonFormat}E${episodeFormat}` 或 `S${season}E${episode}`，避免无法识别剧集编号。启用“已下载文件自动跳过”时，也要确认 qBittorrent 保存路径与 ANI-RSS-Yuri 配置的下载路径一致。
+全局重命名模板和下载路径可在“设置 → 基本设置 / 下载设置”中修改；单条订阅可以启用自定义重命名模板或自定义保存路径。模板至少保留集数标记 `S${seasonFormat}E${episodeFormat}` 或 `S${season}E${episode}`，避免无法识别剧集编号。启用“已下载文件自动跳过”时，也要确认 qBittorrent 保存路径与 MintSoda 配置的下载路径一致。
 
 ## 标题匹配规则
 
@@ -185,6 +185,8 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 - 添加通知时先在弹窗中编辑，点击“确定”才会加入列表；关闭或取消不会产生空通知。
 - Telegram 只显示普通文本模板；模板删除后，引用它的通知会使用备用模板。
 
+在“设置 → 通知”的“通知状态样式”中可以逐项修改每种状态的表情、名称与事件文案。事件模板支持 `${name}`（资源名或集数，如 `S01E02`）、`${source}`（备用 RSS 标记，普通订阅为空）以及订阅字段如 `${title}`、`${subgroup}`；留空则沿用默认值。
+
 默认文本模板包含事件类型、标题、评分、TMDB / BGM、字幕组、集数进度、首播日期、事件和保存路径。文本和 JSON 模板都直接使用通知变量，例如 `${subgroup}`、`${title}`、`${text}`；JSON 变量需放在字符串值中，例如 `{"subgroup":"${subgroup}","event":"${text}"}`。旧配置中的 `${notification}` 会迁移为旧的完整通知内容。
 
 ## 开发者选项
@@ -192,7 +194,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 “设置 → 开发者”是独立的一级设置页，开启前需要输入当前登录账号与密码，验证通过后立即生效；关闭后其中的设置会保留但不再使用，点击底部“保存设置”后生效。
 
 - **自定义种子地址**：支持 `<info_hash>` 或 `${info_hash}`，未写占位符时会自动追加哈希。程序获得 info_hash 后会替换进地址并请求 `.torrent` 内容；留空则使用 RSS 或种子站提供的原始链接。
-- **自定义 User-Agent**：留空使用内置标识 `ani-rss-Yuri/<版本>`。部分站点按 UA 返回不同内容，排查兼容性时可临时修改；保存时会去掉控制字符并限制长度。
+- **自定义 User-Agent**：留空使用内置标识 `MintSoda/<版本>`。部分站点按 UA 返回不同内容，排查兼容性时可临时修改；保存时会去掉控制字符并限制长度。
 - **请求日志**：开启后记录出站请求的方法、地址、状态码与耗时，不记录请求头与请求体。
 - **诊断**：可一键检测到 Bangumi 的连通性，并可跳转日志页或清空当前会话的日志缓存（磁盘日志不受影响）。
 
@@ -212,7 +214,7 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 
 **登录后立即被踢回登录页**：令牌有效期由“设置 → 安全 → 登录有效期”控制，修改用户名、密码或重新登录会轮换会话。浏览器时间与服务端相差超过 30 分钟时前端会提示时间不同步，请先校准。
 
-**首次启动没有看到初始化页面**：Linux 会直接生成随机凭据并只写一次日志，可用 `journalctl -u ani-rss-yuri | head` 或 `assyuri log` 查找；也可用 `ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 覆盖后重启。
+**首次启动没有看到初始化页面**：Linux 会直接生成随机凭据并只写一次日志，可用 `journalctl -u mint-soda | head` 或 `mintsoda log` 查找；也可用 `MINT_SODA_USERNAME` / `MINT_SODA_PASSWORD` 覆盖后重启。
 
 **qBittorrent 连接失败**：确认地址含协议与端口、认证方式与 qBittorrent 实际配置一致；在“设置 → 下载”点击测试登录。若启用了 IP 白名单或反向代理信任，确认来源 IP 未拦截。
 
@@ -228,4 +230,4 @@ ANI-RSS-Yuri 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR�
 
 ## 数据与功能范围
 
-本分支仅保留 qBittorrent 下载、Telegram / 自定义请求 / 媒体库刷新通知和 Bangumi Token 设置。内置播放、刮削、AnimeGarden、OpenList 上传、Bangumi 点格子、摸鱼检测和 trackers 更新设置均已移除。爱发电页面保留，但本地功能不依赖捐赠状态。
+MintSoda 仅保留 qBittorrent 下载、Telegram / 自定义请求 / 媒体库刷新通知和 Bangumi Token 设置。内置播放、刮削、AnimeGarden、OpenList 上传、Bangumi 点格子、摸鱼检测和 trackers 更新设置均已移除。爱发电页面保留，但本地功能不依赖捐赠状态。

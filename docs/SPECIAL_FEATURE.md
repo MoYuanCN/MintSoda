@@ -1,10 +1,9 @@
-# 本分支特性说明
+# 功能与实现说明
 
-本文档说明 **ANI-RSS-Yuri** 相对上游 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的实际差异，内容依据本仓库的提交记录整理。
+本文档说明 **MintSoda** 的功能边界与实现约定。项目最初派生自 [ANI-RSS](https://github.com/wushuo894/ani-rss)，现已独立演进。
 
-- 上游基线：`wushuo894/ani-rss` 的 `3.2.61`。
-- 本分支版本：`3.3.0`。
-- 定位：面向 Windows 与 Linux 的自托管版本，按本分支目标“做减法”——单一下载器、可预期的匹配规则、更自由的外观与更轻的部署方式。常规订阅与下载流程尽量与上游保持一致。
+- 当前版本：`3.3.0`。
+- 定位：面向 Windows 与 Linux 的自托管版本——单一下载器、可预期的匹配规则、更自由的外观与更轻的部署方式；项目最初派生自 ANI-RSS，现已独立演进。
 
 > 功能范围说明见 [使用指南](USER_GUIDE.md)，接口清单见 [API 参考](API.md)，字段与迁移见 [配置参考](CONFIG.md)，构建与协作见 [开发指南](DEVELOPMENT.md) 与 [贡献指南](CONTRIBUTING.md)，多语言见 [多语言与翻译贡献](I18N.md)，安全边界见 [安全说明](SECURITY.md)。
 
@@ -25,11 +24,11 @@
 - [部署](#部署)
 - [移除的功能](#移除的功能)
 - [配置兼容](#配置兼容)
-- [与上游同步的注意事项](#与上游同步的注意事项)
+- [兼容与升级注意事项](#兼容与升级注意事项)
 
 ## 功能边界总览
 
-| 领域 | 上游 | 本分支 |
+| 领域 | 基线 | 当前实现 |
 | --- | --- | --- |
 | 下载器 | qBittorrent、Aria2、Transmission | 仅 qBittorrent |
 | 订阅来源 | Mikan、AniBT、AnimeGarden、手动 RSS | Mikan、AniBT、手动 RSS |
@@ -77,7 +76,7 @@
 
 ### 订阅排序
 
-在上游 SCORE / PINYIN / DOWNLOAD_TIME 之外新增：
+在 SCORE / PINYIN / DOWNLOAD_TIME 之外新增：
 
 | 枚举 | 说明 |
 | --- | --- |
@@ -128,6 +127,12 @@
 - 旧 `WEB_HOOK` 仅用于读取旧配置，加载时迁移为 `CUSTOM_REQUEST`。
 - 已移除类型的旧通知在加载时丢弃。
 
+### 状态文案
+
+- 通知事件文案不再硬编码：`Config.notificationStatusStyles` 按 `DOWNLOAD_START`、`DOWNLOAD_END`、`OMIT`、`ERROR`、`COMPLETED` 保存表情、状态名称与事件模板。
+- 事件模板支持 `${name}`（资源名或集数）与 `${source}`（备用 RSS 标记），并可继续使用订阅字段；留空时回落到默认文案。
+- 旧配置缺少该字段时由 `ConfigUtil.format` 逐项补齐，不覆盖用户已调整的值。
+
 ### 模板
 
 - 模板实体为 `id / name / type / content`，`type` 为 `TEXT` 或 `JSON`，可维护多套并按名称选择。
@@ -156,7 +161,7 @@ Body 只有两种来源，语义明确：
 - 新增 `LoginBootstrapUtil` 在启动时处理首次凭据：
   - **Windows**：标记为待初始化并自动打开浏览器，显示 WebUI 初始化页面。
   - **Linux**：生成随机用户名与强密码，只在首次启动日志输出一次。
-  - **环境变量**：`ANI_RSS_USERNAME` / `ANI_RSS_PASSWORD` 可强制覆盖，每次启动生效；不合规时拒绝启动并说明原因。
+  - **环境变量**：`MINT_SODA_USERNAME` / `MINT_SODA_PASSWORD` 可强制覆盖，每次启动生效；不合规时拒绝启动并说明原因。
   - **`--setup`**：仅在尚未配置账号时进入 WebUI 初始化引导，不生成随机凭据；环境变量优先于该参数，账号已配置时该参数完全失效。
 - 新增 `/api/setupStatus` 与 `/api/setup`；后者仅在未初始化、且请求来自本机或内网时可用，服务端校验强度后只保存摘要。
 - 旧配置按已有凭据自动标记为已配置，避免升级后无法登录；仍是 `admin/admin` 的配置会在日志中提示尽快修改。
@@ -197,7 +202,7 @@ Body 只有两种来源，语义明确：
 
 ## 插件系统
 
-- 新增稳定的接口模块 `ani-rss-plugin-api`，插件以独立 JAR 加载，每个插件一个类加载器；接口类与 JDK 类始终由宿主提供。
+- 新增稳定的接口模块 `mint-soda-plugin-api`，插件以独立 JAR 加载，每个插件一个类加载器；接口类与 JDK 类始终由宿主提供。
 - 支持 JavaScript 插件：`runtime` 为 `JAVASCRIPT` 的 ZIP 包由 Rhino 沙箱解释执行，无需编译；与 Java 插件共用同一套扩展点。
 - 支持 Lua 插件：`runtime` 为 `LUA` 的 ZIP 包由 LuaJ 解释执行，只装载基础库，单次调用 5 秒超时。
 - 插件来源抽象为 `PluginSource`（`JavaPluginSource` / `ScriptPluginSource` / `LuaPluginSource`），管理器不再区分具体语言；描述文件兼容 `manifest.json`，安装时统一为 `plugin.json`。
@@ -211,8 +216,8 @@ Body 只有两种来源，语义明确：
 - 下载拦截在种子提交给下载器之前执行，可改写保存位置与名称，或返回 `null` 取消任务。
 - 新增下载事件扩展点：`DownloadListener` 在任务提交成功、下载完成与提交失败时回调，只读快照不可修改任务；对应权限 `DOWNLOAD_EVENT`（低风险）。
 - 新增条目改写扩展点：`ItemTransformer` 在过滤之后、重命名之前调整标题或字幕组；对应权限 `ITEM_TRANSFORM`（中风险）。
-- 新增界面页面扩展点：`PluginPage` 用白名单区块（文本、表单、表格、操作、分隔线）在主程序界面注册只读页面，页面直接调用插件接口取数；对应权限 `CUSTOM_PAGE`（低风险）。插件内容不按 HTML 渲染，也不执行脚本。
-- 插件接口版本升至 `3`，`PluginContext` 的新增注册方法都有默认实现，只声明 `apiVersion: 2` 的旧插件不受影响。
+- 新增界面页面扩展点：`PluginPage` 用白名单区块（文本、表单、表格、操作、指标卡片、分隔线）在主程序界面注册只读页面，页面直接调用插件接口取数；对应权限 `CUSTOM_PAGE`（低风险）。插件内容不按 HTML 渲染，也不执行脚本。
+- 插件接口版本升至 `4`，接口包名与 Maven 坐标迁移到 `mint.soda`；版本 3 新增的注册方法都有默认实现。
 - 插件自定义接口挂在 `/api/plugin/api/{pluginId}/{path}`，由 `PluginEndpointController` 统一鉴权与分发，请求体上限 256KB。
 - 新增通知类型 `PLUGIN`，插件渠道的字段与值保存在 `NotificationConfig` 的 `pluginChannelId` 与 `pluginOptions`。
 - 新增 `/api/plugin/*` 接口：列表、运行概览、详情、启用/停用/重载/卸载、配置读写、上传与链接安装、市场获取、市场安装、单条与全部更新检查、更新与市场地址管理。全部接口都要求登录；请求体使用 `entity/dto` 下带类型的 DTO。
@@ -224,7 +229,7 @@ Body 只有两种来源，语义明确：
 
 ## 多语言
 
-- WebUI 使用 `vue-i18n` 管理文案，内置 `zh-CN`、`zh-TW`、`en-US` 三种语言，词条位于 `ani-rss-ui/src/i18n/locales/`，`zh-CN` 为唯一事实来源。
+- WebUI 使用 `vue-i18n` 管理文案，内置 `zh-CN`、`zh-TW`、`en-US` 三种语言，词条位于 `mint-soda-ui/src/i18n/locales/`，`zh-CN` 为唯一事实来源。
 - 语言选择保存在浏览器本地，首次访问按浏览器语言自动匹配；切换语言刷新页面以重建模块级常量，同时切换 Element Plus 与 dayjs 语言包。
 - 侧栏底部、登录页与初始化页右上角提供语言选择器；切换只影响界面文案，不写入服务端配置。
 - 新增或修改文案的完整流程见 [多语言与翻译贡献](I18N.md)。
@@ -246,6 +251,9 @@ Body 只有两种来源，语义明确：
 - 插件扩展点改为索引快照：启用状态变化时一次性重建过滤器、拦截器、下载监听、通知渠道、模板变量与接口的索引，分发路径只做一次 volatile 读取；`plugin.json` 按修改时间与大小缓存解析结果。
 - RSS 预取改为复用固定大小的共享线程池，单轮并发仍由信号量限制，不再每轮创建并销毁线程池。
 - 插件模板变量缓存按提供方集合变化失效，容量超限时先清理过期项，避免整表清空后重复计算。
+- 前端资源开启内容哈希长缓存与 gzip 压缩：入口页按 `no-cache` 返回，静态资源命中浏览器缓存，首屏传输量明显下降。
+- 首屏占位、登录/初始化/主界面切换与路由切换统一使用轻量过渡；设置页加载时显示骨架屏，切页带轻微淡入；`prefers-reduced-motion` 下全部关闭。
+- 插件页面新增 `STATS` 指标区块，用自适应网格展示插件提供的 `label / value / hint`，无需表格即可做概览。
 
 ## 数据与接口
 
@@ -258,19 +266,19 @@ Body 只有两种来源，语义明确：
 
 ## 标识与兼容
 
-- 出站请求的 User-Agent 为 `ani-rss-Yuri/<版本>`，可在开发者选项中覆盖。
-- 构建产物为 `ani-rss-Yuri.jar` 与 `ani-rss-Yuri.exe`；更新器为 `ani-rss-Yuri-update.exe`。
-- Windows 非 exe 运行的默认配置目录由 `ani-rss/` 改为 `ani-rss-Yuri/`，首次启动会把旧目录内容复制过去，旧目录保留为备份。
-- qBittorrent 的分类与标签改由 `ani-rss-Yuri` 写入；过滤时同时识别旧的 `ani-rss`，升级后历史任务不会消失。
-- 日志为 `logs/ani-rss-Yuri.log`，备份文件为 `ani-rss-Yuri.backup.<版本>.zip`，ICS 文件名与日历名称同步改为 `ani-rss-Yuri`。
-- Linux 服务名与系统用户改为 `ani-rss-yuri`，控制脚本为 `linux/ani-rss-yuri.sh`；旧版固定目录安装脚本更名为 `linux/install-yuri-legacy.sh`。
+- 出站请求的 User-Agent 为 `MintSoda/<版本>`，可在开发者选项中覆盖。
+- 构建产物为 `MintSoda.jar` 与 `MintSoda.exe`；更新器为 `MintSoda-update.exe`。
+- Windows 非 exe 运行的默认配置目录为 `MintSoda/`，便携运行时为 EXE 同目录的 `config/`。
+- qBittorrent 的分类与标签统一由 `MintSoda` 写入。
+- 日志为 `logs/MintSoda.log`，备份文件为 `MintSoda.backup.<版本>.zip`，ICS 文件名与日历名称同样使用 `MintSoda`。
+- Linux 服务名与系统用户为 `mint-soda`，控制脚本为 `linux/mint-soda.sh`，固定目录安装脚本为 `linux/install-legacy.sh`。
 
 ## 部署
 
 - 默认端口改为 **17789**，同步开发代理、安装脚本与文档。
-- 新增 `linux/install-yuri.sh`：一条命令安装到**执行命令时所在目录**（不新建子目录）并注册 systemd 服务，安装时在终端交互询问用户名与两次密码（沿用与后端一致的强度校验），也可用 `--username`、`--password` 直接传入；另有 `--port`、`--dir`、`--setup`、`--yes`。重新安装检测到已有配置时默认沿用原账号。凭据写入仅 root 可读的环境文件。
-- 新增 `linux/assyuri`：数字菜单与子命令（`status`、`version`、`update`、`log`、`start/stop/restart`、`enable/disable`、`uninstall`）；无 `unzip` 时用 Python 读取版本。
-- `linux/install-yuri-legacy.sh` 保留为安装到 `/opt/ani-rss-yuri` 的旧方式。
+- 新增 `linux/install.sh`：一条命令安装到**执行命令时所在目录**（不新建子目录）并注册 systemd 服务，安装时在终端交互询问用户名与两次密码（沿用与后端一致的强度校验），也可用 `--username`、`--password` 直接传入；另有 `--port`、`--dir`、`--setup`、`--yes`。重新安装检测到已有配置时默认沿用原账号。凭据写入仅 root 可读的环境文件。
+- 新增 `linux/mintsoda`：数字菜单与子命令（`status`、`version`、`update`、`log`、`start/stop/restart`、`enable/disable`、`uninstall`）；无 `unzip` 时用 Python 读取版本。
+- `linux/install-legacy.sh` 保留为安装到 `/opt/mint-soda` 的旧方式。
 - Windows EXE 使用便携配置目录：配置保存在 EXE 同目录的 `config/`，并在首次启动时复制旧用户目录配置。
 
 ## 移除的功能
@@ -291,7 +299,7 @@ Body 只有两种来源，语义明确：
 1. 实体：`entity/Config.java`、`entity/Ani.java`。
 2. 默认值：`config/DefaultConfigFactory.java`、`config/DefaultAniFactory.java`。
 3. 旧配置补齐与迁移：`util/other/ConfigUtil.java` 的 `format` 及迁移方法。
-4. 前端默认对象：`ani-rss-ui/src/js/config.js`、`src/js/ani.js`。
+4. 前端默认对象：`mint-soda-ui/src/js/config.js`、`src/js/ani.js`。
 5. 设置界面与文档。
 
 具体迁移行为：
@@ -301,8 +309,9 @@ Body 只有两种来源，语义明确：
 - 无法无损迁移时保留旧字段并写迁移逻辑；已移除渠道的旧配置会被丢弃。
 - 需要保留的旧字段（如 `rssSleepMinutes`、`notificationTemplate`、`telegramTemplate`、`customRequestBody`、`reverseMatchKeywords`）继续写入或保留，仅作兼容用途。
 
-## 与上游同步的注意事项
+## 兼容与升级注意事项
 
-- 上游新增的 AnimeGarden、AstrBot 与其他已移除能力不要直接合并回来。
-- 合并上游时优先检查 `MatchRuleUtil`、`CustomRequestNotification`、`LoginBootstrapUtil`、`ConfigUtil#format` 是否被覆盖。
-- 上游若新增下载器或通知渠道，需要同时决定是否在本分支保留，并更新本文档。
+- 项目使用独立命名空间（`mint.soda`）与独立坐标（`mint.soda:mint-soda-*`），新增代码不得引入历史包名、产物名或旧 Maven 坐标。
+- 引入外部实现时按本仓库的包名与命名调整后再合入；已移除的能力（AnimeGarden、AstrBot 等）不要重新加回。
+- 调整订阅、通知或配置逻辑时，优先检查 `MatchRuleUtil`、`CustomRequestNotification`、`LoginBootstrapUtil`、`ConfigUtil#format` 的既有行为。
+- 新增下载器或通知渠道前先确认是否符合当前的单一下载器定位，并同步更新本文档。

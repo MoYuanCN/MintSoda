@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# MintSoda 快捷指令菜单
+# 用法: mintsoda [命令]
+# 不带参数时进入交互菜单，可直接执行常用运维操作。
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+SERVICE="mint-soda.service"
+INSTALL_DIR="${MINT_SODA_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+
+need_root() {
+    [ "$EUID" -ne 0 ] && echo -e "${RED}错误：该操作需要 root，请使用 sudo mintsoda${NC}" && return 1
+    return 0
+}
+
+service_exists() {
+    [ -f "/etc/systemd/system/${SERVICE}" ]
+}
+
+stop_service() {
+    need_root || return
+    systemctl stop "$SERVICE" 2>/dev/null && echo -e "${GREEN}已停止${NC}" || echo -e "${YELLOW}服务未在运行${NC}"
+}
+
+system_action() {
+    need_root || return
+    service_exists || { echo -e "${RED}未找到服务，请先执行安装${NC}"; return 1; }
+    case "$1" in
+        start) systemctl start "$SERVICE" && echo -e "${GREEN}已启动${NC}" ;;
+        stop) systemctl stop "$SERVICE" && echo -e "${GREEN}已停止${NC}" ;;
+        restart) systemctl restart "$SERVICE" && echo -e "${GREEN}已重启${NC}" ;;
+        status) systemctl status "$SERVICE" --no-pager ;;
+        log) journalctl -u "$SERVICE" -n 200 --no-pager -f ;;
+        enable) systemctl enable "$SERVICE" && echo -e "${GREEN}已设置开机自启${NC}" ;;
+        disable) systemctl disable "$SERVICE" && echo -e "${GREEN}已取消开机自启${NC}" ;;
+        *) echo -e "${RED}未知操作: $1${NC}"; return 1 ;;
+    esac
+}
+
+manifest_version() {
+    local jar="$1"
+    local version=""
+    if command -v unzip >/dev/null 2>&1; then
+        version="$(unzip -p "$jar" META-INF/MANIFEST.MF 2>/dev/null | tr -d '\r' | sed -n 's/^Implementation-Version: //p' | head -1)"
+    fi
+    if [ -z "$version" ] && command -v python3 >/dev/null 2>&1; then
+        version="$(python3 -c 'import sys,zipfile;z=zipfile.ZipFile(sys.argv[1]);t=z.read("META-INF/MANIFEST.MF").decode("utf-8","ignore");print(next((l.split(":",1)[1].strip() for l in t.splitlines() if l.startswith("Implementation-Version:")),""))' "$jar" 2>/dev/null)"
+    fi
+    printf '%s' "$version"
+}
+
+show_version() {
+    local jar="$INSTALL_DIR/MintSoda.jar"
+    if [ -f "$jar" ]; then
+        local version
+        version="$(manifest_version "$jar")"
+        echo -e "${CYAN}版本: ${version:-未知}${NC}"
+    else
+        echo -e "${YELLOW}未找到 $jar${NC}"
+    fi
+    echo "安装目录: $INSTALL_DIR"
+    echo "端口: ${MINT_SODA_PORT:-17789}"
+}
+
+show_status() {
+    if service_exists; then
+        systemctl is-active "$SERVICE" >/dev/null 2>&1 \
+            && echo -e "${GREEN}服务运行中${NC}" \
+            || echo -e "${RED}服务未运行${NC}"
+        systemctl status "$SERVICE" --no-pager -l | head -n 12
+        return
+    fi
+    if pgrep -f "MintSoda.jar" >/dev/null 2>&1; then
+        echo -e "${GREEN}检测到 MintSoda.jar 进程在前台运行${NC}"
+        pgrep -af "MintSoda.jar" | head -n 5
+    else
+        echo -e "${RED}未检测到运行中的 MintSoda${NC}"
+    fi
+}
+
+do_update() {
+    need_root || return
+    local url="https://github.com/MoYuanCN/MintSoda/releases/latest/download/MintSoda.jar"
+    local tmp
+    tmp="$(mktemp)"
+    echo -e "${YELLOW}正在下载最新版本...${NC}"
+    if ! curl -fL "$url" -o "$tmp"; then
+        rm -f "$tmp"
+        echo -e "${RED}下载失败${NC}"
+        return 1
+    fi
+    if service_exists; then
+        systemctl stop "$SERVICE"
+    fi
+    cp "$tmp" "$INSTALL_DIR/MintSoda.jar"
+    rm -f "$tmp"
+    chmod 640 "$INSTALL_DIR/MintSoda.jar"
+    if service_exists; then
+        systemctl start "$SERVICE"
+        echo -e "${GREEN}已更新并重启服务${NC}"
+    else
+        echo -e "${GREEN}已更新 MintSoda.jar，请手动重启进程${NC}"
+    fi
+}
+
+do_uninstall() {
+    need_root || return
+    read -r -p "将删除服务与安装目录 ${INSTALL_DIR}，是否继续？[y/N]: " reply
+    [[ "$reply" =~ ^[Yy]$ ]] || { echo "已取消"; return; }
+    systemctl stop "$SERVICE" 2>/dev/null
+    systemctl disable "$SERVICE" 2>/dev/null
+    rm -f "/etc/systemd/system/${SERVICE}"
+    systemctl daemon-reload
+    rm -f /usr/local/bin/mintsoda /etc/mint-soda.env
+    echo -e "${GREEN}服务已移除；安装目录保留为 ${INSTALL_DIR}${NC}"
+}
+
+show_help() {
+    cat <<'TXT'
+MintSoda 快捷菜单 (mintsoda)
+
+用法: mintsoda [命令]
+
+命令:
+  status        查看运行状态
+  start         启动服务
+  stop          停止服务
+  restart       重启服务
+  log           实时查看日志
+  version       查看版本与安装目录
+  update        下载并更新到最新版本
+  enable        设置开机自启
+  disable       取消开机自启
+  uninstall     卸载服务
+  help          显示本帮助
+
+不带参数运行会进入交互菜单。
+TXT
+}
+
+interactive_menu() {
+    while true; do
+        echo
+        echo -e "${CYAN}=============================================="
+        echo " MintSoda 管理菜单"
+        echo -e "==============================================${NC}"
+        echo " 1) 运行状态"
+        echo " 2) 版本信息"
+        echo " 3) 启动服务"
+        echo " 4) 停止服务"
+        echo " 5) 重启服务"
+        echo " 6) 查看日志"
+        echo " 7) 更新版本"
+        echo " 8) 卸载服务"
+        echo " 0) 退出"
+        read -r -p "请输入数字选项: " choice
+        case "$choice" in
+            1) show_status ;;
+            2) show_version ;;
+            3) system_action start ;;
+            4) system_action stop ;;
+            5) system_action restart ;;
+            6) system_action log ;;
+            7) do_update ;;
+            8) do_uninstall ;;
+            0) echo "已退出"; return ;;
+            *) echo -e "${YELLOW}无效选项${NC}" ;;
+        esac
+    done
+}
+
+main() {
+    case "${1:-}" in
+        "") interactive_menu ;;
+        status) show_status ;;
+        start|stop|restart|log|enable|disable) system_action "$1" ;;
+        version) show_version ;;
+        update) do_update ;;
+        uninstall) do_uninstall ;;
+        help|-h|--help) show_help ;;
+        *) echo -e "${RED}未知命令: $1${NC}"; show_help; exit 1 ;;
+    esac
+}
+
+main "$@"

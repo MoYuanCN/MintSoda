@@ -3,14 +3,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>ani.rss</groupId>
-    <artifactId>ani-rss</artifactId>
+    <groupId>mint.soda</groupId>
+    <artifactId>mint-soda</artifactId>
     <version>3.3.0</version>
 
-    <name>ANI-RSS-Yuri</name>
+    <name>MintSoda</name>
     <inceptionYear>2025</inceptionYear>
     <description>基于RSS自动追番、订阅与下载</description>
-    <url>https://github.com/MoYuanCN/ani-rss-Yuri</url>
+    <url>https://github.com/MoYuanCN/MintSoda</url>
     <organization>
         <name>MoYuanCN</name>
     </organization>
@@ -24,9 +24,9 @@
     </properties>
 
     <modules>
-        <module>ani-rss-ui</module>
-        <module>ani-rss-plugin-api</module>
-        <module>ani-rss-application</module>
+        <module>mint-soda-ui</module>
+        <module>mint-soda-plugin-api</module>
+        <module>mint-soda-application</module>
     </modules>
 
     <parent>
@@ -39,13 +39,13 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>ani.rss</groupId>
-                <artifactId>ani-rss-ui</artifactId>
+                <groupId>mint.soda</groupId>
+                <artifactId>mint-soda-ui</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
             <dependency>
-                <groupId>ani.rss</groupId>
-                <artifactId>ani-rss-plugin-api</artifactId>
+                <groupId>mint.soda</groupId>
+                <artifactId>mint-soda-plugin-api</artifactId>
                 <version>${project.parent.version}</version>
             </dependency>
             <dependency>

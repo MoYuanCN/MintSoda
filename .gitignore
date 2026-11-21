@@ -1,6 +1,6 @@
 target/
 /.tools/
-/ani-rss-ui/.tools/
+/mint-soda-ui/.tools/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -51,9 +51,9 @@ logs
 /HANDOFF.md
 
 *.log
-ani-rss-Yuri-update.exe
+MintSoda-update.exe
 *.versionsBackup
 .pnpm-store
-/ani-rss-ui/node/
+/mint-soda-ui/node/
 # 示例插件构建产物
 examples/plugins/**/plugin.zip

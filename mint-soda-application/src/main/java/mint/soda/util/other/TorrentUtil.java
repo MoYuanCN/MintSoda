@@ -1,0 +1,487 @@
+package mint.soda.util.other;
+
+import mint.soda.commons.ExceptionUtils;
+import mint.soda.commons.PinyinUtils;
+import mint.soda.download.BaseDownload;
+import mint.soda.download.qBittorrent;
+import mint.soda.entity.Ani;
+import mint.soda.entity.Config;
+import mint.soda.entity.Item;
+import mint.soda.entity.torrent.TorrentsInfo;
+import mint.soda.enums.StringEnum;
+import mint.soda.enums.TorrentsStateEnum;
+import mint.soda.enums.TorrentsTagEnum;
+import mint.soda.service.ClearService;
+import mint.soda.service.DownloadService;
+import mint.soda.util.basic.HttpReq;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.text.StrFormatter;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.ReUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+
+/**
+ * 管理下载器的调用与种子存取
+ */
+@Slf4j
+public class TorrentUtil {
+    private static final Config CONFIG = ConfigUtil.CONFIG;
+    private static BaseDownload DOWNLOAD;
+
+    /**
+     * 单轮刷新内的任务列表缓存，避免每个订阅都请求一次下载器。
+     */
+    private static final ThreadLocal<List<TorrentsInfo>> PASS_TORRENTS = new ThreadLocal<>();
+
+    /**
+     * 开始一轮刷新，拉取一次任务列表并在本轮内复用。
+     */
+    public static void beginPass() {
+        PASS_TORRENTS.set(new ArrayList<>(DOWNLOAD.getTorrentsInfos()));
+    }
+
+    /**
+     * 结束一轮刷新，释放任务列表缓存。
+     */
+    public static void endPass() {
+        PASS_TORRENTS.remove();
+    }
+
+    /**
+     * 记录本轮内新添加的任务，避免同一轮重复添加与计数错误。
+     *
+     * @param torrentsInfo 任务
+     */
+    public static void trackTorrent(TorrentsInfo torrentsInfo) {
+        List<TorrentsInfo> torrentsInfos = PASS_TORRENTS.get();
+        if (torrentsInfos == null || torrentsInfo == null) {
+            return;
+        }
+        boolean exists = torrentsInfos.stream()
+                .anyMatch(info -> Objects.equals(info.getHash(), torrentsInfo.getHash()));
+        if (!exists) {
+            torrentsInfos.add(torrentsInfo);
+        }
+    }
+
+    /**
+     * 强制从下载器重新拉取任务列表，并同步更新本轮缓存。
+     * 用于确认新添加的任务是否已经出现在下载器中。
+     *
+     * @return 种子列表
+     */
+    public static List<TorrentsInfo> refreshTorrentsInfos() {
+        List<TorrentsInfo> torrentsInfos = new ArrayList<>(DOWNLOAD.getTorrentsInfos());
+        List<TorrentsInfo> pass = PASS_TORRENTS.get();
+        // 请求失败时下载器返回空列表，此时保留本轮已有记录，避免丢失刚添加的任务。
+        if (pass != null && !torrentsInfos.isEmpty()) {
+            pass.clear();
+            pass.addAll(torrentsInfos);
+        }
+        return torrentsInfos;
+    }
+
+    /**
+     * 获取任务列表
+     *
+     * @return 种子列表
+     */
+    public static List<TorrentsInfo> getTorrentsInfos() {
+        List<TorrentsInfo> torrentsInfos = PASS_TORRENTS.get();
+        if (torrentsInfos != null) {
+            return new ArrayList<>(torrentsInfos);
+        }
+        return new ArrayList<>(DOWNLOAD.getTorrentsInfos());
+    }
+
+    /**
+     * 获取种子存放文件夹
+     *
+     * @param ani 订阅
+     * @return 文件夹
+     */
+    public static File getTorrentDir(Ani ani) {
+        String id = ani.getId();
+        String title = ani.getTitle();
+        Boolean ova = ani.getOva();
+        Integer season = ani.getSeason();
+
+        File configDir = ConfigUtil.getConfigDir();
+
+        String s = PinyinUtils.getPinyinInitialLetters(title);
+        String fastId = id.substring(0, 1);
+
+        // 兼容旧的路径
+        File torrentDir = ova ?
+                new File(StrFormatter.format("{}/torrents/{}/{}", configDir, s, title)) :
+                new File(StrFormatter.format("{}/torrents/{}/{}/Season {}", configDir, s, title, season));
+
+        if (!torrentDir.exists()) {
+            // 新的种子存放路径
+            torrentDir = new File(StrFormatter.format("{}/torrents/{}/{}", configDir, fastId, id));
+        }
+
+        return torrentDir;
+    }
+
+    /**
+     * 获取种子
+     *
+     * @param ani  订阅
+     * @param item 资源项
+     * @return 种子文件
+     */
+    public static File getTorrent(Ani ani, Item item) {
+        String infoHash = item.getInfoHash();
+        File torrents = getTorrentDir(ani);
+        String torrent = item.getTorrent();
+
+        File txtFile = new File(torrents, infoHash + ".txt");
+        File torrentFile = new File(torrents, infoHash + ".torrent");
+
+        if (txtFile.exists()) {
+            return txtFile;
+        }
+        if (torrentFile.exists()) {
+            return torrentFile;
+        }
+
+        if (ReUtil.contains(StringEnum.MAGNET_REG, torrent)
+                || ReUtil.contains(StringEnum.ED2K_REG, torrent)) {
+            return txtFile;
+        }
+        return torrentFile;
+    }
+
+    /**
+     * 下载种子文件
+     *
+     * @param ani  订阅
+     * @param item 资源项
+     * @return 种子文件
+     */
+    public static File saveTorrent(Ani ani, Item item) {
+        String torrent = item.getTorrent();
+        String reName = item.getReName();
+
+        if (!ReUtil.contains(StringEnum.MAGNET_REG, torrent)
+                && !ReUtil.contains(StringEnum.ED2K_REG, torrent)) {
+            String customUrl = Boolean.TRUE.equals(CONFIG.getDeveloperOptionsEnabled())
+                    ? StrUtil.trimToEmpty(CONFIG.getCustomTorrentUrl())
+                    : "";
+            String infoHash = StrUtil.trimToEmpty(item.getInfoHash());
+            if (StrUtil.isNotBlank(customUrl) && StrUtil.isNotBlank(infoHash)) {
+                String normalizedHash = infoHash.toLowerCase(Locale.ROOT);
+                if (customUrl.contains("<info_hash>") || customUrl.contains("${info_hash}")) {
+                    torrent = customUrl.replace("<info_hash>", normalizedHash)
+                            .replace("${info_hash}", normalizedHash);
+                } else {
+                    torrent = StrUtil.removeSuffix(customUrl, "/") + "/" + normalizedHash;
+                }
+                log.debug("使用自定义种子获取地址 {}", torrent);
+            }
+        }
+
+        log.info("下载种子 {}", reName);
+        File saveTorrentFile = getTorrent(ani, item);
+        if (saveTorrentFile.exists()) {
+            return saveTorrentFile;
+        }
+
+        try {
+            if (ReUtil.contains(StringEnum.MAGNET_REG, torrent)) {
+                FileUtil.writeUtf8String(torrent, saveTorrentFile);
+                log.info("种子下载完成 {}", reName);
+                return saveTorrentFile;
+            }
+
+            if (ReUtil.contains(StringEnum.ED2K_REG, torrent)) {
+                FileUtil.writeUtf8String(torrent, saveTorrentFile);
+                log.info("种子下载完成 {}", reName);
+                return saveTorrentFile;
+            }
+
+            return HttpReq.get(torrent)
+                    .thenFunction(res -> {
+                        int status = res.getStatus();
+                        if (status == 404) {
+                            // 如果为 404 则写入空文件 已在 getMagnet 处理过
+                            FileUtil.writeUtf8String("", saveTorrentFile);
+                            log.info("种子下载完成 {}", reName);
+                            return saveTorrentFile;
+                        }
+                        HttpReq.assertStatus(res);
+                        FileUtil.writeFromStream(res.bodyStream(), saveTorrentFile, true);
+                        log.info("种子下载完成 {}", reName);
+                        return saveTorrentFile;
+                    });
+        } catch (Exception e) {
+            String message = ExceptionUtils.getMessage(e);
+            log.error("下载种子时出现问题 {}", message);
+            log.error(message, e);
+            // 种子未下载异常，删除
+            FileUtil.del(saveTorrentFile);
+        }
+        return saveTorrentFile;
+    }
+
+    /**
+     * 登录 qBittorrent
+     *
+     * @return 是否登录成功
+     */
+    public static Boolean login() {
+        String downloadPath = CONFIG.getDownloadPathTemplate();
+        if (StrUtil.isBlank(downloadPath)) {
+            log.warn("下载位置未设置");
+            return false;
+        }
+        try {
+            return DOWNLOAD.login(CONFIG);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 下载
+     *
+     * @param ani         订阅
+     * @param item        下载项
+     * @param savePath    保存位置
+     * @param torrentFile 种子文件
+     * @return 下载状态
+     */
+    public static Boolean download(Ani ani, Item item, String savePath, File torrentFile) {
+        return DOWNLOAD.download(ani, item, savePath, torrentFile);
+    }
+
+    /**
+     * 判断种子是否可以删除
+     *
+     * @param torrentsInfo 种子信息
+     * @return 是否可以删除
+     */
+    public static Boolean allowDelete(TorrentsInfo torrentsInfo) {
+        Boolean awaitStalledUP = CONFIG.getAwaitStalledUP();
+
+        TorrentsStateEnum torrentsState = torrentsInfo.getState();
+
+        // 是否等待做种完毕
+        if (awaitStalledUP) {
+            return torrentsState == TorrentsStateEnum.stoppedUP;
+        }
+
+        return torrentsInfo.finished();
+    }
+
+
+    /**
+     * 删除已完成任务
+     *
+     * @param torrentsInfo 任务
+     * @param forcedDelete 强制删除
+     * @param deleteFiles  删除本地文件
+     */
+    public static Boolean delete(TorrentsInfo torrentsInfo, Boolean forcedDelete, Boolean deleteFiles) {
+        String name = torrentsInfo.getName();
+
+        if (!forcedDelete) {
+            Boolean delete = CONFIG.getDelete();
+
+            if (!delete) {
+                return false;
+            }
+
+            if (!allowDelete(torrentsInfo)) {
+                return false;
+            }
+        }
+
+        log.info("删除任务 title: {} forcedDelete: {} deleteFiles: {}", name, forcedDelete, deleteFiles);
+
+        ThreadUtil.sleep(500);
+        Boolean b = DOWNLOAD.delete(torrentsInfo, deleteFiles);
+        if (!b) {
+            log.error("删除任务失败 {}", name);
+            return false;
+        }
+        log.info("删除任务成功 {}", name);
+        List<TorrentsInfo> pass = PASS_TORRENTS.get();
+        if (pass != null) {
+            pass.removeIf(info -> Objects.equals(info.getHash(), torrentsInfo.getHash()));
+        }
+        if (!deleteFiles) {
+            return true;
+        }
+        // 清理空文件夹
+        ClearService clearService = SpringUtil.getBean(ClearService.class);
+        clearService.clearDir(torrentsInfo.getSavePath());
+        return true;
+    }
+
+
+    /**
+     * 删除已完成任务
+     *
+     * @param torrentsInfo 种子信息
+     * @return 是否删除成功
+     */
+    public static Boolean delete(TorrentsInfo torrentsInfo) {
+        return delete(torrentsInfo, false, false);
+    }
+
+    /**
+     * 重命名
+     *
+     * @param torrentsInfo 种子信息
+     */
+    public static void rename(TorrentsInfo torrentsInfo) {
+        Boolean rename = CONFIG.getRename();
+        if (!rename) {
+            return;
+        }
+
+        List<String> tags = torrentsInfo.getTagList();
+        if (tags.contains(TorrentsTagEnum.RENAME.getValue())) {
+            return;
+        }
+
+        ThreadUtil.sleep(1000);
+        Boolean renamed = DOWNLOAD.rename(torrentsInfo);
+        if (renamed) {
+            addTags(torrentsInfo, TorrentsTagEnum.RENAME.getValue());
+        }
+    }
+
+    /**
+     * 添加标签
+     *
+     * @param torrentsInfo 种子信息
+     * @param tags         标签
+     * @return 是否添加成功
+     */
+    public static Boolean addTags(TorrentsInfo torrentsInfo, String tags) {
+        if (StrUtil.isBlank(tags)) {
+            return false;
+        }
+        String name = torrentsInfo.getName();
+        log.debug("添加标签 {} {}", name, tags);
+        boolean b = false;
+        try {
+            b = DOWNLOAD.addTags(torrentsInfo, tags);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+        return b;
+    }
+
+
+    /**
+     * 修改保存位置
+     *
+     * @param torrentsInfo 种子信息
+     * @param path         保存路径
+     */
+    public static void setSavePath(TorrentsInfo torrentsInfo, String path) {
+        if (StrUtil.isBlank(path)) {
+            return;
+        }
+        try {
+            log.info("修改保存位置 {} ==> {}", torrentsInfo.getName(), path);
+            DOWNLOAD.setSavePath(torrentsInfo, path);
+            ThreadUtil.sleep(3000);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 初始化下载工具
+     */
+    public static void loadDownloadTool() {
+        CONFIG.setDownloadToolType("qBittorrent");
+        DOWNLOAD = SpringUtil.getBean(qBittorrent.class);
+        log.info("下载工具 qBittorrent");
+    }
+
+    /**
+     * 通过种子获取到磁力链接
+     *
+     * @param file 文件
+     * @return 磁力链接
+     */
+    public static String getMagnet(File file) {
+        String hexHash = FileUtil.mainName(file);
+        if (file.length() < 1) {
+            return StrFormatter.format("magnet:?xt=urn:btih:{}", hexHash);
+        }
+        String extName = FileUtil.extName(file);
+        if ("txt".equals(extName)) {
+            return FileUtil.readUtf8String(file);
+        }
+        try {
+            return TorrentMetadata.from(file).getMagnetUri();
+        } catch (Exception e) {
+            log.error("转换种子为磁力链接时出现错误 {}", file);
+            log.error(e.getMessage(), e);
+        }
+        return StrFormatter.format("magnet:?xt=urn:btih:{}", hexHash);
+    }
+
+    /**
+     * 根据订阅查询到任务列表
+     *
+     * @param anis 订阅
+     * @return 任务列表
+     */
+    public static List<TorrentsInfo> findTorrentsInfosByAni(Ani... anis) {
+        return findTorrentsInfosByAni(List.of(anis));
+    }
+
+
+    /**
+     * 根据订阅查询到任务列表
+     *
+     * @param anis 订阅
+     * @return 任务列表
+     */
+    public static List<TorrentsInfo> findTorrentsInfosByAni(List<Ani> anis) {
+        return findTorrentsInfosByAni(anis, getTorrentsInfos());
+    }
+
+    /**
+     * 在已取得的任务列表中按订阅的保存位置过滤，避免同一轮内重复请求下载器。
+     *
+     * @param ani           订阅
+     * @param torrentsInfos 已取得的任务列表
+     * @return 该订阅对应的任务
+     */
+    public static List<TorrentsInfo> findTorrentsInfosByAni(Ani ani, List<TorrentsInfo> torrentsInfos) {
+        return findTorrentsInfosByAni(List.of(ani), torrentsInfos);
+    }
+
+    public static List<TorrentsInfo> findTorrentsInfosByAni(List<Ani> anis, List<TorrentsInfo> torrentsInfos) {
+        DownloadService downloadService = SpringUtil.getBean(DownloadService.class);
+
+        List<TorrentsInfo> torrentsInfoList = new ArrayList<>();
+        for (Ani ani : anis) {
+            String downloadPath = downloadService.getDownloadPath(ani);
+            for (TorrentsInfo torrentsInfo : torrentsInfos) {
+                if (downloadPath.equals(torrentsInfo.getSavePath())) {
+                    torrentsInfoList.add(torrentsInfo);
+                }
+            }
+        }
+        return torrentsInfoList;
+    }
+
+}

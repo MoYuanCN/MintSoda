@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="ani-rss-ui/public/icon.png" width="128" height="128" alt="ANI-RSS-Yuri"/>
+  <img src="mint-soda-ui/public/icon.png" width="128" height="128" alt="MintSoda"/>
 </p>
 
-<h1 align="center">ANI-RSS-Yuri</h1>
+<h1 align="center">MintSoda</h1>
 
 <p align="center">
   <img alt="java" src="https://img.shields.io/badge/Java-25-orange?logo=openjdk&logoColor=white">
@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="#-快速开始">快速开始</a> ·
-  <a href="#-分支特色">分支特色</a> ·
+  <a href="#-功能特色">功能特色</a> ·
   <a href="#-插件系统">插件系统</a> ·
   <a href="#-本地构建">本地构建</a> ·
   <a href="docs/README.md">文档导航</a> ·
@@ -25,20 +25,20 @@
 
 ## 项目简介
 
-**ANI-RSS-Yuri** 是 [ANI-RSS](https://github.com/wushuo894/ani-rss) 的分支项目，围绕自托管场景做了取舍：只保留 qBittorrent 下载器，收敛通知渠道，重写匹配规则与通知模板，补齐插件系统与多语言 WebUI。常规订阅与下载流程尽量与上游保持一致，差异集中在这些自有能力上。
+**MintSoda** 面向自托管场景：只保留 qBittorrent 下载器，收敛通知渠道，重写匹配规则与通知模板，并内置插件系统与多语言 WebUI。项目最初派生自 [ANI-RSS](https://github.com/wushuo894/ani-rss)，现已独立演进，代码命名空间、产物与文档均使用 MintSoda。
 
 ## 🚀 快速开始
 
 | 平台 | 方式 |
 | --- | --- |
-| 🪟 Windows | 下载 `ani-rss-Yuri.exe` 直接运行，配置保存在 EXE 同目录的 `config/` |
+| 🪟 Windows | 下载 `MintSoda.exe` 直接运行，配置保存在 EXE 同目录的 `config/` |
 | 🐧 Linux | 一条命令安装到当前目录并注册 systemd 服务 |
-| ☕ 通用 | 下载 `ani-rss-Yuri.jar`，使用 Java 25 运行 |
+| ☕ 通用 | 下载 `MintSoda.jar`，使用 Java 25 运行 |
 
 **Linux 一键安装**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/install-yuri.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/MoYuanCN/MintSoda/main/linux/install.sh | sudo bash
 ```
 
 安装过程中会在终端询问登录用户名与密码（直接回车则自动生成）；也可追加参数跳过询问：
@@ -51,20 +51,20 @@ curl -fsSL https://raw.githubusercontent.com/MoYuanCN/ani-rss-Yuri/main/linux/in
 --setup              # 未配置账号时强制在 WebUI 完成首次初始化（已配置则忽略）
 ```
 
-安装完成后运行 `assyuri` 打开管理菜单，也可以直接使用子命令：
+安装完成后运行 `mintsoda` 打开管理菜单，也可以直接使用子命令：
 
 ```bash
-assyuri status     # 运行状态
-assyuri version    # 版本与安装目录
-assyuri update     # 更新到最新版本
-assyuri log        # 实时查看日志
-assyuri restart    # 重启服务
-assyuri uninstall  # 卸载服务
+mintsoda status     # 运行状态
+mintsoda version    # 版本与安装目录
+mintsoda update     # 更新到最新版本
+mintsoda log        # 实时查看日志
+mintsoda restart    # 重启服务
+mintsoda uninstall  # 卸载服务
 ```
 
 > 默认端口 **17789**，首次访问会按平台规则生成凭据或进入账号设置引导。
 
-## ✨ 分支特色
+## ✨ 功能特色
 
 | 能力 | 说明 |
 | --- | --- |
@@ -76,7 +76,7 @@ assyuri uninstall  # 卸载服务
 | 部署 | Windows EXE 便携配置，Linux 一键安装并注册 systemd |
 | 多语言 | 简体中文、繁体中文与英文，切换不影响服务端配置 |
 
-完整的功能清单、配置说明与行为差异见 [分支特性](docs/SPECIAL_FEATURE.md)；日常使用见 [使用指南](docs/USER_GUIDE.md)；对接脚本见 [API 参考](docs/API.md)。
+完整的功能清单、配置说明与实现约定见 [功能与实现](docs/SPECIAL_FEATURE.md)；日常使用见 [使用指南](docs/USER_GUIDE.md)；对接脚本见 [API 参考](docs/API.md)。
 
 ## 🎨 外观与主题
 
@@ -87,7 +87,7 @@ assyuri uninstall  # 卸载服务
 
 ## 🧩 插件系统
 
-- 独立接口模块 `ani-rss-plugin-api`，插件以单独 JAR 加载，宿主与插件只共享稳定接口。
+- 独立接口模块 `mint-soda-plugin-api`，插件以单独 JAR 加载，宿主与插件只共享稳定接口。
 - Java 插件以 JAR 分发；**JavaScript / Lua 插件**只需一个 `plugin.json` 加一个脚本打成 ZIP。
 - 扩展点：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、下载事件、自定义 HTTP 接口。
 - 每个插件的能力按组逐项授权，可随时调整并立即生效；插件可在私有目录持久化数据，升级不受影响。
@@ -97,7 +97,7 @@ assyuri uninstall  # 卸载服务
 
 ## 🛠️ 本地构建
 
-需要 **Java 25**。Maven 前端插件会把 Node.js 与 pnpm 下载到 `ani-rss-ui/node/`，依赖缓存写入 `ani-rss-ui/.tools/pnpm-store/`，无需系统级 Node 环境。
+需要 **Java 25**。Maven 前端插件会把 Node.js 与 pnpm 下载到 `mint-soda-ui/node/`，依赖缓存写入 `mint-soda-ui/.tools/pnpm-store/`，无需系统级 Node 环境。
 
 ```bash
 # 仅构建 JAR（含前端资源）
@@ -107,15 +107,15 @@ mvn -B package -DskipTests --file pom.xml
 bash ./package.sh
 ```
 
-产物位于 `ani-rss-application/target/`：`ani-rss-Yuri.jar` 与 `ani-rss-Yuri.exe`。
+产物位于 `mint-soda-application/target/`：`MintSoda.jar` 与 `MintSoda.exe`。
 
 ## 📦 目录结构
 
 | 路径 | 说明 |
 | --- | --- |
-| `ani-rss-application/` | Spring Boot 后端：订阅、匹配、下载、通知与配置 |
-| `ani-rss-ui/` | Vue 3 + Vite + Element Plus 前端，含三种语言的词条 |
-| `ani-rss-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖 |
+| `mint-soda-application/` | Spring Boot 后端：订阅、匹配、下载、通知与配置 |
+| `mint-soda-ui/` | Vue 3 + Vite + Element Plus 前端，含三种语言的词条 |
+| `mint-soda-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖 |
 | `examples/plugins/` | 三种运行时的示例插件与市场索引，不参与正式构建 |
 | `linux/` | Linux 安装、管理菜单与控制脚本 |
 | `docs/` | 使用、开发、插件、API、配置、安全与多语言文档 |
@@ -126,7 +126,7 @@ bash ./package.sh
 | 我想… | 看这里 |
 | --- | --- |
 | 安装并跑起来 | [使用指南 · 运行与配置文件](docs/USER_GUIDE.md#运行与配置文件) |
-| 了解本分支改了什么 | [分支特性](docs/SPECIAL_FEATURE.md) |
+| 了解功能边界与实现 | [功能与实现](docs/SPECIAL_FEATURE.md) |
 | 写脚本调用接口 | [API 参考](docs/API.md) |
 | 排查或迁移配置 | [配置参考](docs/CONFIG.md) |
 | 编写插件 | [插件开发指南](docs/PLUGIN_DEVELOPMENT.md) |
@@ -138,7 +138,7 @@ bash ./package.sh
 
 ## 📄 许可
 
-本项目沿用上游的 **GPL-2.0** 许可证，详见 [LICENSE](LICENSE)。
+本项目采用 **GPL-2.0** 许可证，详见 [LICENSE](LICENSE)。
 
 <p align="center">
   <sub>欢迎提交 Issue 与 PR，也欢迎点个 ⭐ Star</sub>

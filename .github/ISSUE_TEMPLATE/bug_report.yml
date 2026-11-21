@@ -12,7 +12,7 @@ body:
       label: 请勾选您确认过的前置条件
       options:
         - label: |
-            我已经阅读了 [ANI-RSS-Yuri 使用指南](https://github.com/MoYuanCN/ani-rss-Yuri/blob/main/docs/USER_GUIDE.md)
+            我已经阅读了 [MintSoda 使用指南](https://github.com/MoYuanCN/MintSoda/blob/main/docs/USER_GUIDE.md)
         - label: |
             我确定没有重复的issue或discussions
         - label: |
