@@ -1,0 +1,21 @@
+# 统一行尾，避免 Windows 检出把脚本转成 CRLF 后在 CI 上无法执行。
+* text=auto eol=lf
+
+*.sh text eol=lf
+.githooks/* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.java text eol=lf
+*.vue text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.xml text eol=lf
+
+# 二进制产物不做行尾转换。
+*.jar binary
+*.exe binary
+*.png binary
+*.ico binary
+*.zip binary
+*.gz binary

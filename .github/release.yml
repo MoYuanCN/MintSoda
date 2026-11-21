@@ -1,0 +1,24 @@
+changelog:
+  categories:
+    - title: 功能
+      labels:
+        - feature
+        - feat
+    - title: 修复
+      labels:
+        - bug
+        - fix
+    - title: 插件
+      labels:
+        - plugin
+    - title: 文档
+      labels:
+        - docs
+        - documentation
+    - title: 构建与工作流
+      labels:
+        - build
+        - ci
+  exclude:
+    labels:
+      - skip-changelog

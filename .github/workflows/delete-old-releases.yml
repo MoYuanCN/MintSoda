@@ -1,16 +1,35 @@
-name: delete-old-releases
+name: 清理旧版本
 
 on:
   workflow_dispatch:
+    inputs:
+      keep-count:
+        description: 保留的 Release 数量
+        required: false
+        default: '5'
+      dry-run:
+        description: 只列出将删除的版本，不实际删除
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
 jobs:
-  build:
+  cleanup:
+    name: 删除过期 Release
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: Nats-ji/delete-old-releases@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           remove-tags: true
-          keep-count: 5
+          keep-count: ${{ inputs.keep-count }}
           keep-old-minor-releases: true
           keep-old-minor-releases-count: 1
+          dry-run: ${{ inputs.dry-run }}

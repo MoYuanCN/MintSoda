@@ -1,0 +1,81 @@
+name: 构建发布产物
+description: 构建前端、JAR 与 Windows EXE，校验产物完整并上传为工作流附件
+
+inputs:
+  artifact-name:
+    description: 上传的产物名称
+    required: false
+    default: mint-soda-dist
+  retention-days:
+    description: 产物保留天数
+    required: false
+    default: '7'
+
+runs:
+  using: composite
+  steps:
+    - name: 安装 JDK 25
+      uses: actions/setup-java@v6
+      with:
+        java-version: '25'
+        distribution: temurin
+        cache: maven
+
+    - name: 缓存前端工具链
+      uses: actions/cache@v6
+      with:
+        path: |
+          mint-soda-ui/node
+          mint-soda-ui/.tools/pnpm-store
+        key: ${{ runner.os }}-frontend-${{ hashFiles('mint-soda-ui/pom.xml', 'mint-soda-ui/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-frontend-
+
+    - name: 打包 JAR 与 EXE
+      shell: bash
+      run: bash ./package.sh
+
+    - name: 校验产物
+      shell: bash
+      run: |
+        set -euo pipefail
+        target="$GITHUB_WORKSPACE/mint-soda-application/target"
+        jar="$target/MintSoda.jar"
+        exe="$target/MintSoda.exe"
+
+        for artifact in "$jar" "$exe"; do
+          if [ ! -s "$artifact" ]; then
+            echo "缺少构建产物：$(basename "$artifact")" >&2
+            exit 1
+          fi
+        done
+
+        if ! unzip -l "$jar" | grep -q 'BOOT-INF/lib/mint-soda-ui-'; then
+          echo "JAR 未包含前端资源" >&2
+          exit 1
+        fi
+
+        rm -rf "$GITHUB_WORKSPACE/dist"
+        mkdir -p "$GITHUB_WORKSPACE/dist"
+        cp "$jar" "$exe" "$GITHUB_WORKSPACE/dist/"
+
+        cd "$GITHUB_WORKSPACE/dist"
+        sha256sum MintSoda.jar MintSoda.exe | tee sha256.txt
+
+        {
+          echo '### 构建产物'
+          echo
+          echo '| 文件 | 字节 | sha256 |'
+          echo '| --- | --- | --- |'
+          for artifact in MintSoda.jar MintSoda.exe; do
+            echo "| $artifact | $(stat -c %s "$artifact") | \`$(sha256sum "$artifact" | cut -d' ' -f1)\` |"
+          done
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: 上传产物
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: dist/
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: error
