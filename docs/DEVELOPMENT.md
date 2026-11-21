@@ -75,7 +75,8 @@ cd mint-soda-ui
 
 | 方式 | 作用 |
 | --- | --- |
-| `CONFIG=/path/to/config` 或 `--config=/path/to/config` | 指定配置目录 |
+| `CONFIG=/path/to/config` 或 `--config=/path/to/config` | 指定配置目录；目录名为 `config` 时数据在旁路 `data/`，否则在目录内 |
+| 程序目录下的 `config/` 或 `data/` | 未指定 `CONFIG` 时优先于工作目录，便于挂载配置与数据 |
 | `--setup` | 尚未配置账号时强制进入 WebUI 初始化，已配置时无效 |
 | `SWAGGER_ENABLED=true` | 临时开启 Swagger，默认关闭 |
 | `MCP_ENABLED=true` | 临时开启 MCP 端点，默认关闭 |
@@ -100,7 +101,7 @@ bash ./package.sh
 
 `package.sh` 使用 Maven `windows` profile 生成 EXE，并保留 JAR。CI 与发布共用 `.github/actions/build-artifacts/` 这一个复合 Action：安装 JDK 25、缓存前端工具链、执行 `package.sh`、校验 JAR 内包含前端资源、输出 `sha256` 并上传产物。
 
-Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向安装目录。手动运行时可通过 `CONFIG=/path/to/config java -jar MintSoda.jar` 指定配置目录。
+Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向安装目录。手动运行时可通过 `CONFIG=/path/to/config java -jar MintSoda.jar` 指定配置目录；未指定时，程序目录下已存在的 `config/` 或 `data/` 优先，因此容器里把这两个目录挂载到 JAR 旁边即可，无需额外参数。
 
 ## 代码约定
 

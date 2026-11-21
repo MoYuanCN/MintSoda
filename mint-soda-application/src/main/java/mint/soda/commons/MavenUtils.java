@@ -40,6 +40,24 @@ public class MavenUtils {
                 .setFile(new File(s));
     }
 
+    /**
+     * 程序所在目录，即 JAR 或 EXE 的父目录。
+     * <p>
+     * 开发环境（classpath 指向 classes 目录）无法确定安装位置，返回 {@code null}。
+     *
+     * @return 程序目录；无法判断时返回 null
+     */
+    public static File getApplicationDir() {
+        CurrentFile currentFile = getCurrentFile();
+        File file = currentFile.getFile();
+        // 只有确实存在且为文件的 JAR / EXE 才能确定安装位置；
+        // 开发环境的 classes 目录或空 classpath 一律视为未知。
+        if (file == null || !file.isFile()) {
+            return null;
+        }
+        return file.getAbsoluteFile().getParentFile();
+    }
+
     public static String getVersion() {
         if (Objects.nonNull(version)) {
             return version;

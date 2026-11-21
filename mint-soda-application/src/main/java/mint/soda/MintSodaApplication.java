@@ -1,6 +1,8 @@
 package mint.soda;
 
+import mint.soda.commons.StoragePaths;
 import mint.soda.entity.Global;
+import mint.soda.util.other.ConfigUtil;
 import mint.soda.util.other.SystemTrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -19,8 +21,25 @@ public class MintSodaApplication {
     public static void main(String[] args) {
         Global.ARGS = List.of(ObjectUtil.defaultIfNull(args, new String[]{}));
         loadProperty();
+        prepareStorage();
         SystemTrayUtil.start();
         SpringApplication.run(MintSodaApplication.class, args);
+    }
+
+    /**
+     * 绑定存储目录并确认可写。
+     * <p>
+     * 程序目录下的 {@code config/} 或 {@code data/} 常由容器或隔离环境挂载进来，
+     * 只读或属主不匹配时在这里直接给出结论，而不是等到运行中写盘失败。
+     */
+    private static void prepareStorage() {
+        try {
+            ConfigUtil.getConfigDir();
+            StoragePaths.checkWritable();
+        } catch (Exception e) {
+            System.err.println("启动失败: " + e.getMessage());
+            System.exit(1);
+        }
     }
 
     public static void loadProperty() {

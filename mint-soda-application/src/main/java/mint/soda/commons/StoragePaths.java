@@ -135,6 +135,32 @@ public final class StoragePaths {
     }
 
     /**
+     * 校验配置目录与数据目录可写。
+     * <p>
+     * 隔离环境常把两个目录以只读或错误属主的方式挂载进来，启动时直接给出结论，
+     * 避免运行中写盘失败才暴露问题。
+     */
+    public static void checkWritable() {
+        checkWritable(configDir(), "配置目录");
+        checkWritable(dataDir(), "数据目录");
+    }
+
+    private static void checkWritable(File dir, String label) {
+        File probe = new File(dir, ".mint-soda-write-test-" + System.nanoTime());
+        try {
+            FileUtil.mkdir(dir);
+            if (!probe.createNewFile()) {
+                throw new IOException("无法创建测试文件");
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    StrUtil.format("{}不可写: {}，请检查挂载方式与运行用户权限", label, dir), e);
+        } finally {
+            FileUtil.del(probe);
+        }
+    }
+
+    /**
      * 把相对路径安全地解析到根目录内。
      *
      * @param root     根目录

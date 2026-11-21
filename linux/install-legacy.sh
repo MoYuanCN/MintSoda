@@ -80,10 +80,19 @@ deploy_app() {
 
     sudo chmod +x /usr/local/bin/mint-soda
 
-    # 设置权限
-    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
+    # 设置权限；config/ 与 data/ 可能是挂载目录，只对新建目录设置属主。
+    chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR" "$INSTALL_DIR/MintSoda.jar"
     chmod 750 "$INSTALL_DIR"
     chmod 640 "$INSTALL_DIR/MintSoda.jar"
+    for dir in config data; do
+        local existed="no"
+        [ -d "$INSTALL_DIR/$dir" ] && existed="yes"
+        mkdir -p "$INSTALL_DIR/$dir"
+        if [ "$existed" = "no" ]; then
+            chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/$dir"
+            chmod 750 "$INSTALL_DIR/$dir"
+        fi
+    done
     echo -e "${GREEN}程序部署完成${NC}"
 }
 

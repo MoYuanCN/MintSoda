@@ -263,9 +263,9 @@ Body 有两种来源：
 
 - 出站请求的 User-Agent 为 `MintSoda/<版本>`，可在开发者选项中覆盖。
 - 构建产物为 `MintSoda.jar` 与 `MintSoda.exe`；更新器为 `MintSoda-update.exe`。
-- Windows 非 exe 运行的默认配置目录为 `MintSoda/`，便携运行时为 EXE 同目录的 `config/`。
+- 程序目录下存在 `config/` 或 `data/` 时直接使用程序目录，便于容器与隔离环境挂载配置与数据；Windows 非 exe 运行且两者都不存在时默认配置目录为 `MintSoda/`，便携运行（EXE）始终为 EXE 同目录的 `config/` 与 `data/`。
 - qBittorrent 的分类与标签统一为 `MintSoda`。
-- 日志为 `logs/MintSoda.log`，备份文件为 `MintSoda.backup.<版本>.zip`，ICS 文件名与日历名称同样使用 `MintSoda`。
+- 日志为 `data/logs/MintSoda.log`，备份文件为 `MintSoda.backup.<版本>.zip`，ICS 文件名与日历名称同样使用 `MintSoda`。
 - Linux 服务名与系统用户为 `mint-soda`，控制脚本为 `linux/mint-soda.sh`。
 
 ## 部署
@@ -274,7 +274,8 @@ Body 有两种来源：
 - `linux/install.sh` 安装到**执行命令时所在目录**（不新建子目录）并注册 systemd 服务，安装时在终端交互询问用户名与两次密码（沿用与后端一致的强度校验），也可用 `--username`、`--password` 直接传入；另有 `--port`、`--dir`、`--setup`、`--yes`。重新安装检测到已有配置时默认沿用原账号。凭据写入仅 root 可读的环境文件。
 - `linux/mintsoda` 提供数字菜单与子命令（`status`、`version`、`update`、`log`、`start/stop/restart`、`enable/disable`、`uninstall`）；无 `unzip` 时用 Python 读取版本。
 - `linux/install-legacy.sh` 安装到 `/opt/mint-soda`。
-- Windows EXE 使用便携配置目录：配置保存在 EXE 同目录的 `config/`，并在首次启动时复制旧用户目录配置。
+- Windows EXE 使用便携配置目录：配置与数据保存在 EXE 同目录的 `config/`、`data/`，并在首次启动时复制旧用户目录配置。
+- 容器或隔离环境可直接把 `config/` 与 `data/` 挂载到程序目录；启动时只校验可写，不会改动挂载目录的属主或内容。
 
 ## 配置字段的处理约定
 

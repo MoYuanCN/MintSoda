@@ -22,6 +22,8 @@
 | `data/backups/YYYY-MM-DD.zip` | 开启“设置备份”后每日生成的压缩包，保留 `configBackupDay` 天 |
 | `data/plugins/installed.json` | 插件安装记录，不进入备份 |
 
+目录选择：`CONFIG` 环境变量或 `--config=` 优先；未指定时，程序目录（JAR / EXE 所在目录）存在 `config/` 或 `data/` 就使用程序目录，便于把两个目录直接挂载进容器或隔离环境；否则使用工作目录下的 `config/`，Windows 再回落到用户目录的 `MintSoda/`。启动时会校验两个目录可写，失败即退出并指明目录。
+
 加载顺序：先由 `DefaultConfigFactory` 生成完整默认值，再把磁盘上的 JSON 覆盖上去（`null` 不覆盖），最后由 `ConfigUtil#format` 补齐缺失字段、执行迁移与范围校正。因此旧配置缺字段不会导致启动失败。
 
 自动备份的内容是 `data/images/covers/`、`data/torrents/`、`data/images/assets/`、`data/subscriptions.json`、`config/config.json` 与整个插件目录（含私有 `data/`，不含 `installed.json`），可用 `/api/importBackup` 或设置页导入恢复。旧版备份中的 `ani.v2.json`、`config.v2.json`、`files/`、`img/`、`ui-assets/` 等条目在导入时自动映射到新位置。

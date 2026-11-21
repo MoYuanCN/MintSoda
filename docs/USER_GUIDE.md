@@ -24,20 +24,23 @@
 
 MintSoda 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR，以及 Linux 使用的 JAR。运行 JAR 需要 Java 25。
 
-- **Windows EXE**：配置文件保存在 EXE 同目录下的 `config/`。首次运行会创建该目录。检测到旧版 `%USERPROFILE%/mint-soda/` 配置且目标目录还没有配置文件时，程序会复制旧配置；原目录会保留。
-- **Windows 或 Linux 的 JAR**：若设置了 `CONFIG` 环境变量，则使用该目录；否则当前目录存在 `config/` 时使用它。Windows 没有上述目录时使用用户目录下的 `MintSoda/`（检测到旧的 `mint-soda/` 配置会自动复制）；Linux 使用当前工作目录下的 `config/`。
+- **Windows EXE**：配置与数据保存在 EXE 同目录下的 `config/` 与 `data/`。首次运行会创建这两个目录。检测到旧版 `%USERPROFILE%/mint-soda/` 配置且目标目录还没有配置文件时，程序会复制旧配置；原目录会保留。
+- **Windows 或 Linux 的 JAR**：若设置了 `CONFIG` 环境变量，则使用该目录；否则程序所在目录存在 `config/` 或 `data/` 时使用程序目录（适合把目录挂载进容器或隔离环境）；再否则当前工作目录存在 `config/` 时使用它。Windows 以上都没有时使用用户目录下的 `MintSoda/`；Linux 使用当前工作目录下的 `config/`。
 - **Linux 一键安装**：`curl -fsSL https://raw.githubusercontent.com/MoYuanCN/MintSoda/main/linux/install.sh | sudo bash` 会把 JAR 安装到执行命令时所在的目录（不新建子目录）并注册 systemd 服务。安装过程中会在终端依次询问用户名与两次密码（密码输入时不回显）：用户名需 3-32 位字母、数字、下划线或连字符，密码至少 8 位且包含大写字母、小写字母、数字、符号中的至少两类；直接回车跳过则由程序在首次启动生成随机凭据。也可用 `--username` / `--password` 直接传入，或用 `--setup` 在尚未配置账号时跳过询问并在 WebUI 中完成初始化，`--port` 修改端口，`--dir` 指定目录，`--yes` 跳过所有确认。安装完成后运行 `mintsoda` 打开管理菜单，可查看运行状态、版本、更新、启停和日志，也可直接使用 `mintsoda status` 等命令。
 - **Linux 固定目录安装**：`sudo bash linux/install-legacy.sh` 会把服务安装到 `/opt/mint-soda/`。安装脚本需要联网下载 JAR 和 Java 25。
 
 配置目录的位置取决于启动方式：
 
-| 启动方式 | 配置目录 |
-| --- | --- |
-| Windows EXE | EXE 同目录的 `config/` |
-| JAR，设置了 `CONFIG` | `CONFIG` 指向的目录 |
-| JAR，当前目录存在 `config/` | 当前目录的 `config/` |
-| Windows JAR，以上都没有 | 用户目录下的 `MintSoda/`（检测到旧的 `mint-soda/` 会复制） |
-| Linux JAR，以上都没有 | 当前工作目录的 `config/` |
+| 启动方式 | 配置目录 | 数据目录 |
+| --- | --- | --- |
+| Windows EXE | EXE 同目录的 `config/` | 同级的 `data/` |
+| JAR，设置了 `CONFIG` | `CONFIG` 指向的目录 | 目录名为 `config` 时为其同级的 `data/`，否则在其内部 |
+| JAR，程序目录存在 `config/` 或 `data/` | 程序目录的 `config/` | 程序目录的 `data/` |
+| JAR，当前目录存在 `config/` | 当前目录的 `config/` | 同级的 `data/` |
+| Windows JAR，以上都没有 | 用户目录下的 `MintSoda/`（检测到旧的 `mint-soda/` 会复制） | 同级的 `data/` |
+| Linux JAR，以上都没有 | 当前工作目录的 `config/` | 同级的 `data/` |
+
+程序启动时会检查配置目录与数据目录是否可写：只读挂载或运行用户没有权限时直接退出并说明是哪个目录不可写，不会带着问题继续运行。
 
 配置目录只保存设置文件 `config.json`。其余数据统一放在配置目录同级的 `data/`：订阅、封面与预览图缓存、上传图片、种子、插件与日志都在这里。备份与迁移时整体复制 `config/` 与 `data/` 即可；各配置字段的含义见[配置参考](CONFIG.md)。从旧版本升级时，原配置目录内的 `config.v2.json`、`ani.v2.json`、`files/`、`img/`、`ui-assets/`、`plugins/`、`torrents/`、`logs/` 会在启动时自动迁移到新结构。
 
@@ -118,7 +121,7 @@ MintSoda 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR，以
 - **三种运行时**：Java 插件功能最全；JavaScript 与 Lua 插件不需要编译，适合改模板、加通知渠道与简单过滤。
 - **权限**：每个插件卡片有“权限”一栏，按「订阅 / 下载与通知 / 任务 / 接口 / 配置与数据 / 系统」分组逐项开关，读与写分开授权（例如插件可以只读数据不能写入）。取消下载是独立权限，未授权时插件无法中断下载。保存后已启用的插件会立即按新权限重载；关闭的权限对应功能会停止工作，插件其余部分继续运行。安装时按插件声明初始化，升级不会重置你的调整。
 - **插件数据**：插件可在自己的 `plugins/{插件标识}/data` 目录保存状态，升级与重装都不会丢失；卸载会连同数据一起删除，需要保留时先导出备份。
-- **备份**：导出的设置备份同时包含插件与插件私有数据；导入会整体替换插件目录，插件按备份内容恢复但默认停用，权限仍以本机记录为准。备份文件名形如 `MintSoda.backup.<版本>.zip`，日志文件位于配置目录的 `logs/MintSoda.log`。
+- **备份**：导出的设置备份同时包含插件与插件私有数据；导入会整体替换插件目录，插件按备份内容恢复但默认停用，权限仍以本机记录为准。备份文件名形如 `MintSoda.backup.<版本>.zip`，日志文件位于 `data/logs/MintSoda.log`。
 - **市场**：市场地址保存在设置中，是一个 JSON 索引；检查更新时优先使用市场条目，缺少条目时回退到插件自带的更新地址。
 - **更新**：插件卡片显示“可更新”与最新版本，可单个更新或一次检查全部插件。
 - **配置**：插件可以在插件页声明设置项，保存后会写入插件配置。

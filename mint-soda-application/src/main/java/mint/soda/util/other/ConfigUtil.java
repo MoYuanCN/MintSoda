@@ -72,13 +72,23 @@ public class ConfigUtil {
             }
 
             OsInfo osInfo = SystemUtil.getOsInfo();
+            File applicationDir = MavenUtils.getApplicationDir();
             if (osInfo.isWindows()) {
                 MavenUtils.CurrentFile currentFile = MavenUtils.getCurrentFile();
                 if (currentFile.isExe()) {
-                    File portableConfigDir = new File(currentFile.getFile().getAbsoluteFile().getParentFile(), "config");
-                    resolvedConfigDir = portableConfigDir;
+                    // 便携运行：配置与数据始终跟随 EXE 所在目录。
+                    File exeDir = currentFile.getFile().getAbsoluteFile().getParentFile();
+                    resolvedConfigDir = new File(exeDir, "config");
                     return resolvedConfigDir;
                 }
+            }
+
+            // 程序目录下的 config/ 或 data/ 视为挂载或便携布局，优先于工作目录。
+            if (applicationDir != null
+                    && (new File(applicationDir, "config").isDirectory()
+                    || new File(applicationDir, "data").isDirectory())) {
+                resolvedConfigDir = new File(applicationDir, "config");
+                return resolvedConfigDir;
             }
 
             // 若当前目录存在 config 则优先使用
@@ -129,6 +139,7 @@ public class ConfigUtil {
         BeanUtil.copyProperties(config, CONFIG, copyOptions);
         format(CONFIG);
         LogUtil.loadLogback();
+        log.info("配置目录 {}，数据目录 {}", StoragePaths.configDir(), StoragePaths.dataDir());
         log.debug("加载配置文件 {}", configFile);
         TorrentUtil.loadDownloadTool();
     }

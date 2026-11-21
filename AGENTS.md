@@ -41,7 +41,7 @@ bash ./package.sh
 - `linux/install.sh` 是一键安装入口（安装到当前目录并注册 systemd），`linux/mintsoda` 是配套的交互菜单脚本；`linux/install-legacy.sh` 保留为安装到 `/opt/mint-soda` 的旧方式。
 - Windows profile 的 `generate-resources` 阶段需要 `bash` 与 `curl`；CI 在 Ubuntu 上执行同一脚本。
 - 前端单独调试：在 `mint-soda-ui/` 下用 `pnpm install` 与 `pnpm dev`（可使用 Maven 下载到 `mint-soda-ui/node/` 的 pnpm），Vite 端口 37789，并将 `/api` 代理到本地后端。
-- 运行时可用的环境变量/参数：`CONFIG`/`--config=` 指定配置目录；`MCP_ENABLED`/`--mcp-enabled=` 与 `SWAGGER_ENABLED`/`--swagger-enabled=` 打开默认关闭的 MCP 与 Swagger；`--setup` 仅在尚未配置账号时强制在 WebUI 完成首次初始化（已配置时完全失效）；`MINT_SODA_USERNAME`/`MINT_SODA_PASSWORD` 覆盖登录凭据；`SERVER_PORT` 等 Spring 标准配置可覆盖端口（默认 17789）。
+- 运行时可用的环境变量/参数：`CONFIG`/`--config=` 指定配置目录（目录名为 `config` 时数据目录为同级 `data/`）；未指定时程序目录下的 `config/` 或 `data/` 优先于工作目录，便于挂载；`MCP_ENABLED`/`--mcp-enabled=` 与 `SWAGGER_ENABLED`/`--swagger-enabled=` 打开默认关闭的 MCP 与 Swagger；`--setup` 仅在尚未配置账号时强制在 WebUI 完成首次初始化（已配置时完全失效）；`MINT_SODA_USERNAME`/`MINT_SODA_PASSWORD` 覆盖登录凭据；`SERVER_PORT` 等 Spring 标准配置可覆盖端口（默认 17789）。
 
 不要改动默认的 `SWAGGER_ENABLED=false`、`MCP_ENABLED=false`；需要调试时通过环境变量临时开启。
 

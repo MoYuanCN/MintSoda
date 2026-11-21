@@ -392,23 +392,46 @@ UNIT
     ok "服务已启动"
 }
 
+run_as_service_user() {
+    if command -v runuser >/dev/null 2>&1; then
+        runuser -u "$SERVICE_USER" -- "$@" 2>/dev/null
+    elif command -v su >/dev/null 2>&1; then
+        su -s /bin/sh "$SERVICE_USER" -c "$(printf '%q ' "$@")" 2>/dev/null
+    else
+        "$@"
+    fi
+}
+
+# 确保目录对服务用户可写。
+# 已存在的目录可能是挂载进来的：先看权限，只有确实不可写时才尝试修正属主，
+# 仍然不可写（例如只读挂载）就保留现状并提示，启动时程序会给出同样的结论。
+ensure_writable_dir() {
+    local dir="$1"
+    local existed="no"
+    [ -d "$dir" ] && existed="yes"
+    mkdir -p "$dir"
+    if run_as_service_user test -w "$dir"; then
+        return 0
+    fi
+    # 已有目录可能是宿主机挂载进来的，改属主会影响宿主机，因此只对新建目录设置权限。
+    if [ "$existed" = "no" ]; then
+        chown -R "$SERVICE_USER:$SERVICE_USER" "$dir"
+        chmod 750 "$dir"
+        run_as_service_user test -w "$dir" && return 0
+    fi
+    warn "服务用户 $SERVICE_USER 无法写入 $dir；若该目录由挂载提供，请为其授予写权限，否则启动会失败"
+}
+
 fix_permissions() {
-    mkdir -p "$INSTALL_DIR/config" "$INSTALL_DIR/data"
-    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config" "$INSTALL_DIR/data"
     chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/MintSoda.jar"
-    chmod 750 "$INSTALL_DIR/config" "$INSTALL_DIR/data"
     chmod 640 "$INSTALL_DIR/MintSoda.jar"
+    ensure_writable_dir "$INSTALL_DIR/config"
+    ensure_writable_dir "$INSTALL_DIR/data"
 
     # 服务以独立用户运行，安装目录必须可遍历，例如 /root 下的目录会失败。
-    local readable="no"
-    if command -v runuser >/dev/null 2>&1; then
-        runuser -u "$SERVICE_USER" -- test -r "$INSTALL_DIR/MintSoda.jar" 2>/dev/null && readable="yes"
-    elif command -v su >/dev/null 2>&1; then
-        su -s /bin/sh "$SERVICE_USER" -c "test -r '$INSTALL_DIR/MintSoda.jar'" 2>/dev/null && readable="yes"
-    else
-        readable="yes"
+    if ! run_as_service_user test -r "$INSTALL_DIR/MintSoda.jar"; then
+        die "服务用户 $SERVICE_USER 无法读取 $INSTALL_DIR/MintSoda.jar。请改用 --dir /opt/mint-soda 等可访问目录后重试"
     fi
-    [ "$readable" = "yes" ] || die "服务用户 $SERVICE_USER 无法读取 $INSTALL_DIR/MintSoda.jar。请改用 --dir /opt/mint-soda 等可访问目录后重试"
 }
 
 show_hint() {
