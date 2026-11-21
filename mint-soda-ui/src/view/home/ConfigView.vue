@@ -112,26 +112,26 @@ const groups = [
     items: [
       {
         name: 'appearance',
-        label: t('appearanceandtheme'),
-        description: t('appearancehint'),
+        label: t('navappearance'),
+        description: t('navdescappearance'),
         keywords: '外观 主题 背景 模糊 透明度 圆角 强调色 logo 布局 排序 apperance theme background blur opacity'
       },
       {
         name: 'subscription',
-        label: t('subscriptionsandupdates'),
-        description: t('rssandupdateshint'),
+        label: t('navsubscription'),
+        description: t('navdescsubscription'),
         keywords: 'rss 订阅 刷新 间隔 并发 总集数 完结 备用 跳过 om it 偏移 默认规则'
       },
       {
         name: 'naming',
-        label: t('namingandpaths'),
-        description: t('naming') + ' · ' + t('savingpaths'),
+        label: t('navnaming'),
+        description: t('navdescnaming'),
         keywords: '重命名 模板 保存位置 路径 剧场版 合集 字幕文件夹 rename path template'
       },
       {
         name: 'download',
-        label: t('downloadandtasks'),
-        description: t('downloaderconnection') + ' · ' + t('taskexecution'),
+        label: t('navdownload'),
+        description: t('navdescdownload'),
         keywords: 'qbittorrent 下载器 地址 标签 限速 做种 延迟 重试 清理 priority'
       }
     ]
@@ -142,14 +142,14 @@ const groups = [
     items: [
       {
         name: 'match',
-        label: t('matchingrules'),
-        description: t('excludeunwantedreleasesinoneplace'),
+        label: t('navmatch'),
+        description: t('navdescmatch'),
         keywords: '匹配 排除 反匹配 正则 字幕组 match exclude reverse regex'
       },
       {
         name: 'notification',
-        label: t('notifications'),
-        description: t('channelsandeventnotifications'),
+        label: t('navnotification'),
+        description: t('navdescnotification'),
         keywords: 'telegram 通知 webhook json 模板 emby 状态样式'
       }
     ]
@@ -160,26 +160,26 @@ const groups = [
     items: [
       {
         name: 'metadata',
-        label: t('metadatasource'),
-        description: t('siteandmetadatahint'),
+        label: t('navmetadata'),
+        description: t('navdescmetadata'),
         keywords: 'mikan bangumi tmdb 元数据 token api 封面 github'
       },
       {
         name: 'network',
-        label: t('networkandproxy'),
-        description: t('networkproxyandconnectionsettings'),
+        label: t('navnetwork'),
+        description: t('navdescnetwork'),
         keywords: '代理 proxy http socks 网络 测试'
       },
       {
         name: 'security',
-        label: t('securityandaccess'),
-        description: t('accountandaccesssecurity'),
+        label: t('navsecurity'),
+        description: t('navdescsecurity'),
         keywords: '密码 账号 api key 白名单 跨域 登录 反代 会话'
       },
       {
         name: 'system',
-        label: t('systemandmaintenance'),
-        description: t('maintenance'),
+        label: t('navsystem'),
+        description: t('navdescsystem'),
         keywords: '备份 缓存 日志 自启 更新 debug ics'
       }
     ]
@@ -190,20 +190,20 @@ const groups = [
     items: [
       {
         name: 'developer',
-        label: t('experimentalfeatures'),
-        description: t('experimentalfeaturesdescription'),
+        label: t('navexperimental'),
+        description: t('navdescexperimental'),
         keywords: '实验 开发者 种子 info_hash 调试 诊断 ua 请求日志 experimental developer'
       },
       {
         name: 'about',
-        label: t('about'),
-        description: t('versionandprojectlinks'),
+        label: t('navabout'),
+        description: t('navdescabout'),
         keywords: '版本 更新 关于 重启 关闭 退出'
       },
       {
         name: 'donate',
-        label: t('donate'),
-        description: t('supportongoingmaintenance'),
+        label: t('navdonate'),
+        description: t('navdescdonate'),
         keywords: '捐赠 爱发电'
       }
     ]

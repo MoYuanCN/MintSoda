@@ -1,6 +1,6 @@
 <template>
   <div class="settings-stack">
-    <SettingsCard :title="$t('siteandmetadata')" :description="$t('siteandmetadatahint')">
+    <SettingsCard :title="$t('siteaddresses')" :description="$t('navdescmetadata')">
       <SettingsItem label="Mikan">
         <el-input v-model="props.config.mikanHost" placeholder="https://mikanani.me" class="settings-wide"/>
       </SettingsItem>

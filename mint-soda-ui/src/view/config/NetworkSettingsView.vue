@@ -1,6 +1,6 @@
 <template>
   <div class="settings-stack">
-    <SettingsCard :title="$t('networkandproxy')" :description="$t('networkproxyandconnectionsettings')">
+    <SettingsCard :title="$t('proxysettings')">
       <SettingsItem :label="$t('enable-3')">
         <el-switch v-model="props.config.proxy"/>
       </SettingsItem>

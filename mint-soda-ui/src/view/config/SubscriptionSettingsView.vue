@@ -1,6 +1,6 @@
 <template>
   <div class="settings-stack">
-    <SettingsCard :title="$t('subscriptionsandupdates')" :description="$t('rssandupdateshint')">
+    <SettingsCard :title="$t('rssrefresh')" :description="$t('rssandupdateshint')">
       <SettingsItem :label="$t('rssswitch')">
         <el-switch v-model="props.config.rss"/>
       </SettingsItem>
