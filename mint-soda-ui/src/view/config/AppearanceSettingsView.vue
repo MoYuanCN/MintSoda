@@ -58,6 +58,14 @@
               <UiAssetPicker :config="props.config" field="loginBackgroundImageDark"/>
             </div>
           </div>
+          <div class="appearance-asset-actions">
+            <el-tooltip :content="$t('inheritfromapphint')" placement="top">
+              <span>
+                <el-button bg text icon="CopyDocument" :disabled="!props.config.appBackgroundImage"
+                           @click="inheritAppBackground">{{ $t('inheritfromapp') }}</el-button>
+              </span>
+            </el-tooltip>
+          </div>
         </SettingsItem>
         <SettingsItem :label="$t('backgroundeffect')">
           <div class="appearance-slider-pair">
@@ -287,6 +295,14 @@ const applyPreset = preset => {
   applyUiCustomization(props.config)
 }
 
+// 登录页背景快速继承应用背景：浅色与深色各自复制，登录后无需再传一次图。
+const inheritAppBackground = () => {
+  props.config.loginBackgroundImage = props.config.appBackgroundImage || ''
+  props.config.loginBackgroundImageDark = props.config.appBackgroundImageDark || ''
+  applyUiCustomization(props.config)
+  ElMessage.success(t('backgroundinherited'))
+}
+
 const resetAccentColor = () => {
   props.config.accentColor = ''
   props.config.themeDynamicColor = false
@@ -354,6 +370,12 @@ watch(() => [
 
 .appearance-select {
   width: 200px;
+}
+
+.appearance-asset-actions {
+  display: flex;
+  width: 100%;
+  margin-top: 4px;
 }
 
 .appearance-presets {
