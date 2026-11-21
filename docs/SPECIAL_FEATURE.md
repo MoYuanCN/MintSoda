@@ -169,12 +169,13 @@ Body 有两种来源：
 - 用户名或密码变更后轮换 `tokenId`，使所有已登录会话失效。
 - `/api/setup` 与登录页所需的外观设置（`/api/publicSettings`）等公开接口不包含敏感信息。
 
-### 开发者选项
+### 实验性功能
 
-- 是独立设置页；开启前需输入当前登录账号与密码验证。
-- 关闭后自定义种子地址保留但不再使用，点击“保存设置”后生效。
-- `customTorrentUrl` 支持 `<info_hash>` 或 `${info_hash}`，未写占位符时自动追加哈希；仅在开发者选项启用时由 `TorrentUtil` 使用。
-- 已填写自定义地址的旧配置迁移时默认启用。
+- 是独立设置页，`developerOptionsEnabled` 默认开启，不需要账号密码验证。
+- 页面明确提示不了解作用时不要修改，并提供一键恢复默认值（清空自定义种子地址与 User-Agent、关闭请求日志）。
+- 关闭总开关后自定义种子地址与请求日志立即失效，其余字段保留，点击“保存设置”后写入。
+- `customTorrentUrl` 支持 `<info_hash>` 或 `${info_hash}`，未写占位符时自动追加哈希；仅在总开关开启时由 `TorrentUtil` 使用。
+- 旧配置缺少该字段时按开启处理，显式关闭的保持不变。
 
 ### 默认安全开关
 
@@ -261,7 +262,7 @@ Body 有两种来源：
 
 ## 标识
 
-- 出站请求的 User-Agent 为 `MintSoda/<版本>`，可在开发者选项中覆盖。
+- 出站请求的 User-Agent 为 `MintSoda/<版本>`，可在实验性功能中覆盖。
 - 构建产物为 `MintSoda.jar` 与 `MintSoda.exe`；更新器为 `MintSoda-update.exe`。
 - 程序目录下存在 `config/` 或 `data/` 时直接使用程序目录，便于容器与隔离环境挂载配置与数据；Windows 非 exe 运行且两者都不存在时默认配置目录为 `MintSoda/`，便携运行（EXE）始终为 EXE 同目录的 `config/` 与 `data/`。
 - qBittorrent 的分类与标签统一为 `MintSoda`。

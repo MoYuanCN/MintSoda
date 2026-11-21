@@ -1,15 +1,13 @@
 <template>
   <div class="flex-center about-container">
     <div class="flex about-header">
-      <img alt="MintSoda" height="80" :src="appLogo" width="80" @click="developerTap"/>
+      <img alt="MintSoda" height="80" :src="appLogo" width="80"/>
       <div>
         <h1>MintSoda</h1>
         <el-tooltip
             :content="`${props.config.gitInfo.branch} ${props.config.gitInfo.shortCommitId}`"
             placement="right">
-          <el-text class="mx-1 cursor-pointer" size="small" role="button" tabindex="0"
-                    :title="$t('tapseventimestoopendeveloperoptions')" @click.stop="developerTap"
-                    @keydown.enter.stop="developerTap" @keydown.space.prevent.stop="developerTap">
+          <el-text class="mx-1" size="small">
             &nbsp;v{{ props.config.version }}
           </el-text>
         </el-tooltip>
@@ -45,20 +43,6 @@
       </el-badge>
     </div>
   </div>
-  <el-dialog v-model="developerDialogVisible" center :title="$t('enabledeveloperoptions')" width="520">
-    <el-form label-position="top" @submit.prevent>
-      <el-form-item :label="$t('account')">
-        <el-input v-model="developerCredentials.username" autocomplete="username"/>
-      </el-form-item>
-      <el-form-item :label="$t('loginpassword')">
-        <el-input v-model="developerCredentials.password" type="password" show-password
-                  autocomplete="current-password" @keyup.enter="unlockDeveloperMode"/>
-      </el-form-item>
-      <div class="developer-dialog-actions">
-        <el-button type="primary" :loading="developerLoading" @click="unlockDeveloperMode">{{ $t('verifyandenable') }}</el-button>
-      </div>
-    </el-form>
-  </el-dialog>
   <el-dialog v-if="dialogVisible" v-model="dialogVisible" align-center center :title="$t('versionupdate')"
              class="about-dialog">
     <div v-if="about.update">
@@ -113,7 +97,7 @@
 import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
 import {computed, onMounted, ref} from "vue";
-import {ElMessage, ElMessageBox, ElText} from "element-plus";
+import {ElMessage} from "element-plus";
 import PopconfirmView from "@/view/custom/PopconfirmView.vue";
 import {Github} from "@vicons/fa";
 
@@ -144,59 +128,6 @@ const actionLoading = ref(false)
 const appLogo = computed(() => uiCustomization.value.appLogoImage
     ? uiAssetUrl(uiCustomization.value.appLogoImage)
     : '/icon.png')
-const developerDialogVisible = ref(false)
-const developerLoading = ref(false)
-const developerCredentials = ref({username: '', password: ''})
-let developerTapCount = 0
-let developerTapTimer
-
-const developerTap = () => {
-  developerTapCount++
-  clearTimeout(developerTapTimer)
-  if (developerTapCount >= 7) {
-    developerTapCount = 0
-    developerDialogVisible.value = true
-    return
-  }
-  developerTapTimer = setTimeout(() => developerTapCount = 0, 3000)
-}
-
-const unlockDeveloperMode = () => {
-  const credentials = {
-    username: (developerCredentials.value.username || '').trim(),
-    password: developerCredentials.value.password || ''
-  }
-  if (!credentials.username || !credentials.password) {
-    ElMessage.error(t('enteryourcurrentusernameandpassword'))
-    return
-  }
-  developerLoading.value = true
-  http.verifyDeveloperCredentials(credentials)
-      .then(() => ElMessageBox.confirm(
-          t('credentialsverifiedenablingdeveloperoptionsr'),
-          t('enabledeveloperoptions-2'),
-          {confirmButtonText: t('enableandreload'), cancelButtonText: t('cancel'), type: 'warning'}
-      ))
-      .then(() => http.setDeveloperSettings({
-        username: credentials.username,
-        password: credentials.password,
-        customTorrentUrl: props.config.customTorrentUrl || ''
-      }))
-      .then(res => {
-        ElMessage.success(res.message || t('developeroptionsenabledthepagewillreload'))
-        developerDialogVisible.value = false
-        developerCredentials.value = {username: '', password: ''}
-        window.$skipUnsavedGuard = true
-        setTimeout(() => window.location.reload(), 500)
-      })
-      .catch(error => {
-        if (error !== 'cancel' && error !== 'close') {
-          ElMessage.error(error?.message || t('failedtoenabledeveloperoptions'))
-        }
-      })
-      .finally(() => { developerLoading.value = false })
-}
-
 const stop = (status) => {
   actionLoading.value = true
   http.stop(status)

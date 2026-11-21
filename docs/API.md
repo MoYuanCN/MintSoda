@@ -42,7 +42,7 @@ curl -s -X POST http://127.0.0.1:17789/api/listAni \
   -H 'Authorization: <令牌>'
 ```
 
-> 登录与开发者验证提交的是口令摘要而非明文，相当于口令本身可用于重放；务必配合 HTTPS 使用。
+> 登录提交的是口令摘要而非明文，相当于口令本身可用于重放；务必配合 HTTPS 使用。
 
 ## 统一返回体
 
@@ -105,8 +105,6 @@ curl -s -X POST http://127.0.0.1:17789/api/listAni \
 | `/api/clearCache` | POST | 清理未被引用的封面与预览缓存 |
 | `/api/testProxy` | POST | 代理连通性测试（`?url=` + 设置对象） |
 | `/api/downloadLoginTest` | POST | 用给定设置测试 qBittorrent 登录 |
-| `/api/verifyDeveloperCredentials` | POST | 校验开发者选项凭据 |
-| `/api/setDeveloperSettings` | POST | 保存开发者选项（自定义种子地址、User-Agent、请求日志） |
 | `/api/devNetworkCheck` | POST | 出站网络自检 |
 
 ### 订阅
@@ -218,7 +216,7 @@ curl -s -X POST http://127.0.0.1:17789/api/listAni \
 
 插件接口的返回值是插件自己生成的字符串，原样放进 `Result.data`；不是所有插件都返回 JSON。
 
-### 开发者与调试
+### 实验性功能与调试
 
 | 接口 | 方法 | 说明 |
 | --- | --- | --- |

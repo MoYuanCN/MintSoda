@@ -1,124 +1,74 @@
 <template>
-  <div class="developer-settings full-width">
-    <el-alert class="developer-alert" :closable="false" show-icon type="warning"
-              :title="$t('developeroptionsareadvancedverifyyouraccount')"/>
-    <SettingsItem :label="$t('status')">
-      <div class="developer-status">
-        <el-tag :type="enabled ? 'success' : 'info'" effect="plain">
-          {{ enabled ? $t('enabled') : $t('disabled') }}
-        </el-tag>
-        <el-button v-if="!enabled" type="primary" bg text @click="openUnlock">{{ $t('enabledeveloperoptions') }}</el-button>
-        <el-button v-else type="danger" bg text @click="disable">{{ $t('disabledeveloperoptions') }}</el-button>
+  <div class="experimental-settings full-width">
+    <el-alert class="experimental-alert" :closable="false" show-icon type="warning"
+              :title="$t('experimentalfeatureswarning')"/>
+
+    <SettingsItem :label="$t('experimentalfeatures')" :label-width="150">
+      <div class="experimental-switch">
+        <el-switch v-model="props.config.developerOptionsEnabled"/>
+        <el-text size="small" type="info" class="experimental-hint">
+          {{ $t('experimentalfeatureshint') }}
+        </el-text>
       </div>
     </SettingsItem>
-    <template v-if="enabled">
-      <SettingsItem :label="$t('customtorrenturl')">
+
+    <template v-if="props.config.developerOptionsEnabled">
+      <SettingsItem :label="$t('customtorrenturl')" :label-width="150">
         <el-input v-model.trim="props.config.customTorrentUrl" type="textarea"
                   :autosize="{ minRows: 2, maxRows: 4 }"
                   placeholder="https://torrent.example.com/api/public/<info_hash>"/>
         <el-alert :closable="false" show-icon type="info"
                   :title="$t('onceaninfohashisknownthetorrentisfetchedfrom')"/>
       </SettingsItem>
-      <SettingsItem label="User-Agent">
+
+      <SettingsItem label="User-Agent" :label-width="150">
         <el-input v-model.trim="props.config.customUserAgent" clearable maxlength="256"
                   :placeholder="$t('leaveblanktousemintsodaversion')"/>
         <el-alert :closable="false" show-icon type="info"
                   :title="$t('onlyaffectsrequestsmadebythisappsomesitesvar')"/>
       </SettingsItem>
-      <SettingsItem :label="$t('requestlog')">
+
+      <SettingsItem :label="$t('requestlog')" :label-width="150">
         <el-switch v-model="props.config.devHttpTrace"/>
-        <el-text size="small" type="info" class="developer-hint">
+        <el-text size="small" type="info" class="experimental-hint">
           {{ $t('logsthemethodurlstatusanddurationofoutboundr') }}
         </el-text>
       </SettingsItem>
-      <SettingsItem :label="$t('diagnostics')">
-        <div class="developer-actions">
+
+      <SettingsItem :label="$t('diagnostics')" :label-width="150">
+        <div class="experimental-actions">
           <el-button bg text icon="Refresh" :loading="checking" @click="checkNetwork">{{ $t('testconnection') }}</el-button>
           <el-button bg text icon="Document" @click="openLogs">{{ $t('viewlogs') }}</el-button>
           <el-button bg text icon="Delete" @click="clearLogs">{{ $t('clearlogs') }}</el-button>
         </div>
         <el-text v-if="networkResult" size="small" :type="networkResult.ok ? 'success' : 'danger'"
-                 class="developer-hint">
+                 class="experimental-hint">
           {{ networkResult.message }}
-        </el-text>
-      </SettingsItem>
-      <SettingsItem :label="$t('backupcontents')">
-        <el-text size="small" type="info">
-          {{ $t('exportedbackupsincludepluginsandtheirprivate') }}
         </el-text>
       </SettingsItem>
     </template>
 
-    <el-dialog v-model="dialogVisible" center :title="$t('enabledeveloperoptions')" width="420">
-      <el-alert class="developer-alert" :closable="false" show-icon type="info"
-                :title="$t('enteryourcurrentusernameandpasswordtoconfirm')"/>
-      <el-form label-position="top" @submit.prevent @keyup.enter="unlock">
-        <el-form-item :label="$t('username')">
-          <el-input v-model.trim="credentials.username" autocomplete="username"/>
-        </el-form-item>
-        <el-form-item :label="$t('password')">
-          <el-input v-model="credentials.password" type="password" show-password autocomplete="current-password"/>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button bg text @click="dialogVisible = false">{{ $t('cancel') }}</el-button>
-        <el-button type="primary" :loading="loading" @click="unlock">{{ $t('enable') }}</el-button>
-      </template>
-    </el-dialog>
+    <div class="experimental-footer">
+      <el-button bg text :icon="RefreshLeft" @click="resetDefaults">
+        {{ $t('resetexperimentalsettings') }}
+      </el-button>
+    </div>
   </div>
 </template>
 
 <script setup>
 import {useI18n} from "vue-i18n"
 import SettingsItem from "@/view/custom/SettingsItem.vue";
-import {computed, reactive, ref} from "vue";
+import {ref} from "vue";
 import {ElMessage, ElMessageBox} from "element-plus";
+import {RefreshLeft} from "@element-plus/icons-vue";
 import * as http from "@/js/http.js";
 const {t} = useI18n()
 let props = defineProps(['config'])
+const emit = defineEmits(['request-save'])
 
-const enabled = computed(() => Boolean(props.config.developerOptionsEnabled))
-const dialogVisible = ref(false)
-const loading = ref(false)
 const checking = ref(false)
 const networkResult = ref(null)
-const credentials = reactive({username: '', password: ''})
-
-const openUnlock = () => {
-  credentials.username = ''
-  credentials.password = ''
-  dialogVisible.value = true
-}
-
-const settings = () => ({
-  username: credentials.username,
-  password: credentials.password,
-  customTorrentUrl: props.config.customTorrentUrl || '',
-  customUserAgent: props.config.customUserAgent || '',
-  devHttpTrace: Boolean(props.config.devHttpTrace)
-})
-
-const unlock = () => {
-  if (!credentials.username || !credentials.password) {
-    ElMessage.error(t('enteryourcurrentusernameandpassword'))
-    return
-  }
-  loading.value = true
-  http.verifyDeveloperCredentials(credentials)
-      .then(() => http.setDeveloperSettings(settings()))
-      .then(res => {
-        props.config.developerOptionsEnabled = true
-        dialogVisible.value = false
-        credentials.password = ''
-        ElMessage.success(res.message || t('developeroptionsenabled'))
-      })
-      .catch(error => {
-        if (error !== 'cancel' && error !== 'close') {
-          ElMessage.error(error?.message || t('failedtoenabledeveloperoptions'))
-        }
-      })
-      .finally(() => { loading.value = false })
-}
 
 const checkNetwork = () => {
   checking.value = true
@@ -146,40 +96,53 @@ const clearLogs = () => {
       .catch(() => {})
 }
 
-// 与其他设置一样只改内存状态，点击底部“保存设置”后才会关闭并失效。
-const disable = () => {
-  ElMessageBox.confirm(t('customtorrenturlandrequestloggingwillstopwor'), t('disabledeveloperoptions'), {
-    confirmButtonText: t('close'),
+// 一键回到出厂值：重新开启实验性功能，并清空自定义地址、UA 与请求日志。
+// 与其他设置一样写入编辑副本，随后立即触发保存。
+const resetDefaults = () => {
+  ElMessageBox.confirm(t('resetexperimentalsettingsconfirm'), t('resetexperimentalsettings'), {
+    confirmButtonText: t('resetexperimentalsettings'),
     cancelButtonText: t('cancel'),
     type: 'warning'
   })
       .then(() => {
-        props.config.developerOptionsEnabled = false
-        ElMessage.success(t('developeroptionsdisabledsaveyoursettings'))
+        props.config.developerOptionsEnabled = true
+        props.config.customTorrentUrl = ''
+        props.config.customUserAgent = ''
+        props.config.devHttpTrace = false
+        ElMessage.success(t('experimentalsettingsreset'))
+        emit('request-save')
       })
       .catch(() => {})
 }
 </script>
 
 <style scoped>
-.developer-alert {
-  margin-bottom: 12px;
+.experimental-alert {
+  margin-bottom: 18px;
 }
 
-.developer-status {
+.experimental-switch {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.developer-actions {
+.experimental-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.developer-hint {
+.experimental-hint {
   display: block;
   margin-top: 6px;
+}
+
+.experimental-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 </style>

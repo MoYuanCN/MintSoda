@@ -111,7 +111,7 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 - 一轮 RSS 刷新用 `AniUtil.beginDeferredSync` / `endDeferredSync` 包裹，期间 `AniUtil.sync` 只标记待保存，结束时写一次 `data/subscriptions.json`；新增的刷新入口要保持同样包裹，否则会退化为逐条写盘。
 - 复用通知模板使用 `id / name / type / content` 字段；`type` 为 `TEXT` 或 `JSON`。更改持久化格式时，保留旧字段读取能力并在 `ConfigUtil.format` 中迁移已有配置。
 - 旧版 `Config.notificationTemplate` 是完整消息正文，迁移时应并入默认文本通知模板；模板应直接渲染 `${title}`、`${subgroup}`、`${text}` 等字段，不再嵌套 `${notification}`。
-- 开发者设置由 `developerOptionsEnabled` 控制是否显示；通过关于页的凭据验证后，先确认并保存整份当前配置，再启用该标记并刷新页面。
+- 实验性功能由 `developerOptionsEnabled` 控制，默认开启，无需额外验证；关闭后自定义种子地址与请求日志立即失效，设置页提供一键恢复默认值。
 - 过滤规则或业务条件有多个调用点时抽取共享逻辑。RSS 下载、RSS 预览和合集预览应保持一致。
 - 合集保存位置统一由 `CollectionService#resolveDownloadPath` 计算：优先使用 `collectionDownloadPathTemplate`，其次为会话中的自定义位置，最后回落到普通保存位置；新增合集入口不要自行读取 `Ani#customDownloadPathTemplate`。
 - RSS 读取统一走 `ItemsUtil#getRss`：同一轮内复用响应、跨轮使用 `ETag` 条件请求、失败时回退到上次成功内容。需要新增 RSS 请求入口时复用该方法，不要自行发 HTTP 请求。

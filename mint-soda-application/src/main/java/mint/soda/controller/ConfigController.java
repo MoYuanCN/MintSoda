@@ -2,8 +2,6 @@ package mint.soda.controller;
 
 import mint.soda.annotation.Auth;
 import mint.soda.entity.Config;
-import mint.soda.entity.DeveloperSettings;
-import mint.soda.entity.Login;
 import mint.soda.entity.Global;
 import mint.soda.entity.ProxyTest;
 import mint.soda.entity.web.ContentType;
@@ -51,40 +49,6 @@ public class ConfigController extends BaseController {
         settings.put("cardBlur", ObjectUtil.defaultIfNull(config.getCardBlur(), 8));
         settings.put("appCornerRadius", ObjectUtil.defaultIfNull(config.getAppCornerRadius(), 12));
         return Result.success(settings);
-    }
-
-    @Auth
-    @Operation(summary = "验证开发者选项凭据")
-    @PostMapping("/verifyDeveloperCredentials")
-    public Result<Boolean> verifyDeveloperCredentials(@RequestBody Login credentials) {
-        boolean valid = ConfigUtil.CONFIG.getLogin().getUsername().equals(credentials.getUsername())
-                && ConfigUtil.CONFIG.getLogin().getPassword().equals(credentials.getPassword());
-        if (!valid) return Result.error("用户名或密码错误");
-        return Result.success(true);
-    }
-
-    @Auth
-    @Operation(summary = "保存开发者选项")
-    @PostMapping("/setDeveloperSettings")
-    public Result<Void> setDeveloperSettings(@RequestBody DeveloperSettings settings) {
-        boolean valid = ConfigUtil.CONFIG.getLogin().getUsername().equals(settings.getUsername())
-                && ConfigUtil.CONFIG.getLogin().getPassword().equals(settings.getPassword());
-        if (!valid) return Result.error("用户名或密码错误");
-        String customUrl = StrUtil.trimToEmpty(settings.getCustomTorrentUrl());
-        if (StrUtil.isNotBlank(customUrl)
-                && !(customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
-            return Result.error("自定义种子地址必须以 http:// 或 https:// 开头");
-        }
-        String userAgent = StrUtil.trimToEmpty(settings.getCustomUserAgent());
-        if (userAgent.length() > 256) {
-            return Result.error("User-Agent 过长");
-        }
-        ConfigUtil.CONFIG.setCustomTorrentUrl(customUrl)
-                .setCustomUserAgent(userAgent)
-                .setDevHttpTrace(Boolean.TRUE.equals(settings.getDevHttpTrace()))
-                .setDeveloperOptionsEnabled(true);
-        ConfigUtil.sync();
-        return Result.success("开发者选项已保存");
     }
 
     @Auth

@@ -198,7 +198,7 @@ public class DefaultConfigFactory {
                 .setCompletedPathTemplate(completedPathTemplate)
                 .setNotificationTemplate("")
                 .setNotificationConfigList(new ArrayList<>())
-                .setDeveloperOptionsEnabled(false)
+                .setDeveloperOptionsEnabled(true)
                 .setPluginMarketUrl("")
                 .setNotificationTemplateList(new ArrayList<>(List.of(
                         new NotificationTemplate()

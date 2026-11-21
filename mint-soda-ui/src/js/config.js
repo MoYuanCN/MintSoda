@@ -120,7 +120,7 @@ export let configData = {
     "customTorrentUrl": "",
     "customUserAgent": "",
     "devHttpTrace": false,
-    "developerOptionsEnabled": false,
+    "developerOptionsEnabled": true,
     "pluginMarketUrl": "",
     "customEpisode": false,
     "customEpisodeStr": "",

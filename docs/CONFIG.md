@@ -227,12 +227,12 @@
 | `forceUpdateTotalEpisodeNumber` | `Boolean` | `false` | 强制更新总集数信息 |
 | `version` | `String` | 空 | 版本 |
 
-### 插件与开发者
+### 插件与实验性功能
 
 | 字段 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `pluginMarketUrl` | `String` | 空 | 插件市场地址 |
-| `developerOptionsEnabled` | `Boolean` | `false` | 开发者选项是否已解锁 |
+| `developerOptionsEnabled` | `Boolean` | `true` | 实验性功能总开关，默认开启 |
 | `customTorrentUrl` | `String` | 空 | 自定义种子下载地址，留空使用来源站默认 |
 | `customUserAgent` | `String` | 空 | 自定义 User-Agent |
 | `devHttpTrace` | `Boolean` | `false` | 记录出站请求日志 |

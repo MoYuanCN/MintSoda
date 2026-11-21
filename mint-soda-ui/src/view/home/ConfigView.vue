@@ -44,7 +44,7 @@
           </header>
           <el-scrollbar class="settings-scrollbar">
             <div class="settings-panel-content">
-              <component :is="activeComponent" :config="config"/>
+              <component :is="activeComponent" :config="config" @request-save="saveConfig"/>
             </div>
           </el-scrollbar>
         </section>
@@ -190,9 +190,9 @@ const groups = [
     items: [
       {
         name: 'developer',
-        label: t('developer'),
-        description: t('developeroptionsrequestdiagnosticsandcustomt'),
-        keywords: '开发者 种子 info_hash 调试 诊断 ua 请求日志'
+        label: t('experimentalfeatures'),
+        description: t('experimentalfeaturesdescription'),
+        keywords: '实验 开发者 种子 info_hash 调试 诊断 ua 请求日志 experimental developer'
       },
       {
         name: 'about',

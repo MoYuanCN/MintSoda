@@ -203,8 +203,9 @@ public class ConfigUtil {
         }
         config.setNotificationStatusStyles(statusStyles);
         if (config.getPluginMarketUrl() == null) config.setPluginMarketUrl("");
+        // 实验性功能默认开启；旧配置里显式关闭的保持不变。
         if (config.getDeveloperOptionsEnabled() == null) {
-            config.setDeveloperOptionsEnabled(StrUtil.isNotBlank(config.getCustomTorrentUrl()));
+            config.setDeveloperOptionsEnabled(true);
         }
         migrateLegacyGlobalReverseRules(config);
         if (config.getCardOpacity() == null) config.setCardOpacity(80);

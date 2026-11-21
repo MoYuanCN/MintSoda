@@ -9,18 +9,6 @@ export let config = () => api.post('api/config')
 
 export let publicSettings = () => api.post('api/publicSettings')
 
-export let verifyDeveloperCredentials = user => {
-    const credentials = JSON.parse(JSON.stringify(user))
-    credentials.password = md5(credentials.password)
-    return api.post('api/verifyDeveloperCredentials', credentials)
-}
-
-export let setDeveloperSettings = settings => {
-    const payload = JSON.parse(JSON.stringify(settings))
-    payload.password = md5(payload.password)
-    return api.post('api/setDeveloperSettings', payload)
-}
-
 /**
  * 修改设置
  * @param config 设置
