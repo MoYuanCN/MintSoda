@@ -2,6 +2,7 @@ package mint.soda.controller;
 
 import mint.soda.annotation.Auth;
 import mint.soda.commons.MavenUtils;
+import mint.soda.commons.StoragePaths;
 import mint.soda.entity.Global;
 import mint.soda.entity.web.Header;
 import mint.soda.entity.web.Result;
@@ -91,17 +92,19 @@ public class BackupController extends BaseController {
                         PluginArchive.writeEntry(pluginStaging, entry.getName(), buffer.toByteArray());
                         continue;
                     }
-                    java.nio.file.Path target = configDir.toPath()
-                            .resolve(entry.getName().replace('\\', '/')).normalize();
-                    Assert.isTrue(target.startsWith(configDir.toPath().toAbsolutePath().normalize()),
-                            "备份包含非法路径: " + entry.getName());
+                    File mapped = StoragePaths.resolveImportEntry(entry.getName());
+                    if (mapped == null) {
+                        continue;
+                    }
+                    java.nio.file.Path target = mapped.toPath().toAbsolutePath().normalize();
                     java.nio.file.Files.createDirectories(target.getParent());
                     java.nio.file.Files.write(target, buffer.toByteArray());
                 }
             }
 
             // 删除旧的种子记录
-            FileUtil.del(new File(configDir, "torrents"));
+            FileUtil.del(StoragePaths.torrentsDir());
+            StoragePaths.ensureLayout();
             int restored = PluginArchive.commit(pluginStaging, configDir);
             if (restored > 0) {
                 log.info("已从备份恢复 {} 个插件", restored);

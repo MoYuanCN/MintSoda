@@ -1,5 +1,6 @@
 package mint.soda.service;
 
+import mint.soda.commons.StoragePaths;
 import mint.soda.util.other.AniUtil;
 import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.io.FileUtil;
@@ -33,7 +34,12 @@ public final class PluginArchive {
     /**
      * 压缩包内插件目录的前缀
      */
-    public static final String PREFIX = "plugins/";
+    public static final String PREFIX = "data/plugins/";
+
+    /**
+     * 旧备份中的插件目录前缀，导入时兼容
+     */
+    private static final String LEGACY_PREFIX = "plugins/";
 
     /**
      * 需要排除的运行时状态文件；安装记录由宿主重建，不随备份恢复
@@ -106,7 +112,8 @@ public final class PluginArchive {
      * 条目是否属于插件目录。
      */
     public static boolean isPluginEntry(String name) {
-        return StrUtil.nullToEmpty(name).replace('\\', '/').startsWith(PREFIX);
+        String normalized = StrUtil.nullToEmpty(name).replace('\\', '/');
+        return normalized.startsWith(PREFIX) || normalized.startsWith(LEGACY_PREFIX);
     }
 
     /**
@@ -116,7 +123,7 @@ public final class PluginArchive {
      * @return 临时目录
      */
     public static Path newStaging(File configDir) throws IOException {
-        Path staging = new File(configDir, "plugins.import-" + System.currentTimeMillis())
+        Path staging = new File(StoragePaths.dataDir(), "plugins.import-" + System.currentTimeMillis())
                 .toPath().toAbsolutePath().normalize();
         Files.createDirectories(staging);
         return staging;
@@ -134,10 +141,14 @@ public final class PluginArchive {
      */
     public static boolean writeEntry(Path staging, String name, byte[] content) throws IOException {
         String normalized = StrUtil.nullToEmpty(name).replace('\\', '/');
-        if (!normalized.startsWith(PREFIX)) {
+        String relative;
+        if (normalized.startsWith(PREFIX)) {
+            relative = normalized.substring(PREFIX.length());
+        } else if (normalized.startsWith(LEGACY_PREFIX)) {
+            relative = normalized.substring(LEGACY_PREFIX.length());
+        } else {
             return false;
         }
-        String relative = normalized.substring(PREFIX.length());
         if (!accept(relative)) {
             return false;
         }
@@ -156,7 +167,7 @@ public final class PluginArchive {
      * @return 恢复的插件数量
      */
     public static int commit(Path staging, File configDir) throws IOException {
-        File pluginsRoot = new File(configDir, "plugins");
+        File pluginsRoot = StoragePaths.pluginsDir();
         try (var stream = Files.walk(staging)) {
             boolean empty = stream.filter(Files::isRegularFile).findAny().isEmpty();
             if (empty) {

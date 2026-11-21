@@ -1,6 +1,7 @@
 package mint.soda.config;
 
 import mint.soda.commons.GsonStatic;
+import mint.soda.commons.StoragePaths;
 import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.util.ClassUtil;
 import org.jspecify.annotations.NonNull;
@@ -24,8 +25,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        File configDir = ConfigUtil.getConfigDir();
-        File webuiDir = new File(configDir, "webui");
+        ConfigUtil.getConfigDir();
+        File webuiDir = StoragePaths.webuiDir();
         registry.addResourceHandler("/**")
                 .addResourceLocations(webuiDir.toURI().toString())
                 .addResourceLocations("classpath:/META-INF/resources/")

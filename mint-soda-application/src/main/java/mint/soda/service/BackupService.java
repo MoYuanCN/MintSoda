@@ -1,6 +1,7 @@
 package mint.soda.service;
 
 import mint.soda.commons.FileUtils;
+import mint.soda.commons.StoragePaths;
 import mint.soda.entity.Config;
 import mint.soda.util.other.AniUtil;
 import mint.soda.util.other.ConfigUtil;
@@ -46,8 +47,7 @@ public class BackupService {
 
         clearBackup();
 
-        File configDir = ConfigUtil.getConfigDir();
-        File backupDir = new File(configDir, "backup");
+        File backupDir = StoragePaths.backupsDir();
 
         String date = DateUtil.format(new Date(), DatePattern.NORM_DATE_PATTERN);
         File backupFile = new File(backupDir, date + ".zip");
@@ -78,32 +78,55 @@ public class BackupService {
         // 清理残余封面
         clearService.clearCover();
 
-        File configDir = ConfigUtil.getConfigDir();
         List<File> backupFiles = Stream.of(
-                        "files", "torrents",
-                        AniUtil.FILE_NAME, ConfigUtil.FILE_NAME
+                        StoragePaths.coversDir(), StoragePaths.torrentsDir(),
+                        StoragePaths.assetsDir(),
+                        StoragePaths.subscriptionsFile(), StoragePaths.configFile()
                 )
-                .map(s -> new File(configDir, s))
                 .filter(File::exists)
                 .toList();
 
         try (ZipOutputStream zip = new ZipOutputStream(outputStream, StandardCharsets.UTF_8)) {
             // Hutool 的 zip(OutputStream, ...) 会关闭流，这里自行写条目，才能在同一压缩包里追加插件目录。
             for (File root : backupFiles) {
+                String prefix = StoragePaths.archivePrefix(root);
+                if (prefix == null) {
+                    continue;
+                }
                 if (root.isDirectory()) {
-                    // 目录以名称做前缀，自身不写条目，避免空目录产生重复或陌生条目。
                     for (File child : FileUtils.listFiles(root)) {
-                        writeEntry(zip, child, root.getName() + "/" + child.getName()
-                                + (child.isDirectory() ? "/" : ""));
+                        writeEntry(zip, child, archiveEntry(prefix, root, child));
                     }
                 } else {
-                    writeEntry(zip, root, root.getName());
+                    writeEntry(zip, root, prefix);
                 }
             }
             // 插件目录单独遍历，确保脚本、描述文件与私有 data/ 一起备份，但不含安装状态。
             PluginArchive.exportTo(zip);
             zip.finish();
         }
+    }
+
+    /**
+     * 计算子项在压缩包中的路径。
+     *
+     * @param prefix 根前缀
+     * @param root   根目录
+     * @param child  子项
+     * @return 条目名
+     */
+    private static String archiveEntry(String prefix, File root, File child) {
+        if (child.equals(root)) {
+            return prefix;
+        }
+        String relative = root.toPath().toAbsolutePath().normalize()
+                .relativize(child.toPath().toAbsolutePath().normalize())
+                .toString().replace(File.separatorChar, '/');
+        String name = prefix + "/" + relative;
+        if (child.isDirectory() && !name.endsWith("/")) {
+            name = name + "/";
+        }
+        return name;
     }
 
     /**
@@ -141,8 +164,7 @@ public class BackupService {
         // 过期时间
         long expirationTime = DateUtil.offsetDay(new Date(), -configBackupDay).getTime();
 
-        File configDir = ConfigUtil.getConfigDir();
-        File backupDir = new File(configDir, "backup");
+        File backupDir = StoragePaths.backupsDir();
         if (!backupDir.exists()) {
             return;
         }

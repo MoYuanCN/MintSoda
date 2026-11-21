@@ -2,6 +2,7 @@ package mint.soda.util.other;
 
 import mint.soda.commons.ExceptionUtils;
 import mint.soda.commons.PinyinUtils;
+import mint.soda.commons.StoragePaths;
 import mint.soda.download.BaseDownload;
 import mint.soda.download.qBittorrent;
 import mint.soda.entity.Ani;
@@ -114,19 +115,19 @@ public class TorrentUtil {
         Boolean ova = ani.getOva();
         Integer season = ani.getSeason();
 
-        File configDir = ConfigUtil.getConfigDir();
+        File torrentsRoot = StoragePaths.torrentsDir();
 
         String s = PinyinUtils.getPinyinInitialLetters(title);
         String fastId = id.substring(0, 1);
 
         // 兼容旧的路径
         File torrentDir = ova ?
-                new File(StrFormatter.format("{}/torrents/{}/{}", configDir, s, title)) :
-                new File(StrFormatter.format("{}/torrents/{}/{}/Season {}", configDir, s, title, season));
+                new File(torrentsRoot, s + File.separator + title) :
+                new File(torrentsRoot, s + File.separator + title + File.separator + "Season " + season);
 
         if (!torrentDir.exists()) {
             // 新的种子存放路径
-            torrentDir = new File(StrFormatter.format("{}/torrents/{}/{}", configDir, fastId, id));
+            torrentDir = new File(torrentsRoot, fastId + File.separator + id);
         }
 
         return torrentDir;

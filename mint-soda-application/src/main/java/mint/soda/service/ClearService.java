@@ -1,6 +1,7 @@
 package mint.soda.service;
 
 import mint.soda.commons.FileUtils;
+import mint.soda.commons.StoragePaths;
 import mint.soda.entity.Ani;
 import mint.soda.util.other.AniUtil;
 import mint.soda.util.other.ConfigUtil;
@@ -122,10 +123,8 @@ public class ClearService {
      * @return 清理大小 bytes
      */
     public Long clearCover() {
-        File configDir = ConfigUtil.getConfigDir();
-        String configDirStr = FileUtils.getAbsolutePath(configDir);
-        File filesDir = new File(configDirStr, "files");
-        File imgDir = new File(configDirStr, "img");
+        File filesDir = StoragePaths.coversDir();
+        File imgDir = StoragePaths.previewsDir();
 
         FileUtil.mkdir(filesDir);
         FileUtil.mkdir(imgDir);
@@ -133,7 +132,7 @@ public class ClearService {
         Set<String> covers = AniUtil.ANI_LIST
                 .stream()
                 .map(Ani::getCover)
-                .map(s -> FileUtils.getAbsolutePath(Path.of(configDirStr, "files", s).toFile()))
+                .map(s -> FileUtils.getAbsolutePath(Path.of(filesDir.getPath(), s).toFile()))
                 .collect(Collectors.toSet());
 
         Set<File> files = FileUtil.loopFiles(filesDir)
@@ -145,12 +144,15 @@ public class ClearService {
         long filesSize = files.stream()
                 .mapToLong(File::length)
                 .sum();
-        long imgSize = FileUtil.size(imgDir);
 
         for (File file : files) {
             FileUtil.del(file);
             clearDir(file, false, true, 2);
         }
+        // 预览图只是转发缓存，整目录删除后会按需重新下载。
+        long imgSize = FileUtil.size(imgDir);
+        FileUtil.del(imgDir);
+        FileUtil.mkdir(imgDir);
 
         return filesSize + imgSize;
     }

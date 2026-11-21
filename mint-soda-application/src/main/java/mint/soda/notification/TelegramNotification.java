@@ -6,6 +6,7 @@ import mint.soda.entity.NotificationConfig;
 import mint.soda.entity.web.ContentType;
 import mint.soda.enums.NotificationStatusEnum;
 import mint.soda.util.basic.HttpReq;
+import mint.soda.commons.StoragePaths;
 import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.text.StrFormatter;
@@ -127,10 +128,9 @@ public class TelegramNotification implements BaseNotification {
             return send(notificationConfig, ani, text, notificationStatusEnum);
         }
 
-        File configDir = ConfigUtil.getConfigDir();
-        File photo = Path.of(configDir.toString(), "files", cover).toFile();
+        File photo = StoragePaths.resolveInside(StoragePaths.coversDir(), cover);
 
-        if (!photo.exists()) {
+        if (photo == null || !photo.exists()) {
             notificationConfig.setTelegramImage(false);
             return send(notificationConfig, ani, text, notificationStatusEnum);
         }

@@ -4,7 +4,7 @@ import mint.soda.annotation.Auth;
 import mint.soda.commons.URLUtils;
 import mint.soda.entity.Global;
 import mint.soda.util.basic.HttpReq;
-import mint.soda.util.other.ConfigUtil;
+import mint.soda.commons.StoragePaths;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
@@ -95,8 +95,10 @@ public class ProxyImageController extends BaseController {
         String filename = StrUtil.format("{}.{}", md5, extName);
         String dir = String.valueOf(md5.charAt(0));
 
-        File configDir = ConfigUtil.getConfigDir();
-        return Path.of(configDir.toString(), "img", dir, filename).toFile();
+        File previewsRoot = StoragePaths.previewsDir();
+        File target = Path.of(previewsRoot.toString(), dir, filename).toFile();
+        cn.hutool.core.io.FileUtil.mkdir(target.getParentFile());
+        return target;
     }
 
     public void getImg(String url, Consumer<HttpResponse> consumer) {

@@ -6,6 +6,7 @@ import mint.soda.entity.NotificationConfig;
 import mint.soda.entity.NotificationTemplate;
 import mint.soda.enums.NotificationStatusEnum;
 import mint.soda.util.basic.HttpReq;
+import mint.soda.commons.StoragePaths;
 import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Opt;
@@ -171,9 +172,10 @@ public class CustomRequestNotification implements BaseNotification {
         }
         File file = new File(cover);
         if (!file.exists()) {
-            file = Path.of(ConfigUtil.getConfigDir().toString(), "files", cover).toFile();
+            file = StoragePaths.resolveInside(StoragePaths.coversDir(), cover);
         }
-        return file.exists() ? Base64.getEncoder().encodeToString(FileUtil.readBytes(file)) : emptyImage;
+        return file != null && file.exists()
+                ? Base64.getEncoder().encodeToString(FileUtil.readBytes(file)) : emptyImage;
     }
 
     /** Adapter to use the existing, shared notification placeholder implementation. */

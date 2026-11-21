@@ -1,5 +1,6 @@
 package mint.soda.plugin;
 
+import mint.soda.commons.StoragePaths;
 import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
@@ -23,7 +24,8 @@ public final class PluginPaths {
     }
 
     public static File root() {
-        return new File(ConfigUtil.getConfigDir(), "plugins");
+        ConfigUtil.getConfigDir();
+        return StoragePaths.pluginsDir();
     }
 
     public static File registryFile() {

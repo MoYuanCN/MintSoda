@@ -1,5 +1,6 @@
 package mint.soda.util.basic;
 
+import mint.soda.commons.StoragePaths;
 import mint.soda.entity.Config;
 import mint.soda.entity.Log;
 import mint.soda.list.FixedSizeLinkedList;
@@ -42,7 +43,7 @@ public class LogUtil {
         ByteArrayInputStream byteArrayInputStream = null;
         try {
             String s = ResourceUtil.readUtf8Str("logback-template.xml");
-            s = s.replace("${config}", ConfigUtil.getConfigDir() + "/");
+            s = s.replace("${logs}", StoragePaths.logsDir().getPath());
             s = s.replace("${level}", debug ? "debug" : "info");
 
             JoranConfigurator configurator = new JoranConfigurator();

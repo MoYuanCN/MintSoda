@@ -2,6 +2,7 @@ package mint.soda.util.other;
 
 import mint.soda.commons.FileUtils;
 import mint.soda.commons.MavenUtils;
+import mint.soda.commons.StoragePaths;
 import mint.soda.commons.URLUtils;
 import mint.soda.config.DefaultConfigFactory;
 import mint.soda.commons.CredentialUtils;
@@ -35,15 +36,26 @@ import java.util.Set;
 public class ConfigUtil {
 
     public static final Config CONFIG = DefaultConfigFactory.create();
-    public static final String FILE_NAME = "config.v2.json";
+    public static final String FILE_NAME = StoragePaths.CONFIG_FILE_NAME;
     private static volatile File resolvedConfigDir;
 
     /**
-     * 获取设置文件夹
+     * 获取设置文件夹，并确保存储布局已绑定。
      *
      * @return 文件夹
      */
     public static File getConfigDir() {
+        File dir = resolveConfigDir();
+        StoragePaths.bind(dir);
+        return dir;
+    }
+
+    /**
+     * 解析设置文件夹，不触发存储布局初始化。
+     *
+     * @return 文件夹
+     */
+    private static File resolveConfigDir() {
         String configDir = SystemUtil.get("CONFIG");
         if (StrUtil.isNotBlank(configDir)) {
             return new File(configDir);
@@ -92,8 +104,8 @@ public class ConfigUtil {
      * @return 设置文件
      */
     public static File getConfigFile() {
-        File configDir = getConfigDir();
-        return new File(configDir + File.separator + FILE_NAME);
+        getConfigDir();
+        return StoragePaths.configFile();
     }
 
     /**

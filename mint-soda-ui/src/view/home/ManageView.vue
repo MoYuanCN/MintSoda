@@ -298,7 +298,7 @@ const exportData = () => {
   const anchor = document.createElement('a')
   anchor.style.display = 'none'
   anchor.href = url
-  anchor.download = 'ani.v2.json'
+  anchor.download = 'subscriptions.json'
   document.body.appendChild(anchor)
   try {
     anchor.click()

@@ -3,7 +3,7 @@ package mint.soda.controller;
 import mint.soda.annotation.Auth;
 import mint.soda.entity.web.Result;
 import mint.soda.entity.web.ResultCode;
-import mint.soda.util.other.ConfigUtil;
+import mint.soda.commons.StoragePaths;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
@@ -39,7 +39,7 @@ public class UploadController extends BaseController {
             throw new IllegalArgumentException("图片内容与文件格式不匹配");
         }
         String saveName = SecureUtil.md5(tempFile) + "." + extension;
-        File assetDir = new File(ConfigUtil.getConfigDir(), "ui-assets");
+        File assetDir = StoragePaths.assetsDir();
         FileUtil.mkdir(assetDir);
         FileUtil.move(tempFile, new File(assetDir, saveName), true);
         return Result.<String>success("上传完成").setData(saveName);
@@ -74,8 +74,7 @@ public class UploadController extends BaseController {
         String fileName = file.getOriginalFilename();
         String saveName = s + "." + FileUtil.extName(fileName);
 
-        File configDir = ConfigUtil.getConfigDir();
-        File dir = new File(configDir, "/files/" + s.charAt(0));
+        File dir = new File(StoragePaths.coversDir(), s.substring(0, 1));
         File saveFile = new File(dir, saveName);
         FileUtil.move(tempFile, saveFile, true);
         return new Result<>()

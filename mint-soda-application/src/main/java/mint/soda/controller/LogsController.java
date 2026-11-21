@@ -1,12 +1,12 @@
 package mint.soda.controller;
 
 import mint.soda.annotation.Auth;
+import mint.soda.commons.StoragePaths;
 import mint.soda.entity.Global;
 import mint.soda.entity.Log;
 import mint.soda.entity.web.Header;
 import mint.soda.entity.web.Result;
 import mint.soda.util.basic.LogUtil;
-import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.StrFormatter;
 import cn.hutool.core.util.StrUtil;
@@ -55,8 +55,7 @@ public class LogsController extends BaseController {
     @Operation(summary = "下载日志")
     @GetMapping("/downloadLogs")
     public void downloadLogs() throws IOException {
-        File configDir = ConfigUtil.getConfigDir();
-        String logsPath = configDir + "/logs";
+        String logsPath = StoragePaths.logsDir().getPath();
 
         String filename = "logs.zip";
 

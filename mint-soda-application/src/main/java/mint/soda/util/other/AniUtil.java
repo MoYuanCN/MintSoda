@@ -2,6 +2,7 @@ package mint.soda.util.other;
 
 import mint.soda.commons.FileUtils;
 import mint.soda.commons.GsonStatic;
+import mint.soda.commons.StoragePaths;
 import mint.soda.config.DefaultAniFactory;
 import mint.soda.entity.*;
 import mint.soda.entity.dto.RssToAniDTO;
@@ -44,16 +45,16 @@ public class AniUtil {
 
     private static final Config CONFIG = ConfigUtil.CONFIG;
     public static final List<Ani> ANI_LIST = new CopyOnWriteArrayList<>();
-    public static final String FILE_NAME = "ani.v2.json";
+    public static final String FILE_NAME = StoragePaths.SUBSCRIPTIONS_FILE_NAME;
 
     /**
-     * 获取当前配置目录下的订阅数据文件。
+     * 获取订阅数据文件。
      *
-     * @return 指向 ani.v2.json 的文件对象
+     * @return 指向 data/subscriptions.json 的文件对象
      */
     public static File getAniFile() {
-        File configDir = ConfigUtil.getConfigDir();
-        return new File(configDir + File.separator + FILE_NAME);
+        ConfigUtil.getConfigDir();
+        return StoragePaths.subscriptionsFile();
     }
 
     /**
@@ -402,17 +403,16 @@ public class AniUtil {
     }
 
     /**
-     * 将封面缓存到配置目录下的 files 目录，按图片 URL 的 MD5 命名并分目录存放。
+     * 将封面缓存到 {@code data/images/covers}，按图片 URL 的 MD5 命名并分目录存放。
      * <p>
      * 已缓存且未要求覆盖时直接返回路径；图片地址为空或下载异常时使用默认封面。
      *
      * @param coverUrl   封面图片地址，可为空
      * @param isOverride 是否删除已有缓存并重新下载
-     * @return 相对于 files 目录的封面路径，例如 a/图片文件名.jpg 或默认封面 cover.png
+     * @return 相对于 covers 目录的封面路径，例如 a/图片文件名.jpg 或默认封面 cover.png
      */
     public static String saveCover(String coverUrl, Boolean isOverride) {
-        File configDir = ConfigUtil.getConfigDir();
-        File filesDir = new File(configDir, "files");
+        File filesDir = StoragePaths.coversDir();
         FileUtil.mkdir(filesDir);
 
         // 默认空图片

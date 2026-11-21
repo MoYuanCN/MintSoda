@@ -393,10 +393,10 @@ UNIT
 }
 
 fix_permissions() {
-    mkdir -p "$INSTALL_DIR/config"
-    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config"
+    mkdir -p "$INSTALL_DIR/config" "$INSTALL_DIR/data"
+    chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/config" "$INSTALL_DIR/data"
     chown "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR/MintSoda.jar"
-    chmod 750 "$INSTALL_DIR/config"
+    chmod 750 "$INSTALL_DIR/config" "$INSTALL_DIR/data"
     chmod 640 "$INSTALL_DIR/MintSoda.jar"
 
     # 服务以独立用户运行，安装目录必须可遍历，例如 /root 下的目录会失败。

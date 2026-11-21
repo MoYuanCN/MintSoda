@@ -10,7 +10,7 @@ import java.io.Serializable;
  * 反匹配路由记录。
  * <p>
  * 反匹配订阅中，条目命中规则后会把目标字幕组写入这里，随订阅一起保存到
- * {@code ani.v2.json}。这样即使条目暂时从 RSS 中消失，已路由的集数仍能保留其字幕组，
+ * {@code data/subscriptions.json}。这样即使条目暂时从 RSS 中消失，已路由的集数仍能保留其字幕组，
  * 供重命名、下载标签与完结迁移使用。
  */
 @Data

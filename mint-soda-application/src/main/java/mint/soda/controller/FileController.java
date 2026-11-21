@@ -3,9 +3,9 @@ package mint.soda.controller;
 import mint.soda.annotation.Auth;
 import mint.soda.commons.ExceptionUtils;
 import mint.soda.commons.FileUtils;
+import mint.soda.commons.StoragePaths;
 import mint.soda.entity.Global;
 import mint.soda.entity.web.Header;
-import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
@@ -57,7 +57,7 @@ public class FileController extends BaseController {
                 case "gif" -> "image/gif";
                 default -> throw new IllegalArgumentException("不允许访问");
             };
-            Path filesRoot = Path.of(ConfigUtil.getConfigDir().getAbsolutePath(), "ui-assets").normalize();
+            Path filesRoot = StoragePaths.assetsDir().getAbsoluteFile().toPath().normalize();
             Path image = filesRoot.resolve(relative).normalize();
             Assert.isTrue(image.startsWith(filesRoot) && Files.isRegularFile(image), "文件不存在");
             response.setContentType(contentType);
@@ -92,12 +92,12 @@ public class FileController extends BaseController {
 
         File file = new File(filename);
         if (!file.exists()) {
-            File configDir = ConfigUtil.getConfigDir();
-            file = Path.of(configDir.toString(), "files", filename).toFile();
-            if (!file.exists()) {
+            File cover = StoragePaths.resolveInside(StoragePaths.coversDir(), filename);
+            if (cover == null || !cover.exists()) {
                 writeNotFound();
                 return;
             }
+            file = cover;
         }
 
         long fileLength = file.length();

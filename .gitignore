@@ -47,6 +47,7 @@ target
 logs
 *.log
 /config
+/data
 .git
 /HANDOFF.md
 

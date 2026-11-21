@@ -162,7 +162,7 @@ public class Config implements Serializable {
     private Integer rssSleepSeconds;
 
     /**
-     * Legacy interval in minutes, retained only to migrate config.v2.json files from older versions.
+     * Legacy interval in minutes, retained only to migrate older configuration files.
      */
     @Deprecated
     @Schema(hidden = true)

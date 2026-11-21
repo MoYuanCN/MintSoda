@@ -4,6 +4,7 @@ import mint.soda.entity.UpdateInfo;
 import mint.soda.entity.WebUI;
 import mint.soda.handle.JsonReader;
 import mint.soda.util.basic.HttpReq;
+import mint.soda.commons.StoragePaths;
 import mint.soda.util.other.ConfigUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.lang.Assert;
@@ -28,8 +29,8 @@ public class WebUIService {
     private final GithubService githubService;
 
     public File getWebUIDir() {
-        File configDir = ConfigUtil.getConfigDir();
-        return new File(configDir, "webui");
+        ConfigUtil.getConfigDir();
+        return StoragePaths.webuiDir();
     }
 
     @Nullable
