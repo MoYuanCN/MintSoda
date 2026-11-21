@@ -28,7 +28,14 @@
   - 常用 type：`feat`、`fix`、`refactor`、`perf`、`build`、`ci`、`docs`、`test`、`chore`。
   - 常用 scope：`match`、`notification`、`config`、`security`、`ui`、`download`、`plugin`、`build`、`release`、`docs`。
   - 示例：`feat(match): 支持全局反匹配规则`、`fix(config): 保留旧的分钟字段`、`docs(plugin): 补充 Lua 与权限说明`。
-- 摘要不超过约 72 个字符（按显示宽度计），句末不加句号；正文同样使用中文，说明动机、兼容影响与验证方式。
+- 摘要不超过 80 个字符，句末不加句号；正文同样使用中文，说明动机、兼容影响与验证方式。
+- 提交信息可用 `bash .github/scripts/check-commit-messages.sh` 自查；启用仓库自带钩子后，每次提交都会自动校验：
+
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
+- PR 标题按同样格式校验，CI 会检查提交信息、PR 标题与工作流语法。
 - 一次提交只解决一件事；功能改动与配置迁移、格式化、依赖升级分开提交。
 - 不要提交 `.tools/`、`mint-soda-ui/node/`、`mint-soda-ui/.tools/`、`target/`、`dist/`、`node_modules/`、配置目录、日志、备份或本机交接文件。
 
@@ -95,9 +102,10 @@ bash ./package.sh                            # JAR + Windows EXE
 
 1. 更新版本号：`./new_version.sh <x.y.z>`（同步 reactor 与子模块版本）。
 2. 确认 `README.md`、`docs/USER_GUIDE.md`、`docs/API.md` 的行为描述与当前实现一致。
-3. 触发 `build-test` 工作流验证打包，再触发 `build` 工作流生成 Release。
-4. Release 附加 `MintSoda.jar` 与 `MintSoda.exe`，说明由 GitHub 自动生成；仓库中不维护独立的更新说明文件。
-5. 旧 Release 由 `delete-old-releases` 工作流手动清理，保留策略在脚本中定义。
+3. 推送后在 `ci.yml` 中确认提交信息、PR 标题与构建全部通过。
+4. 手动触发 `release.yml`：标签默认取 `pom.xml` 的版本并加 `v` 前缀，标签已存在会失败，需要先提升版本号。
+5. Release 附加 `MintSoda.jar` 与 `MintSoda.exe`，说明由 GitHub 按 `.github/release.yml` 的分类自动生成；仓库中不维护独立的更新说明文件。
+6. 旧 Release 由 `delete-old-releases.yml` 手动清理，可先以试运行确认删除范围。
 
 ## 安全问题
 

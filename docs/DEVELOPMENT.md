@@ -27,7 +27,7 @@
 - `mint-soda-plugin-api/`：稳定的插件接口模块，插件以 `provided` 依赖。
 - `examples/plugins/`：示例插件与市场索引，不参与正式构建。
 - `linux/`：Linux JAR 的 systemd 安装、控制与卸载脚本。
-- `.github/workflows/`：构建检查、Release 发布与旧版本清理。
+- `.github/workflows/`：持续集成、发布与旧版本清理；`.github/actions/build-artifacts/` 是 CI 与发布共用的构建步骤。
 - `docs/`：文档索引与用户、开发、插件、API、安全、多语言文档。
 
 本项目只支持 Linux 与 Windows，不维护 Docker 或 macOS 构建。
@@ -98,7 +98,7 @@ mvn -B package -DskipTests --file pom.xml
 bash ./package.sh
 ```
 
-`package.sh` 使用 Maven `windows` profile 生成 EXE，并保留 JAR。CI 的 `build-test.yml` 执行相同打包脚本；`build.yml` 将 JAR 与 EXE 附加到 GitHub Release，不发布容器镜像。
+`package.sh` 使用 Maven `windows` profile 生成 EXE，并保留 JAR。CI 与发布共用 `.github/actions/build-artifacts/` 这一个复合 Action：安装 JDK 25、缓存前端工具链、执行 `package.sh`、校验 JAR 内包含前端资源、输出 `sha256` 并上传产物。
 
 Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向安装目录。手动运行时可通过 `CONFIG=/path/to/config java -jar MintSoda.jar` 指定配置目录。
 
@@ -142,7 +142,9 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 
 - 现有自动化测试只有 `mint-soda-application/src/test/java/mint/soda/MintSodaApplicationTests.java`，会访问 Bangumi 接口，依赖网络。
 - 用户未要求测试时不要主动新增测试；需要验证时优先选择可离线覆盖的点：配置迁移、模板渲染、匹配优先级、插件权限解析。
-- 提交前至少运行 `mvn -B package -DskipTests --file pom.xml`；改动了前端则先执行一次 `pnpm build`。改动工作流时用 YAML 校验工具检查 `.github/workflows/*.yml`。
+- 提交前至少运行 `mvn -B package -DskipTests --file pom.xml`；改动了前端则先执行一次 `pnpm build`。
+- 提交信息可以用仓库脚本自查：`bash .github/scripts/check-commit-messages.sh`；启用本地钩子后每次提交都会自动检查，见[贡献指南 · 分支与提交](CONTRIBUTING.md#分支与提交)。
+- 改动工作流时用 `actionlint` 校验 `.github/workflows/*.yml` 与 `.github/actions/*/action.yml`。
 
 ## 匹配规则维护
 
@@ -150,11 +152,16 @@ Linux 安装脚本使用 Java 直接运行 JAR，并将服务配置目录指向�
 
 ## CI 与发布
 
-- `build-test.yml`：手动触发，运行 Java 25 Maven 打包并生成 Linux 可构建的 JAR 与 Windows EXE。
-- `build.yml`：手动触发，构建后创建 GitHub Release，发布 `MintSoda.jar` 和 `MintSoda.exe`。
+| 工作流 | 触发 | 内容 |
+| --- | --- | --- |
+| `ci.yml` | PR、推送到 `main`、手动 | 校验工作流、提交信息与 PR 标题，并构建 JAR / EXE |
+| `release.yml` | 手动 | 构建产物、校验哈希与标签唯一性，创建 GitHub Release |
+| `delete-old-releases.yml` | 手动 | 按保留数量清理旧 Release，可先试运行 |
+
+- 发布时标签由 `pom.xml` 的版本生成（`v` 前缀），也可在手动触发时指定；标签已存在会直接失败，避免覆盖已发布的产物。
+- Release 附加 `MintSoda.jar`、`MintSoda.exe`，说明由 GitHub 按 `.github/release.yml` 的分类规则自动生成。程序检查更新时读取 Release 资产的 `digest`，因此不要手工替换已发布资产。
+- 工作流权限按实际操作设置最小范围：CI 只需 `contents: read`，发布与清理需要 `contents: write`。
 - 变更 Maven profile 或构建工具版本时，确认 JAR 与 EXE 都仍包含前端资源；不要恢复 Docker 镜像或 macOS 打包步骤。
-- 工作流权限按实际操作设置最小范围：构建检查只需读取仓库，发布流程需要 `contents: write`。
-- `delete-old-releases.yml`：手动触发，按脚本中的保留策略清理旧 Release。
 
 ## 延伸阅读
 

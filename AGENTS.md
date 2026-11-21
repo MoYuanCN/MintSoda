@@ -21,7 +21,7 @@ MintSoda 是独立演进的番剧订阅与下载服务：通过 RSS 订阅番剧
 | `mint-soda-plugin-api/` | 稳定的插件接口模块，插件以 `provided` 依赖，不应引入宿主内部类 |
 | `examples/plugins/` | 示例插件与市场索引，不参与正式构建 |
 | `docs/` | 文档索引、用户指南、API 参考、配置参考、开发指南、功能与实现、贡献规范、安全说明、插件开发指南、多语言说明 |
-| `.github/workflows/` | 手动触发的构建检查与 Release 发布 |
+| `.github/workflows/` | 持续集成（PR / 推送到 main / 手动）、手动发布与旧版本清理；`.github/actions/build-artifacts/` 为共用构建步骤 |
 
 后端入口为 `mint-soda-application/src/main/java/mint/soda/MintSodaApplication.java`；默认端口 17789，接口统一挂在 `/api` 前缀下。
 
@@ -149,7 +149,8 @@ bash ./package.sh
 
 - 现有测试仅 `mint-soda-application/src/test/java/mint/soda/MintSodaApplicationTests.java`，会访问 Bangumi 接口，依赖网络。
 - 用户未要求测试时，不要主动新增或运行测试；需要验证时优先选择配置迁移、模板渲染、匹配优先级这类可离线覆盖的点。
-- 提交前至少保证 `mvn -B package -DskipTests` 通过；改动了工作流则同时做 YAML 校验。
+- 提交前至少保证 `mvn -B package -DskipTests` 通过；改动工作流时用 `actionlint` 校验 `.github/workflows/*.yml` 与 `.github/actions/*/action.yml`。
+- 提交信息由 `.github/scripts/check-subject.sh` 校验；可用 `git config core.hooksPath .githooks` 启用本地钩子，CI 会复核提交信息与 PR 标题。
 
 ## 提交与交付
 
