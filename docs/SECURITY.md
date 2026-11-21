@@ -41,7 +41,7 @@ MintSoda 是自托管的番剧订阅与下载服务，通常部署在家庭网�
 重点保护：
 
 - 登录凭据、API Key、JWT 签名密钥、qBittorrent 凭据、Telegram Bot Token、Bangumi / TMDB Token。
-- 配置目录中的 `config.v2.json`、备份压缩包、日志、种子与上传文件。
+- `config/config.json`、`data/` 下的备份压缩包、日志、种子与上传文件。
 - 对外的更新链路与 WebUI 资源。
 
 ## 认证与授权
@@ -59,7 +59,7 @@ MintSoda 是自托管的番剧订阅与下载服务，通常部署在家庭网�
 
 - `POST /api/login`、`POST /api/publicSettings`（登录页所需的外观资源名与数值）。
 - `GET /api/custom.js`、`GET /api/custom.css`（管理员配置的自定义资源，会注入页面）。
-- `GET /api/uiAsset`（仅 `ui-assets` 目录下的图片，路径经过规范化）。
+- `GET /api/uiAsset`（仅 `data/images/assets` 下的图片，路径经过规范化）。
 - `POST /api/testIpWhitelist`（返回当前来源 IP 是否命中白名单）。
 
 新增公开接口必须在评审中说明其“不含敏感信息”的理由。
@@ -80,7 +80,7 @@ MintSoda 是自托管的番剧订阅与下载服务，通常部署在家庭网�
 - 前端登录与开发者验证发送的是密码摘要，验证在与保存的摘要比较时完成。
 - 日志默认写入配置目录下的 `logs/`，保留 7 天；日志不得记录密码、摘要、API Key、JWT、Bot Token、完整认证头或完整配置。
 - 唯一例外是 Linux 首次启动生成的随机登录密码：它只在首次启动写一次日志，用于让用户取回凭据；其余场景（含环境变量覆盖、设置页保存）都不得输出密码。
-- 上传文件只保存到配置目录下的 `files/`、`img/`、`ui-assets/`、`webui/`；备份导入写入配置目录。
+- 上传文件只保存到 `data/` 下的图片、种子与 `webui/` 目录；备份导入只写入 `config/` 与 `data/`，并逐条映射条目路径。
 
 ## 出站请求
 
@@ -91,7 +91,7 @@ MintSoda 是自托管的番剧订阅与下载服务，通常部署在家庭网�
 
 ## 上传与文件访问
 
-- 外观图片上传（`/api/uiAsset/upload`）只接受 `png`/`jpg`/`jpeg`/`webp`/`gif`，并校验文件头魔数；读取时限定在 `ui-assets` 根目录内。
+- 外观图片上传（`/api/uiAsset/upload`）只接受 `png`/`jpg`/`jpeg`/`webp`/`gif`，并校验文件头魔数；读取时限定在 `data/images/assets` 内。
 - 通用上传（`/api/upload`）只要求登录，按内容摘要命名保存；读取端 `/api/file` 限定图片扩展名。
 - 备份导入（`/api/importBackup`）与 WebUI 上传/更新（`/api/webui/*`）会解压到配置目录，改动这些流程时必须确认解压实现能阻止路径穿越（zip-slip），并对条目路径做规范化校验。
 

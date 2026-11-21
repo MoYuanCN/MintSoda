@@ -1,6 +1,6 @@
 # 配置参考
 
-设置保存在配置目录的 `config.v2.json`，订阅保存在 `ani.v2.json`，两者都由程序读写，不建议在服务运行时手工编辑。本文列出 `Config` 的全部字段、类型与默认值，便于备份比对、迁移排查和二次开发。
+设置保存在 `config/config.json`，订阅保存在 `data/subscriptions.json`，两者都由程序读写，不建议在服务运行时手工编辑。本文列出 `Config` 的全部字段、类型与默认值，便于备份比对、迁移排查和二次开发。
 
 > 面向使用者的界面说明见[使用指南](USER_GUIDE.md)，接口清单见 [API 参考](API.md)，改动字段时必须遵守的流程见[开发指南 · 配置变更清单](DEVELOPMENT.md#配置变更清单)。
 
@@ -17,14 +17,14 @@
 
 | 文件 | 内容 |
 | --- | --- |
-| `config.v2.json` | 设置（本文的 `Config`） |
-| `ani.v2.json` | 订阅列表 |
-| `backup/YYYY-MM-DD.zip` | 开启“设置备份”后每日生成的压缩包，保留 `configBackupDay` 天 |
-| `plugins/installed.json` | 插件安装记录，不进入备份 |
+| `config/config.json` | 设置（本文的 `Config`） |
+| `data/subscriptions.json` | 订阅列表 |
+| `data/backups/YYYY-MM-DD.zip` | 开启“设置备份”后每日生成的压缩包，保留 `configBackupDay` 天 |
+| `data/plugins/installed.json` | 插件安装记录，不进入备份 |
 
 加载顺序：先由 `DefaultConfigFactory` 生成完整默认值，再把磁盘上的 JSON 覆盖上去（`null` 不覆盖），最后由 `ConfigUtil#format` 补齐缺失字段、执行迁移与范围校正。因此旧配置缺字段不会导致启动失败。
 
-自动备份的内容是 `files/`、`torrents/`、`ani.v2.json`、`config.v2.json` 与整个插件目录（含私有 `data/`，不含 `installed.json`），可用 `/api/importBackup` 或设置页导入恢复。
+自动备份的内容是 `data/images/covers/`、`data/torrents/`、`data/images/assets/`、`data/subscriptions.json`、`config/config.json` 与整个插件目录（含私有 `data/`，不含 `installed.json`），可用 `/api/importBackup` 或设置页导入恢复。旧版备份中的 `ani.v2.json`、`config.v2.json`、`files/`、`img/`、`ui-assets/` 等条目在导入时自动映射到新位置。
 
 ## 字段清单
 
@@ -193,14 +193,14 @@
 | --- | --- | --- | --- |
 | `accentColor` | `String` | 空 | 主题强调色 |
 | `themeDynamicColor` | `Boolean` | `false` | 从背景图动态取色 |
-| `appBackgroundImage` | `String` | 空 | 应用背景图文件名，位于 `ui-assets/` |
+| `appBackgroundImage` | `String` | 空 | 应用背景图文件名，位于 `data/images/assets/` |
 | `appBackgroundImageDark` | `String` | 空 | 深色模式应用背景图 |
-| `loginBackgroundImage` | `String` | 空 | 登录页背景图文件名，位于 `ui-assets/` |
+| `loginBackgroundImage` | `String` | 空 | 登录页背景图文件名，位于 `data/images/assets/` |
 | `loginBackgroundImageDark` | `String` | 空 | 深色模式登录背景图 |
 | `backgroundBlur` | `Integer` | `10` | 背景图模糊度 |
 | `backgroundOpacity` | `Integer` | `100` | 背景图不透明度 |
-| `appLogoImage` | `String` | 空 | 应用 Logo 文件名，位于 `ui-assets/` |
-| `loginLogoImage` | `String` | 空 | 登录页 Logo 文件名，位于 `ui-assets/` |
+| `appLogoImage` | `String` | 空 | 应用 Logo 文件名，位于 `data/images/assets/` |
+| `loginLogoImage` | `String` | 空 | 登录页 Logo 文件名，位于 `data/images/assets/` |
 | `cardOpacity` | `Integer` | `80` | 卡片不透明度（0–100） |
 | `cardBlur` | `Integer` | `14` | 卡片模糊度 |
 | `navOpacity` | `Integer` | `78` | 导航栏不透明度 |

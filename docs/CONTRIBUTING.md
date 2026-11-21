@@ -50,7 +50,7 @@
 
 ## 配置与兼容
 
-配置以 JSON 持久化（默认 `config.v2.json`），升级用户可能保留任意旧版本文件。新增或修改配置字段时必须同时处理：
+配置以 JSON 持久化（`config/config.json`，数据在配置目录同级的 `data/`），升级用户可能保留任意旧版本文件。新增或修改配置字段时必须同时处理：
 
 1. 实体：`mint-soda-application/.../entity/Config.java`（或对应实体）。
 2. 默认值：`config/DefaultConfigFactory.java`。

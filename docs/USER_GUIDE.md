@@ -39,7 +39,7 @@ MintSoda 只面向 Windows 和 Linux。发布页提供 Windows EXE 与 JAR，以
 | Windows JAR，以上都没有 | 用户目录下的 `MintSoda/`（检测到旧的 `mint-soda/` 会复制） |
 | Linux JAR，以上都没有 | 当前工作目录的 `config/` |
 
-配置目录内包含 `config.v2.json`（设置）、`ani.v2.json`（订阅）、`plugins/`（插件与私有数据）、`logs/`（日志）、`files/`、`img/`、`ui-assets/`、`webui/` 等子目录。备份与迁移时整体复制该目录即可；各配置字段的含义见[配置参考](CONFIG.md)。
+配置目录只保存设置文件 `config.json`。其余数据统一放在配置目录同级的 `data/`：订阅、封面与预览图缓存、上传图片、种子、插件与日志都在这里。备份与迁移时整体复制 `config/` 与 `data/` 即可；各配置字段的含义见[配置参考](CONFIG.md)。从旧版本升级时，原配置目录内的 `config.v2.json`、`ani.v2.json`、`files/`、`img/`、`ui-assets/`、`plugins/`、`torrents/`、`logs/` 会在启动时自动迁移到新结构。
 
 首次启动不再内置 `admin/admin`：
 
@@ -253,12 +253,15 @@ MintSoda 提供 qBittorrent 下载、Mikan / AniBT / 手动 RSS 订阅、Telegra
 
 | 数据 | 位置 |
 | --- | --- |
-| 设置 | 配置目录的 `config.v2.json` |
-| 订阅 | 配置目录的 `ani.v2.json` |
-| 插件与私有数据 | 配置目录的 `plugins/` |
-| 日志 | 配置目录的 `logs/MintSoda.log` |
-| 封面与预览缓存 | 配置目录的 `img/` |
-| 上传的外观资源 | 配置目录的 `ui-assets/` |
-| 自动备份 | 配置目录的 `backup/` |
+| 设置 | `config/config.json` |
+| 订阅 | `data/subscriptions.json` |
+| 封面缓存 | `data/images/covers/` |
+| 站点预览图缓存 | `data/images/previews/` |
+| 上传的外观图 | `data/images/assets/` |
+| 种子缓存 | `data/torrents/` |
+| 插件与私有数据 | `data/plugins/` |
+| 在线下载的 WebUI | `data/webui/` |
+| 自动备份 | `data/backups/` |
+| 日志 | `data/logs/MintSoda.log` |
 
-“设置 → 系统与维护”可导出与导入设置备份，备份包含设置、订阅与插件目录（不含 `installed.json`）。迁移到新机器时整体复制配置目录即可。
+“设置 → 系统与维护”可导出与导入设置备份，备份以 `data/` 为根打包设置、订阅、封面、上传图片、种子与插件（不含 `installed.json`）。迁移到新机器时整体复制 `config/` 与 `data/` 即可。

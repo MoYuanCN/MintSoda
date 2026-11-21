@@ -81,7 +81,7 @@ curl -s -X POST http://127.0.0.1:17789/api/listAni \
 | `POST /api/setup` | 首次设置账号，仅未初始化且来源为本机或内网时可用 |
 | `POST /api/publicSettings` | 登录页所需的外观字段 |
 | `GET /api/custom.js` / `GET /api/custom.css` | 管理员配置的自定义资源，会注入页面 |
-| `GET /api/uiAsset` | 外观图片，限定在 `ui-assets` 目录 |
+| `GET /api/uiAsset` | 外观图片，限定在 `data/images/assets` |
 | `POST /api/testIpWhitelist` | 当前来源 IP 是否命中白名单 |
 | `POST /api/ping` | 存活测试 |
 
@@ -188,7 +188,7 @@ curl -s -X POST http://127.0.0.1:17789/api/listAni \
 | 接口 | 方法 | 说明 |
 | --- | --- | --- |
 | `/api/file` | GET | 读取文件，`filename` 为 Base64 编码路径，仅允许图片 |
-| `/api/uiAsset` | GET | 读取外观图片，路径限定在 `ui-assets` 目录 |
+| `/api/uiAsset` | GET | 读取外观图片，路径限定在 `data/images/assets` |
 | `/api/uiAsset/upload` | POST | 上传外观图片，白名单扩展名并校验文件头 |
 | `/api/upload` | POST | 通用上传，按内容摘要命名 |
 | `/api/uploadAndRead` | POST | 上传并返回 UTF-8 文本 |

@@ -59,7 +59,7 @@
 
 ### 订阅进度写入
 
-- 刷新期间 `AniUtil.beginDeferredSync` 只记录待保存，整轮结束写一次 `ani.v2.json`；请求线程的即时保存行为不变。
+- 刷新期间 `AniUtil.beginDeferredSync` 只记录待保存，整轮结束写一次 `data/subscriptions.json`；请求线程的即时保存行为不变。
 - 备用 RSS 复制订阅为属性拷贝。
 - 缺集检测使用集数集合，条件请求与退避记录有上限。
 
@@ -179,7 +179,7 @@ Body 有两种来源：
 ### 默认安全开关
 
 - `allowCors=false`、`MCP_ENABLED=false`、`SWAGGER_ENABLED=false` 默认关闭；`innerIP` 与 `limitLoginAttempts` 生效。
-- `ui-assets` 目录与 `/api/uiAsset`：文件名为相对路径，拒绝绝对路径与 `..`，只允许 png/jpg/webp/gif，并校验文件头魔数。
+- `data/images/assets` 与 `/api/uiAsset`：文件名为相对路径，拒绝绝对路径与 `..`，只允许 png/jpg/webp/gif，并校验文件头魔数。
 - 外观图片上传（`/api/uiAsset/upload`）同样按白名单与文件头校验；`/api/file` 只允许图片。
 - `/api/custom.js` 与 `/api/custom.css` 视为管理员可信输入。
 - 更新包做 `size` + `sha256` 双重校验，WebUI 在线更新同样校验。
@@ -254,7 +254,7 @@ Body 有两种来源：
 
 ## 数据与接口
 
-- 配置文件为 `config.v2.json`，订阅文件为 `ani.v2.json`，均位于配置目录。
+- 设置文件为 `config/config.json`，其余数据位于配置目录同级的 `data/`，目录布局由 `StoragePaths` 统一定义。
 - 接口统一挂在 `/api` 前缀下，业务接口使用 `POST`；文件、图片、日志压缩包、备份导出与日历使用 `GET`。接口清单见 [API 参考](API.md)。
 - 插件接口统一挂在 `/api/plugin/api/{pluginId}/**`。
 - 公开接口仅限登录与初始化页面渲染所需的无敏感字段。

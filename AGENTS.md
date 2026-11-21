@@ -66,7 +66,7 @@ bash ./package.sh
 
 ## 配置变更清单
 
-配置以 JSON 持久化（默认文件名 `config.v2.json`，位于配置目录）。任何配置字段或语义变更必须同时处理：
+配置以 JSON 持久化（`config/config.json`，位于配置目录），其余数据统一放在配置目录同级的 `data/`（路径由 `commons/StoragePaths` 定义）。任何配置字段或语义变更必须同时处理：
 
 1. 实体：`entity/Config.java`（或对应实体）。
 2. 默认值：`config/DefaultConfigFactory.java`。
