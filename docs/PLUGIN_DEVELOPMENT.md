@@ -4,7 +4,7 @@
 
 不熟悉 Java 时优先看 [JavaScript 插件](#javascript-插件) 或 [Lua 插件](#lua-插件)：两者都不需要编译，改完脚本重新打包即可。
 
-插件接口当前版本为 `4`。版本 3 新增了[条目改写](#条目改写)与[界面页面](#界面页面)；版本 4 把接口包名迁移到 `mint.soda.plugin.api`，因此 Java 插件需要改用新坐标与新包名重新编译并声明 `apiVersion: 4`，JavaScript 与 Lua 插件只需把 `apiVersion` 改为 `4`。
+插件接口当前版本为 `4`。版本 3 新增了[条目改写](#条目改写)与[界面页面](#界面页面)；版本 4 把接口包名迁移到 `mint.soda.plugin.api`，因此 Java 插件需要改用新坐标与新包名重新编译并声明 `apiVersion: 5`，JavaScript 与 Lua 插件只需把 `apiVersion` 改为 `4`。
 
 > 安全边界见 [安全说明](SECURITY.md)。插件与服务同权限运行，**只安装你信任的插件**。用户视角的插件页说明见[使用指南 · 插件](USER_GUIDE.md#插件)，宿主接口清单见 [API 参考 · 插件](API.md#插件)。
 
@@ -14,6 +14,7 @@
 - [目录布局](#目录布局)
 - [最小插件](#最小插件)
 - [扩展点](#扩展点)
+- [插件联动](#插件联动)
 - [JavaScript 插件](#javascript-插件)
 - [权限管理](#权限管理)
 - [插件数据](#插件数据)
@@ -38,6 +39,7 @@
 
 - 插件接口版本由 `PluginApi.VERSION` 表示，当前为 `4`。宿主只加载 `apiVersion` 不大于自身版本的插件，破坏性变更时提升该值。
 - 版本 4 是一次破坏性变更：接口包名与 Maven 坐标从 `ani.rss.plugin.api`、`ani.rss:ani-rss-plugin-api` 迁移为 `mint.soda.plugin.api`、`mint.soda:mint-soda-plugin-api`，旧 Java 插件必须重新编译。
+- 版本 5 新增插件之间的消息联动（`publish` / `request` / `subscribe` / `serve`）与插件发现（`plugins` / `isPluginEnabled`）；旧插件无需改动即可继续加载，声明 `apiVersion: 5` 才能使用这些能力。
 - 版本 2 新增模板变量、下载拦截与自定义接口三个扩展点；均为新增能力，不改变既有扩展点语义。
 - 下载事件（`registerDownloadListener`）是在版本 2 之上追加的可选能力：接口方法与注册入口都提供默认实现，未升级的插件无需改动即可继续使用。
 - 描述文件统一叫 `plugin.json`；为兼容常见习惯，包内只提供 `manifest.json` 也接受，安装后会改名为 `plugin.json`。
@@ -70,7 +72,7 @@
   "id": "my-plugin",
   "name": "我的插件",
   "version": "1.0.0",
-  "apiVersion": 4,
+  "apiVersion": 5,
   "mainClass": "com.example.MyPlugin",
   "author": "you",
   "description": "一句话说明插件作用",
@@ -441,8 +443,63 @@ context.registerEndpoint(new PluginEndpoint() {
 - 返回值按字符串原样放进 `Result.data`；需要返回 JSON 时自行拼接或序列化。
 - 不要在接口里返回令牌、密码或完整配置。
 
-## JavaScript 插件
+## 插件联动
 
+插件之间通过宿主的消息总线通信，彼此不持有对方对象，也不共享类加载器与配置。
+主题（topic）是唯一寻址方式，只允许小写字母、数字、点、下划线与连字符，最长 64 字符；
+单条载荷最长 64KB，超出直接抛错。总线只传递文本，格式由收发双方约定（通常为 JSON）。
+
+| 能力 | 方法（Java / JS / Lua） | 权限 |
+| --- | --- | --- |
+| 广播 | `publish(topic, payload)` | `PLUGIN_MESSAGE_SEND` |
+| 请求并等待应答 | `request(topic, payload)` | `PLUGIN_MESSAGE_SEND` |
+| 订阅广播 | `subscribe(topic, listener)` | `PLUGIN_MESSAGE_RECEIVE` |
+| 应答请求 | `serve(topic, handler)` | `PLUGIN_MESSAGE_RECEIVE` |
+| 取消订阅 | `unsubscribe(topic)` | `PLUGIN_MESSAGE_RECEIVE` |
+| 列出其他插件 | `plugins()` / `api.plugins()` | `PLUGIN_DISCOVERY` |
+| 查询插件是否启用 | `isPluginEnabled(id)` / `api.is_plugin_enabled(id)` | `PLUGIN_DISCOVERY` |
+
+规则与边界：
+
+- 广播异步投递，每个订阅者一个虚拟线程；接收方抛错只记录日志，不影响发送方与其他订阅者。
+- 广播与请求都不会发给发送方自身，避免插件收到自己发出的消息形成自激循环。
+- 请求并发询问所有应答了该主题的插件，单次整体超时 3 秒，超时返回已收到的部分；请求不会发给发送方自身。
+- 应答结果按插件标识排序，便于稳定比较；返回 `null` / 空串视为不应答。
+- 嵌套请求最多 4 层，超过后直接忽略并记录告警，防止两个插件互相请求形成死循环。
+- 停用或卸载插件时订阅与处理器自动清理，无需手写 `onDisable`。
+- 消息的 `source` 由宿主填写，插件无法伪造来源。
+- 联动只传递文本，不提供跨插件的方法调用、文件访问或配置读取；需要协作时请自定义主题与载荷格式。
+
+Java 示例：
+
+```java
+@Override
+public void onEnable(PluginContext context) {
+    // 应答其他插件的查询。
+    context.serve("my.plugin.capabilities", message ->
+            "{\"features\":[\"thumbnail\"]}");
+
+    // 订阅广播，只关心自己需要的主题。
+    context.subscribe("my.plugin.refresh", message ->
+            context.log("收到来自 " + message.source() + " 的刷新请求"));
+
+    // 广播自己的状态，并询问其他插件是否具备某项能力。
+    context.publish("my.plugin.ready", "{\"version\":\"1.0.0\"}");
+    for (PluginReply reply : context.request("my.plugin.capabilities", "")) {
+        context.log(reply.plugin() + " -> " + reply.payload());
+    }
+
+    // 发现其他插件（不暴露路径与配置）。
+    for (PluginSummary plugin : context.plugins()) {
+        context.log(plugin.id() + " " + plugin.runtime() + " enabled=" + plugin.enabled());
+    }
+}
+```
+
+JavaScript 与 Lua 的写法见各自运行时的 `__api` / `api` 参考；示例插件中已包含订阅、应答、广播与发现的完整用例。
+插件联动的能力在插件页的权限面板中单独授予，默认值来自描述文件的 `permissions`，与其余权限一样可以随时关闭。
+
+## JavaScript 插件
 不需要 Java 或 Maven，一个目录、两个文件即可：`plugin.json` 与入口脚本（默认 `main.js`），打成 ZIP 上传。
 
 ### 1. `plugin.json`
@@ -452,7 +509,7 @@ context.registerEndpoint(new PluginEndpoint() {
   "id": "js-demo-plugin",
   "name": "JavaScript 示例插件",
   "version": "1.0.0",
-  "apiVersion": 4,
+  "apiVersion": 5,
   "runtime": "JAVASCRIPT",
   "entry": "main.js",
   "author": "you",
@@ -513,6 +570,13 @@ function onEnable() {
 | `itemTransformer(obj)` | 注册条目改写 |
 | `page(obj)` | 注册界面页面 |
 | `endpoint(obj)` | 注册自定义 HTTP 接口 |
+| `publish(topic, payload)` | 向其他插件广播消息，需要 `PLUGIN_MESSAGE_SEND` |
+| `request(topic, payload)` | 请求其他插件并等待应答，返回 `[{plugin, payload}]`，需要 `PLUGIN_MESSAGE_SEND` |
+| `subscribe(topic, fn)` | 订阅广播消息，回调参数为 `{topic, source, payload}`，需要 `PLUGIN_MESSAGE_RECEIVE` |
+| `serve(topic, fn)` | 登记请求应答，函数返回值即应答文本，需要 `PLUGIN_MESSAGE_RECEIVE` |
+| `unsubscribe(topic)` | 取消订阅与应答 |
+| `plugins()` | 列出其他插件 `{id, name, version, runtime, enabled}`，需要 `PLUGIN_DISCOVERY` |
+| `isPluginEnabled(id)` | 查询插件是否启用，需要 `PLUGIN_DISCOVERY` |
 
 注册对象的字段：
 
@@ -608,6 +672,9 @@ cd examples/plugins/js-plugin
 | 任务 | `SCHEDULED_TASK` | 周期任务 | 后台定时执行 | 低 | 是 |
 | 接口 | `HTTP_ENDPOINT` | 自定义接口 | 提供 `/api/plugin/api/{id}/**` | 中 | 是 |
 | 界面 | `CUSTOM_PAGE` | 界面页面 | 在主程序界面注册只读页面 | 低 | 是 |
+| 联动 | `PLUGIN_DISCOVERY` | 发现插件 | 查看其他插件的标识、版本与启用状态 | 低 | 是 |
+| 联动 | `PLUGIN_MESSAGE_SEND` | 发送插件消息 | 广播消息或请求其他插件 | 中 | 是 |
+| 联动 | `PLUGIN_MESSAGE_RECEIVE` | 接收插件消息 | 订阅广播或应答请求 | 中 | 是 |
 | 配置 | `CONFIG_READ` | 读取配置 | 读取插件设置 | 低 | 是 |
 | 配置 | `CONFIG_WRITE` | 写入配置 | 保存插件设置 | 中 | 是 |
 | 数据 | `DATA_READ` | 读取数据 | 读取 `plugins/{id}/data` | 低 | 是 |
@@ -701,7 +768,7 @@ Lua 插件和 JavaScript 插件结构一致：`plugin.json` 加一个入口脚�
   "id": "lua-demo-plugin",
   "name": "Lua 示例插件",
   "version": "1.0.0",
-  "apiVersion": 4,
+  "apiVersion": 5,
   "runtime": "LUA",
   "entry": "main.lua",
   "permissions": ["notification", "item-filter"]
@@ -760,6 +827,13 @@ end
 | `api.register_item_transformer(table)` | 注册条目改写 |
 | `api.register_page(table)` | 注册界面页面 |
 | `api.register_endpoint(table)` | 注册自定义 HTTP 接口 |
+| `api.publish(topic, payload)` | 广播消息，需要 `PLUGIN_MESSAGE_SEND` |
+| `api.request(topic, payload)` | 请求其他插件，返回 `{{plugin=..., payload=...}}`，需要 `PLUGIN_MESSAGE_SEND` |
+| `api.subscribe(topic, fn)` | 订阅广播消息，`fn({topic, source, payload})`，需要 `PLUGIN_MESSAGE_RECEIVE` |
+| `api.serve(topic, fn)` | 登记请求应答，`fn` 的返回值即应答文本，需要 `PLUGIN_MESSAGE_RECEIVE` |
+| `api.unsubscribe(topic)` | 取消订阅与应答 |
+| `api.plugins()` | 列出其他插件，需要 `PLUGIN_DISCOVERY` |
+| `api.is_plugin_enabled(id)` | 查询插件是否启用，需要 `PLUGIN_DISCOVERY` |
 
 注册表字段与 JavaScript 版一致，命名改用下划线：
 
@@ -918,7 +992,7 @@ cd examples/plugins/hello-plugin
       "downloadUrl": "https://example.com/plugins/my-plugin-1.0.0.jar",
       "sha256": "<jar 的 sha256>",
       "size": 12345,
-      "apiVersion": 4,
+      "apiVersion": 5,
       "permissions": ["notification"],
       "updateUrl": ""
     }

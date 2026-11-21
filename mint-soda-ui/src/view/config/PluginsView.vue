@@ -36,7 +36,8 @@
                 error: stats.error,
                 points: stats.filters + stats.listeners + stats.downloadInterceptors
                     + stats.downloadListeners + stats.channels + stats.variableProviders
-                    + stats.endpoints + stats.transformers + stats.pages
+                    + stats.endpoints + stats.transformers + stats.pages,
+                topics: stats.interopTopics || 0
               }) }}
             </el-text>
           </el-card>
@@ -95,6 +96,12 @@
                     </el-text>
                     <el-text v-if="plugin.pages?.length" size="small" type="info">
                       {{ $t('pluginpages') }}: {{ plugin.pages.map(it => it.title || it.id).join(', ') }}
+                    </el-text>
+                    <el-text v-if="plugin.subscribedTopics?.length" size="small" type="info">
+                      {{ $t('subscribedtopics') }}{{ plugin.subscribedTopics.join(', ') }}
+                    </el-text>
+                    <el-text v-if="plugin.servedTopics?.length" size="small" type="info">
+                      {{ $t('servedtopics') }}{{ plugin.servedTopics.join(', ') }}
                     </el-text>
                   </div>
                   <div v-if="plugin.pages?.length" class="plugin-pages">

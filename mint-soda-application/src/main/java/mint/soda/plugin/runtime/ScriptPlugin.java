@@ -236,7 +236,85 @@ public class ScriptPlugin implements Plugin {
                 register(args, value -> context.registerItemTransformer(transformer(value)))));
         api.put("page", api, function((cx1, args) ->
                 register(args, value -> context.registerPage(page(value)))));
+
+        // ---- 插件联动 ----
+        api.put("publish", api, function((cx1, args) -> {
+            context.publish(textAt(args, 0), textAt(args, 1));
+            return Undefined.instance;
+        }));
+        api.put("request", api, function((cx1, args) -> toNative(cx1,
+                replyMaps(context.request(textAt(args, 0), textAt(args, 1))))));
+        api.put("subscribe", api, function((cx1, args) -> {
+            Object listener = args.length < 2 ? null : args[1];
+            if (!(listener instanceof Function fn)) {
+                throw new IllegalArgumentException("subscribe 需要回调函数");
+            }
+            String topic = textAt(args, 0);
+            context.subscribe(topic, message -> callFunction(fn, List.of(messageMap(message))));
+            return Undefined.instance;
+        }));
+        api.put("serve", api, function((cx1, args) -> {
+            Object handler = args.length < 2 ? null : args[1];
+            if (!(handler instanceof Function fn)) {
+                throw new IllegalArgumentException("serve 需要处理函数");
+            }
+            String topic = textAt(args, 0);
+            context.serve(topic, message -> {
+                Object reply = callFunction(fn, List.of(messageMap(message)));
+                return reply == null || reply == Undefined.instance ? "" : String.valueOf(reply);
+            });
+            return Undefined.instance;
+        }));
+        api.put("unsubscribe", api, function((cx1, args) -> {
+            context.unsubscribe(textAt(args, 0));
+            return Undefined.instance;
+        }));
+        api.put("plugins", api, function((cx1, args) -> toNative(cx1, summaryMaps(context.plugins()))));
+        api.put("isPluginEnabled", api, function((cx1, args) -> context.isPluginEnabled(textAt(args, 0))));
         return api;
+    }
+
+    private static String textAt(Object[] args, int index) {
+        if (index >= args.length || args[index] == null || args[index] == Undefined.instance) {
+            return "";
+        }
+        return String.valueOf(args[index]);
+    }
+
+    /**
+     * 消息对象转原生 Map，供脚本回调读取。
+     */
+    private static Map<String, Object> messageMap(mint.soda.plugin.api.PluginMessage message) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("topic", message.topic());
+        map.put("source", message.source());
+        map.put("payload", message.payload());
+        return map;
+    }
+
+    private static List<Map<String, Object>> replyMaps(List<mint.soda.plugin.api.PluginReply> replies) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (mint.soda.plugin.api.PluginReply reply : replies) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("plugin", reply.plugin());
+            map.put("payload", reply.payload());
+            result.add(map);
+        }
+        return result;
+    }
+
+    private static List<Map<String, Object>> summaryMaps(List<mint.soda.plugin.api.PluginSummary> plugins) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (mint.soda.plugin.api.PluginSummary summary : plugins) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", summary.id());
+            map.put("name", summary.name());
+            map.put("version", summary.version());
+            map.put("runtime", summary.runtime());
+            map.put("enabled", summary.enabled());
+            result.add(map);
+        }
+        return result;
     }
 
     private static String text(Object[] args) {

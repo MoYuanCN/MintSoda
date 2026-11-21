@@ -11,10 +11,10 @@ public final class PluginApi {
      * 当前插件接口版本。
      * <p>
      * 版本 3 新增界面页面（{@code registerPage}）与条目改写（{@code registerItemTransformer}）；
-     * 版本 4 将接口包名迁移到 {@code mint.soda.plugin.api}，并为界面页面新增指标区块，
-     * Java 插件必须重新编译并声明 {@code apiVersion: 4}，脚本插件不受影响。
+     * 版本 4 将接口包名迁移到 {@code mint.soda.plugin.api}，并为界面页面新增指标区块；
+     * 版本 5 新增插件之间的消息联动与插件发现能力，旧插件无需改动即可继续加载。
      */
-    public static final int VERSION = 4;
+    public static final int VERSION = 5;
 
     /**
      * 插件描述文件名，安装时统一规范化为该名称

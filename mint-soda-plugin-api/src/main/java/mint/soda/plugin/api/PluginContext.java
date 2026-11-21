@@ -169,4 +169,80 @@ public interface PluginContext {
     }
 
     List<NotificationChannel> notificationChannels();
+
+    /**
+     * 发布一条消息给订阅同一主题的其他插件。需要 {@code PLUGIN_MESSAGE_SEND}。
+     * <p>
+     * 发布是异步的：消息进入宿主队列后立即返回，接收方异常或过慢不会影响发送方。
+     * 只有已启用且订阅该主题的插件会收到。
+     *
+     * @param topic   主题，仅允许小写字母、数字、点、下划线与连字符
+     * @param payload 载荷文本，最长 64KB
+     */
+    default void publish(String topic, String payload) {
+    }
+
+    /**
+     * 向订阅该主题的其他插件发起请求并等待应答。需要 {@code PLUGIN_MESSAGE_SEND}。
+     * <p>
+     * 请求只会送达通过 {@link #serve} 声明了应答处理器的插件；每个插件最多一条应答，
+     * 结果按插件标识排序，超时后返回已收到的部分。
+     *
+     * @param topic   主题
+     * @param payload 载荷文本
+     * @return 各插件的应答
+     */
+    default List<PluginReply> request(String topic, String payload) {
+        return List.of();
+    }
+
+    /**
+     * 订阅一个主题，接收其他插件发布的消息。需要 {@code PLUGIN_MESSAGE_RECEIVE}。
+     * <p>
+     * 重复订阅同一主题时以最后一次为准；停用插件后订阅自动失效。
+     *
+     * @param topic    主题
+     * @param listener 接收回调
+     */
+    default void subscribe(String topic, PluginMessageListener listener) {
+    }
+
+    /**
+     * 为请求式消息登记应答处理器。需要 {@code PLUGIN_MESSAGE_RECEIVE}。
+     * <p>
+     * 与 {@link #subscribe} 相互独立：订阅只接收单向下发，应答处理器只响应请求。
+     * 同一主题重复登记时以最后一次为准。
+     *
+     * @param topic   主题
+     * @param handler 应答处理器
+     */
+    default void serve(String topic, PluginMessageHandler handler) {
+    }
+
+    /**
+     * 取消订阅一个主题；未订阅时忽略。需要 {@code PLUGIN_MESSAGE_RECEIVE}。
+     *
+     * @param topic 主题
+     */
+    default void unsubscribe(String topic) {
+    }
+
+    /**
+     * 列出其他插件，用于发现可联动的对象。需要 {@code PLUGIN_DISCOVERY}。
+     *
+     * @return 插件概要，按标识排序
+     */
+    default List<PluginSummary> plugins() {
+        return List.of();
+    }
+
+    /**
+     * 查询某个插件是否已启用。需要 {@code PLUGIN_DISCOVERY}。
+     *
+     * @param pluginId 插件标识
+     * @return 是否启用，不存在时为 {@code false}
+     */
+    default boolean isPluginEnabled(String pluginId) {
+        return false;
+    }
 }

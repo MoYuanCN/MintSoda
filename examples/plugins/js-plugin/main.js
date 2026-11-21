@@ -163,6 +163,30 @@ function onEnable() {
             });
         }
     });
+    // ---- 插件联动：订阅其他插件发布的消息 ----
+    if (__api.hasPermission('plugin-message-receive')) {
+        __api.subscribe('mintsoda.demo.heartbeat', function (message) {
+            __api.log('收到 ' + message.source + ' 的心跳：' + message.payload);
+        });
+
+        // 应答式主题：其他插件可以 request 本插件，返回值会作为应答内容。
+        __api.serve('mintsoda.demo.info', function () {
+            return JSON.stringify({id: __descriptor.id, version: __descriptor.version});
+        });
+    }
+
+    // ---- 插件联动：向其他插件广播与查询 ----
+    if (__api.hasPermission('plugin-message-send')) {
+        __api.publish('mintsoda.demo.heartbeat', JSON.stringify({at: new Date().toISOString()}));
+        const replies = __api.request('mintsoda.demo.info', 'ping');
+        __api.log('收到 ' + replies.length + ' 个应答');
+    }
+
+    // ---- 插件发现：列出其他已安装插件 ----
+    if (__api.hasPermission('plugin-discovery')) {
+        const plugins = __api.plugins().filter(item => item.id !== __descriptor.id);
+        __api.log('可联动的插件：' + plugins.map(item => item.id).join(', '));
+    }
 }
 
 function onDisable() {

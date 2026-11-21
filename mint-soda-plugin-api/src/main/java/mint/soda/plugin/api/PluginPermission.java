@@ -57,6 +57,15 @@ public enum PluginPermission {
     DATA_READ("DATA_READ", "读取数据", "读取插件私有目录 data/ 下的文件", Group.STORAGE, Risk.LOW, true),
     DATA_WRITE("DATA_WRITE", "写入数据", "在插件私有目录 data/ 下写入、覆盖与删除文件", Group.STORAGE, Risk.HIGH, true),
 
+    // ---- 插件联动 ----
+
+    PLUGIN_DISCOVERY("PLUGIN_DISCOVERY", "发现插件", "查看其他已安装插件的标识、版本与启用状态", Group.INTEROP, Risk.LOW, true,
+            "PLUGIN_LIST", "DISCOVERY"),
+    PLUGIN_MESSAGE_SEND("PLUGIN_MESSAGE_SEND", "发送插件消息", "向其他插件发布消息或发起请求", Group.INTEROP, Risk.MEDIUM, true,
+            "PLUGIN_PUBLISH", "MESSAGE_SEND"),
+    PLUGIN_MESSAGE_RECEIVE("PLUGIN_MESSAGE_RECEIVE", "接收插件消息", "订阅其他插件发布的消息与请求", Group.INTEROP, Risk.MEDIUM, true,
+            "PLUGIN_SUBSCRIBE", "MESSAGE_RECEIVE"),
+
     // ---- 系统 ----
 
     LOG("LOG", "写日志", "向应用日志输出带插件标识的消息", Group.SYSTEM, Risk.LOW, true),
@@ -76,7 +85,7 @@ public enum PluginPermission {
      */
     public enum Group {
         SUBSCRIPTION("订阅"), DOWNLOAD("下载与通知"), TASK("任务"), API("接口"),
-        UI("界面"), STORAGE("配置与数据"), SYSTEM("系统");
+        UI("界面"), INTEROP("插件联动"), STORAGE("配置与数据"), SYSTEM("系统");
 
         private final String label;
 

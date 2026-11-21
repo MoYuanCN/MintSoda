@@ -40,7 +40,13 @@ import java.util.jar.JarFile;
  */
 @Slf4j
 @Component
+@lombok.RequiredArgsConstructor
 public class PluginManager {
+
+    /**
+     * 插件之间的消息总线；插件只通过上下文访问，管理器负责生命周期清理。
+     */
+    private final PluginBus pluginBus;
 
     private final Map<String, LoadedPlugin> loaded = new ConcurrentHashMap<>();
     /**
@@ -175,7 +181,8 @@ public class PluginManager {
         try {
             source = PluginSources.create(descriptor);
             Plugin plugin = source.load();
-            PluginContextImpl context = new PluginContextImpl(descriptor, registry, MavenUtils.getVersion());
+            PluginContextImpl context = new PluginContextImpl(descriptor, registry,
+                    MavenUtils.getVersion(), pluginBus, this);
             plugin.onLoad(context);
             LoadedPlugin loadedPlugin = new LoadedPlugin(descriptor, plugin, context, source);
             loaded.put(id, loadedPlugin);
@@ -354,6 +361,26 @@ public class PluginManager {
         return Optional.ofNullable(loaded.get(id));
     }
 
+    /**
+     * 其他插件的公开概要，供插件发现可联动的对象。
+     * <p>
+     * 只返回描述文件中的公开字段与启用状态，不暴露路径、配置或权限。
+     */
+    public List<PluginSummary> summaries() {
+        List<PluginSummary> result = new ArrayList<>();
+        for (LoadedPlugin plugin : loaded.values()) {
+            PluginDescriptor descriptor = plugin.descriptor();
+            result.add(new PluginSummary(
+                    descriptor.id(),
+                    StrUtil.nullToEmpty(descriptor.name()),
+                    StrUtil.nullToEmpty(descriptor.version()),
+                    StrUtil.nullToEmpty(descriptor.runtime()),
+                    plugin.context().enabled()));
+        }
+        result.sort(Comparator.comparing(PluginSummary::id));
+        return List.copyOf(result);
+    }
+
     public List<PluginInfo> list() {
         List<PluginInfo> result = new ArrayList<>();
         for (File dir : Objects.requireNonNullElse(PluginPaths.root().listFiles(File::isDirectory), new File[0])) {
@@ -372,7 +399,7 @@ public class PluginManager {
     public record PluginStats(int total, int enabled, int disabled, int error, int incompatible,
                               int filters, int listeners, int downloadInterceptors, int downloadListeners,
                               int channels, int variableProviders, int endpoints, int scheduledTasks,
-                              int transformers, int pages) {
+                              int transformers, int pages, int interopTopics) {
     }
 
     /**
@@ -396,11 +423,20 @@ public class PluginManager {
         int endpoints = current.endpoints().values().stream().mapToInt(value -> value.size()).sum();
         int taskCount = this.scheduledTasks.values().stream().mapToInt(List::size).sum();
         int pageCount = current.pages().values().stream().mapToInt(List::size).sum();
+        // 联动主题按插件去重后统计，便于一眼看出插件之间是否真的连上了。
+        java.util.Set<String> interop = new java.util.HashSet<>();
+        for (LoadedPlugin plugin : loaded.values()) {
+            if (!plugin.context().enabled()) {
+                continue;
+            }
+            interop.addAll(plugin.context().subscribedTopics());
+            interop.addAll(plugin.context().servedTopics());
+        }
         return new PluginStats(infos.size(), enabled, disabled, error, incompatible,
                 current.filters().size(), current.listeners().size(),
                 current.interceptors().size(), current.downloadListeners().size(),
                 current.channels().size(), current.variableProviders().size(),
-                endpoints, taskCount, current.transformers().size(), pageCount);
+                endpoints, taskCount, current.transformers().size(), pageCount, interop.size());
     }
 
     public PluginInfo describe(String id) {
@@ -424,7 +460,8 @@ public class PluginManager {
                     descriptor.runtime(),
                     record == null || record.getGrantedPermissions() == null
                             ? mint.soda.plugin.api.PluginPermission.sanitize(descriptor.permissions())
-                            : record.getGrantedPermissions()
+                            : record.getGrantedPermissions(),
+                    context.subscribedTopics(), context.servedTopics()
             );
         }
         File descriptorFile = PluginPaths.descriptorFile(id);
@@ -432,7 +469,7 @@ public class PluginManager {
             descriptorCache.remove(id);
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "缺少 plugin.json", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of(), List.of(), "", List.of());
+                    List.of(), "", List.of(), List.of(), List.of(), "", List.of(), List.of(), List.of());
         }
         try {
             PluginDescriptor descriptor = cachedDescriptor(id, descriptorFile);
@@ -449,11 +486,12 @@ public class PluginManager {
                     List.of(), List.of(), List.of(), descriptor.runtime(),
                     record == null || record.getGrantedPermissions() == null
                             ? mint.soda.plugin.api.PluginPermission.sanitize(descriptor.permissions())
-                            : record.getGrantedPermissions());
+                            : record.getGrantedPermissions(),
+                    List.of(), List.of());
         } catch (Exception e) {
             return new PluginInfo(id, id, "", 0, "", "", "", List.of(),
                     PluginState.ERROR, "plugin.json 解析失败", "", 0L, "", "", false,
-                    List.of(), "", List.of(), List.of(), List.of(), "", List.of());
+                    List.of(), "", List.of(), List.of(), List.of(), "", List.of(), List.of(), List.of());
         }
     }
 

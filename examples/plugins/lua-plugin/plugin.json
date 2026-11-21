@@ -2,7 +2,7 @@
   "id": "lua-demo-plugin",
   "name": "Lua 示例插件",
   "version": "1.0.0",
-  "apiVersion": 4,
+  "apiVersion": 5,
   "runtime": "LUA",
   "entry": "main.lua",
   "author": "MintSoda",
@@ -24,7 +24,10 @@
     "data-write",
     "log",
     "item-transform",
-    "custom-page"
+    "custom-page",
+    "plugin-discovery",
+    "plugin-message-send",
+    "plugin-message-receive"
   ],
   "minAppVersion": ""
 }

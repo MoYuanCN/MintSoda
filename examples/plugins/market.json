@@ -12,7 +12,7 @@
       "downloadUrl": "https://example.com/plugins/hello-plugin-1.0.0.jar",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 12345,
-      "apiVersion": 4,
+      "apiVersion": 5,
       "permissions": [
         "notification",
         "item-filter",
@@ -28,7 +28,10 @@
         "data-write",
         "log",
         "item-transform",
-        "custom-page"
+        "custom-page",
+        "plugin-discovery",
+        "plugin-message-send",
+        "plugin-message-receive"
       ],
       "updateUrl": ""
     },
@@ -42,7 +45,7 @@
       "downloadUrl": "https://example.com/plugins/js-demo-plugin-1.0.0.zip",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 4096,
-      "apiVersion": 4,
+      "apiVersion": 5,
       "permissions": [
         "notification",
         "item-filter",
@@ -58,7 +61,10 @@
         "data-write",
         "log",
         "item-transform",
-        "custom-page"
+        "custom-page",
+        "plugin-discovery",
+        "plugin-message-send",
+        "plugin-message-receive"
       ],
       "updateUrl": ""
     },
@@ -72,7 +78,7 @@
       "downloadUrl": "https://example.com/plugins/lua-demo-plugin-1.0.0.zip",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
       "size": 3072,
-      "apiVersion": 4,
+      "apiVersion": 5,
       "permissions": [
         "notification",
         "item-filter",
@@ -88,7 +94,10 @@
         "data-write",
         "log",
         "item-transform",
-        "custom-page"
+        "custom-page",
+        "plugin-discovery",
+        "plugin-message-send",
+        "plugin-message-receive"
       ],
       "updateUrl": ""
     }

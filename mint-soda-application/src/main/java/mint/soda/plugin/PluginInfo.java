@@ -29,6 +29,8 @@ import java.util.List;
  * @param pages         提供的界面页面
  * @param runtime       运行时：JAVA / JAVASCRIPT / LUA
  * @param grantedPermissions 用户授予的权限；为空表示尚未单独配置
+ * @param subscribedTopics   订阅的联动主题
+ * @param servedTopics       应答的联动主题
  */
 public record PluginInfo(
         String id,
@@ -52,7 +54,9 @@ public record PluginInfo(
         List<EndpointView> endpoints,
         List<PageView> pages,
         String runtime,
-        List<String> grantedPermissions
+        List<String> grantedPermissions,
+        List<String> subscribedTopics,
+        List<String> servedTopics
 ) {
     public PluginInfo {
         permissions = permissions == null ? List.of() : List.copyOf(permissions);
@@ -61,6 +65,8 @@ public record PluginInfo(
         endpoints = endpoints == null ? List.of() : List.copyOf(endpoints);
         pages = pages == null ? List.of() : List.copyOf(pages);
         grantedPermissions = grantedPermissions == null ? List.of() : List.copyOf(grantedPermissions);
+        subscribedTopics = subscribedTopics == null ? List.of() : List.copyOf(subscribedTopics);
+        servedTopics = servedTopics == null ? List.of() : List.copyOf(servedTopics);
     }
 
     public static PluginInfo from(PluginDescriptor descriptor) {
@@ -69,7 +75,7 @@ public record PluginInfo(
                 descriptor.author(), descriptor.description(), descriptor.homepage(),
                 descriptor.permissions(), PluginState.DISABLED, "", "", 0L,
                 descriptor.updateUrl(), "", false, List.of(), "", List.of(), List.of(), List.of(),
-                descriptor.runtime(), List.of()
+                descriptor.runtime(), List.of(), List.of(), List.of()
         );
     }
 

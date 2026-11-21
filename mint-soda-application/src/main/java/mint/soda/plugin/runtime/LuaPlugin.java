@@ -306,6 +306,81 @@ public class LuaPlugin implements Plugin {
                 value -> context.registerItemTransformer(transformer(value))));
         api.set("register_page", registrar(
                 value -> context.registerPage(page(value))));
+
+        // ---- 插件联动 ----
+        api.set("publish", new org.luaj.vm2.lib.TwoArgFunction() {
+            @Override
+            public LuaValue call(LuaValue topic, LuaValue payload) {
+                context.publish(topic.tojstring(), payload.tojstring());
+                return LuaValue.NIL;
+            }
+        });
+        api.set("request", new org.luaj.vm2.lib.TwoArgFunction() {
+            @Override
+            public LuaValue call(LuaValue topic, LuaValue payload) {
+                List<Map<String, Object>> replies = new ArrayList<>();
+                for (mint.soda.plugin.api.PluginReply reply
+                        : context.request(topic.tojstring(), payload.tojstring())) {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("plugin", reply.plugin());
+                    map.put("payload", reply.payload());
+                    replies.add(map);
+                }
+                return fromJava(replies);
+            }
+        });
+        api.set("subscribe", new org.luaj.vm2.lib.TwoArgFunction() {
+            @Override
+            public LuaValue call(LuaValue topic, LuaValue fn) {
+                if (!fn.isfunction()) {
+                    throw new LuaError("subscribe 需要函数");
+                }
+                context.subscribe(topic.tojstring(), message -> fn.call(fromJava(messageMap(message))));
+                return LuaValue.NIL;
+            }
+        });
+        api.set("serve", new org.luaj.vm2.lib.TwoArgFunction() {
+            @Override
+            public LuaValue call(LuaValue topic, LuaValue fn) {
+                if (!fn.isfunction()) {
+                    throw new LuaError("serve 需要函数");
+                }
+                context.serve(topic.tojstring(), message -> {
+                    LuaValue reply = fn.call(fromJava(messageMap(message)));
+                    return reply.isnil() ? "" : reply.tojstring();
+                });
+                return LuaValue.NIL;
+            }
+        });
+        api.set("unsubscribe", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue topic) {
+                context.unsubscribe(topic.tojstring());
+                return LuaValue.NIL;
+            }
+        });
+        api.set("plugins", new org.luaj.vm2.lib.ZeroArgFunction() {
+            @Override
+            public LuaValue call() {
+                List<Map<String, Object>> result = new ArrayList<>();
+                for (mint.soda.plugin.api.PluginSummary summary : context.plugins()) {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("id", summary.id());
+                    map.put("name", summary.name());
+                    map.put("version", summary.version());
+                    map.put("runtime", summary.runtime());
+                    map.put("enabled", summary.enabled());
+                    result.add(map);
+                }
+                return fromJava(result);
+            }
+        });
+        api.set("is_plugin_enabled", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue id) {
+                return LuaValue.valueOf(context.isPluginEnabled(id.tojstring()));
+            }
+        });
         return api;
     }
 
@@ -401,6 +476,17 @@ public class LuaPlugin implements Plugin {
             }
         }
         return table;
+    }
+
+    /**
+     * 消息对象转普通 Map，供脚本回调读取。
+     */
+    private static Map<String, Object> messageMap(mint.soda.plugin.api.PluginMessage message) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("topic", message.topic());
+        map.put("source", message.source());
+        map.put("payload", message.payload());
+        return map;
     }
 
     private static LuaValue wrap(Object value) {

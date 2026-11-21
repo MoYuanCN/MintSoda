@@ -150,6 +150,34 @@ function on_enable()
             return '{"ok":true,"plugin":"lua-demo-plugin","method":"' .. tostring(request.method) .. '"}'
         end
     })
+
+    -- 插件联动：接收其他插件发布的消息，并登记应答主题
+    if api.has_permission("plugin-message-receive") then
+        api.subscribe("mintsoda.demo.heartbeat", function(message)
+            api.log("收到 " .. message.source .. " 的心跳：" .. message.payload)
+        end)
+        api.serve("mintsoda.demo.info", function()
+            return '{"id":"lua-demo-plugin","version":"1.0.0"}'
+        end)
+    end
+
+    -- 插件联动：广播与查询其他插件
+    if api.has_permission("plugin-message-send") then
+        api.publish("mintsoda.demo.heartbeat", '{"at":"now"}')
+        local replies = api.request("mintsoda.demo.info", "ping")
+        api.log("收到 " .. tostring(#replies) .. " 个应答")
+    end
+
+    -- 插件发现：列出其他已安装插件
+    if api.has_permission("plugin-discovery") then
+        local plugins = api.plugins()
+        for _, item in ipairs(plugins) do
+            if item.id ~= "lua-demo-plugin" then
+                api.log("可联动的插件：" .. item.id .. " (" .. tostring(item.enabled) .. ")")
+            end
+        end
+    end
+
 end
 
 function on_disable()

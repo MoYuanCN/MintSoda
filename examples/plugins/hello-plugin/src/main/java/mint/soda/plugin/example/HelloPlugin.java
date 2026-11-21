@@ -133,6 +133,15 @@ public class HelloPlugin implements Plugin {
             }
         });
 
+        // 插件联动：应答其他插件的查询，并在启用时广播一次心跳。
+        context.serve("mintsoda.demo.info", message -> {
+            return "{\"id\":\"" + context.descriptor().id() + "\",\"version\":\""
+                    + context.descriptor().version() + "\"}";
+        });
+        context.subscribe("mintsoda.demo.heartbeat", message ->
+                context.log("收到 " + message.source() + " 的心跳：" + message.payload()));
+        context.publish("mintsoda.demo.heartbeat", "{\"at\":" + System.currentTimeMillis() + "}");
+
         // 插件自有页面：宿主按白名单区块渲染，插件只提供结构化描述。
         context.registerPage(new PluginPage(
                 "dashboard",

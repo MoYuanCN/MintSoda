@@ -1,6 +1,7 @@
 package mint.soda.plugin;
 
 import mint.soda.plugin.api.*;
+
 import lombok.extern.slf4j.Slf4j;
 
 import cn.hutool.core.io.FileUtil;
@@ -23,6 +24,8 @@ public class PluginContextImpl implements PluginContext {
     private final PluginDescriptor descriptor;
     private final PluginRegistry registry;
     private final String appVersion;
+    private final PluginBus bus;
+    private final PluginManager manager;
     private final List<NotificationChannel> channels = new CopyOnWriteArrayList<>();
     private final List<ItemFilter> filters = new CopyOnWriteArrayList<>();
     private final List<SubscriptionListener> listeners = new CopyOnWriteArrayList<>();
@@ -34,12 +37,18 @@ public class PluginContextImpl implements PluginContext {
     private final List<PluginEndpoint> endpoints = new CopyOnWriteArrayList<>();
     private final List<PluginPage> pages = new CopyOnWriteArrayList<>();
     private final List<ItemTransformer> itemTransformers = new CopyOnWriteArrayList<>();
+    /** 订阅与应答主题，仅用于在插件页展示联动关系。 */
+    private final Set<String> subscribedTopics = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final Set<String> servedTopics = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private volatile boolean enabled;
 
-    public PluginContextImpl(PluginDescriptor descriptor, PluginRegistry registry, String appVersion) {
+    public PluginContextImpl(PluginDescriptor descriptor, PluginRegistry registry, String appVersion,
+                             PluginBus bus, PluginManager manager) {
         this.descriptor = descriptor;
         this.registry = registry;
         this.appVersion = appVersion;
+        this.bus = bus;
+        this.manager = manager;
     }
 
     @Override
@@ -314,6 +323,82 @@ public class PluginContextImpl implements PluginContext {
     }
 
     @Override
+    public void publish(String topic, String payload) {
+        if (!require(PluginPermission.PLUGIN_MESSAGE_SEND)) {
+            return;
+        }
+        bus.publish(descriptor.id(), topic, payload);
+    }
+
+    @Override
+    public List<PluginReply> request(String topic, String payload) {
+        if (!require(PluginPermission.PLUGIN_MESSAGE_SEND)) {
+            return List.of();
+        }
+        return bus.request(descriptor.id(), topic, payload);
+    }
+
+    @Override
+    public void subscribe(String topic, PluginMessageListener listener) {
+        if (!require(PluginPermission.PLUGIN_MESSAGE_RECEIVE)) {
+            return;
+        }
+        String key = PluginBus.topic(topic);
+        bus.subscribe(descriptor.id(), key, listener);
+        if (listener == null) {
+            subscribedTopics.remove(key);
+        } else {
+            subscribedTopics.add(key);
+        }
+    }
+
+    @Override
+    public void serve(String topic, PluginMessageHandler handler) {
+        if (!require(PluginPermission.PLUGIN_MESSAGE_RECEIVE)) {
+            return;
+        }
+        String key = PluginBus.topic(topic);
+        bus.serve(descriptor.id(), key, handler);
+        if (handler == null) {
+            servedTopics.remove(key);
+        } else {
+            servedTopics.add(key);
+        }
+    }
+
+    @Override
+    public void unsubscribe(String topic) {
+        String key = PluginBus.topic(topic);
+        bus.unsubscribe(descriptor.id(), key);
+        subscribedTopics.remove(key);
+        servedTopics.remove(key);
+    }
+
+    @Override
+    public List<PluginSummary> plugins() {
+        if (!require(PluginPermission.PLUGIN_DISCOVERY)) {
+            return List.of();
+        }
+        return manager.summaries();
+    }
+
+    @Override
+    public boolean isPluginEnabled(String pluginId) {
+        if (!require(PluginPermission.PLUGIN_DISCOVERY)) {
+            return false;
+        }
+        return manager.find(pluginId).map(plugin -> plugin.context().enabled()).orElse(false);
+    }
+
+    public List<String> subscribedTopics() {
+        return List.copyOf(subscribedTopics);
+    }
+
+    public List<String> servedTopics() {
+        return List.copyOf(servedTopics);
+    }
+
+    @Override
     public List<NotificationChannel> notificationChannels() {
         return List.copyOf(channels);
     }
@@ -373,5 +458,8 @@ public class PluginContextImpl implements PluginContext {
         endpoints.clear();
         pages.clear();
         itemTransformers.clear();
+        subscribedTopics.clear();
+        servedTopics.clear();
+        bus.removeAll(descriptor.id());
     }
 }
