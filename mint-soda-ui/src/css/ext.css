@@ -8,6 +8,41 @@
     align-items: center;
 }
 
+/* 设置页通用尺寸：新分类页面统一使用，避免各页重复定义。 */
+.settings-stack {
+    display: grid;
+    gap: 18px;
+    width: 100%;
+    min-width: 0;
+}
+
+.settings-wide {
+    width: 100%;
+    max-width: 460px;
+}
+
+.settings-select {
+    width: 200px;
+}
+
+.settings-self-start {
+    align-self: flex-start;
+}
+
+.settings-inline-check {
+    margin-left: 4px;
+}
+
+@media (max-width: 700px) {
+    .settings-wide {
+        max-width: 100%;
+    }
+
+    .settings-select {
+        width: 100%;
+    }
+}
+
 .full-width {
     width: 100%;
 }

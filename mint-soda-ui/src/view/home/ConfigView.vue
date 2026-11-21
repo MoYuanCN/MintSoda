@@ -8,6 +8,7 @@
         <el-tag v-else class="config-header-status" type="success" effect="plain">{{ $t('saved') }}</el-tag>
       </template>
     </PageHeaderView>
+
     <div v-if="loading" class="config-content app-page-content app-page-padding">
       <div class="config-skeleton">
         <el-skeleton :rows="3" animated/>
@@ -15,58 +16,45 @@
         <el-skeleton :rows="3" animated/>
       </div>
     </div>
+
     <div v-else class="config-content app-page-content app-page-padding">
       <div class="config-toolbar">
-        <el-input
-            v-model="searchText"
-            class="config-search"
-            clearable
-            :placeholder="$t('searchsettingsegintervalnotificationproxy')"
-            prefix-icon="Search"/>
-        <el-text v-if="searchText && !filteredTabs.length" size="small" type="warning">
-          {{ $t('nomatchingsettingspage') }}
-        </el-text>
+        <el-input v-model="searchText" class="config-search" clearable
+                  :placeholder="$t('searchsettingsegintervalnotificationproxy')"
+                  prefix-icon="Search"/>
       </div>
-      <el-tabs v-if="filteredTabs.length" v-model="activeName" class="segmented-tabs config-tabs">
-        <el-tab-pane
-            v-for="tab in filteredTabs"
-            :key="tab.name"
-            :name="tab.name"
-            :lazy="true">
-          <template #label>
-            <span class="config-tab-label">
-              {{ tab.label }}
-              <span v-if="isTabDirty(tab.name)" class="config-tab-dot" :title="$t('thispagehasunsavedchanges')"/>
-            </span>
-          </template>
-          <el-scrollbar class="config-scrollbar">
-            <div class="tab-scroll-content" :class="`tab-body tab-${tab.name}`">
-              <DownloadView v-if="tab.name === 'download'" v-model:config="config"/>
-              <BasicView v-else-if="tab.name === 'basic'" v-model:config="config"/>
-              <ExcludeView
-                  v-else-if="tab.name === 'exclude'"
-                  v-model:exclude="config.exclude"
-                  :show-text="true"/>
-              <div v-else-if="tab.name === 'match'" class="global-match-content">
-                <el-alert :closable="false" show-icon type="info"
-                          :title="$t('everyglobalmatchrulemusthitamatchtakespreced')"/>
-                <ExcludeView v-model:exclude="config.globalMatch" :show-text="true"/>
-              </div>
-              <ReverseMatchSettingsView v-else-if="tab.name === 'reverse-match'" :config="config"/>
-              <ProxyView v-else-if="tab.name === 'proxy'" v-model:config="config"/>
-              <Security v-else-if="tab.name === 'security'" :config="config"/>
-              <NotificationView v-else-if="tab.name === 'notification'" v-model:config="config"/>
-              <DeveloperView v-else-if="tab.name === 'developer'" :config="config"/>
-              <AfdianView v-else-if="tab.name === 'afdian'" :config="config"/>
-              <AboutView v-else-if="tab.name === 'about'" :config="config"/>
+
+      <div v-if="filteredGroups.length" class="settings-layout">
+        <nav class="settings-nav" :aria-label="$t('settings')">
+          <div v-for="group in filteredGroups" :key="group.name" class="settings-nav-group">
+            <div class="settings-nav-title">{{ group.label }}</div>
+            <button v-for="tab in group.items" :key="tab.name" type="button"
+                    class="settings-nav-item" :class="{'is-active': tab.name === activeName}"
+                    @click="activeName = tab.name">
+              <span class="settings-nav-label">{{ tab.label }}</span>
+              <span v-if="isTabDirty(tab.name)" class="settings-nav-dot"/>
+            </button>
+          </div>
+        </nav>
+
+        <section class="settings-panel">
+          <header class="settings-panel-heading">
+            <h3 class="settings-panel-title">{{ activeTab?.label }}</h3>
+            <p v-if="activeDescription" class="settings-panel-description">{{ activeDescription }}</p>
+          </header>
+          <el-scrollbar class="settings-scrollbar">
+            <div class="settings-panel-content">
+              <component :is="activeComponent" :config="config"/>
             </div>
           </el-scrollbar>
-        </el-tab-pane>
-      </el-tabs>
+        </section>
+      </div>
+
       <div v-else class="config-empty">
         <el-empty :description="$t('nomatchingsettingspage')"/>
       </div>
     </div>
+
     <div class="config-savebar" :class="{'is-dirty': dirty}">
       <el-text class="config-savebar-text" size="small">
         {{ dirty ? $t('nunsavedchanges', {n: changedKeys.length}) : $t('allchangessaved') }}
@@ -74,7 +62,9 @@
       </el-text>
       <div class="config-savebar-actions">
         <el-button bg text :disabled="!dirty || saving" @click="discardChanges">{{ $t('discardchanges') }}</el-button>
-        <el-button type="primary" :disabled="!dirty" :loading="saving" @click="saveConfig">{{ $t('savesettings') }}</el-button>
+        <el-button type="primary" :disabled="!dirty" :loading="saving" @click="saveConfig">
+          {{ $t('savesettings') }}
+        </el-button>
       </div>
     </div>
   </div>
@@ -82,61 +72,179 @@
 
 <script setup>
 import {useI18n} from "vue-i18n"
-import {computed, onActivated, onMounted, ref, watch} from "vue";
-import {onBeforeRouteLeave} from "vue-router";
-import {ElMessage, ElMessageBox} from "element-plus";
-import {md5} from "js-md5";
-import {useEventListener} from "@vueuse/core";
-import ExcludeView from "@/view/config/ExcludeView.vue";
-import ReverseMatchSettingsView from "@/view/config/ReverseMatchSettingsView.vue";
-import NotificationView from "@/view/config/NotificationView.vue";
-import ProxyView from "@/view/config/ProxyView.vue";
-import DownloadView from "@/view/config/DownloadView.vue";
-import BasicView from "@/view/config/BasicView.vue";
-import AboutView from "@/view/config/AboutView.vue";
-import Security from "@/view/config/SecurityView.vue";
-import AfdianView from "@/view/config/AfdianView.vue";
-import DeveloperView from "@/view/config/DeveloperView.vue";
-import PageHeaderView from "@/view/custom/PageHeaderView.vue";
-import {configData} from "@/js/config.js";
-import {applyUiCustomization} from "@/js/global.js";
-import * as http from "@/js/http.js";
+import {computed, onActivated, onMounted, ref, watch} from "vue"
+import {onBeforeRouteLeave} from "vue-router"
+import {ElMessage, ElMessageBox} from "element-plus"
+import {md5} from "js-md5"
+import {useEventListener} from "@vueuse/core"
+
+import AppearanceSettingsView from "@/view/config/AppearanceSettingsView.vue"
+import SubscriptionSettingsView from "@/view/config/SubscriptionSettingsView.vue"
+import NamingSettingsView from "@/view/config/NamingSettingsView.vue"
+import DownloadSettingsView from "@/view/config/DownloadSettingsView.vue"
+import MetadataSettingsView from "@/view/config/MetadataSettingsView.vue"
+import MatchRulesView from "@/view/config/MatchRulesView.vue"
+import NotificationView from "@/view/config/NotificationView.vue"
+import NetworkSettingsView from "@/view/config/NetworkSettingsView.vue"
+import SecuritySettingsView from "@/view/config/SecuritySettingsView.vue"
+import SystemSettingsView from "@/view/config/SystemSettingsView.vue"
+import DeveloperView from "@/view/config/DeveloperView.vue"
+import AboutView from "@/view/config/AboutView.vue"
+import AfdianView from "@/view/config/AfdianView.vue"
+import PageHeaderView from "@/view/custom/PageHeaderView.vue"
+import {configData} from "@/js/config.js"
+import {applyUiCustomization} from "@/js/global.js"
+import * as http from "@/js/http.js"
+
 const {t} = useI18n()
 const saving = ref(false)
 const loading = ref(true)
 const searchText = ref('')
-const activeName = ref('download')
+const activeName = ref('appearance')
 
 const config = ref(configData)
 const baseline = ref('')
 
-const tabs = [
-  {name: 'download', label: t('downloadsettings'), description: t('downloaderfoldersandtaskbehavior'), keywords: 'qbittorrent 种子 保存 路径 下载 限速 标签 ' + t('qbittorrenttorrentsavepathdownloadlimittags')},
-  {name: 'basic', label: t('basicsettings'), description: t('subscriptionsnamingandbackup'), keywords: '外观 主题 重命名 rss 间隔 bangumi token 备份 自启 ' + t('appearancethemerenamerssintervalbangumitoken')},
-  {name: 'exclude', label: t('globalexclude'), description: t('excludeunwantedreleasesinoneplace'), keywords: '正则 排除 过滤 ' + t('regexexcludefilter')},
-  {name: 'match', label: t('globalmatch'), description: t('requireeveryrsstitletomatchtheserules'), keywords: '正则 匹配 标题 ' + t('regexmatchtitle')},
-  {name: 'reverse-match', label: t('reversematch'), description: t('manageglobalandpersubscriptionreversematchru'), keywords: '反匹配 字幕组 测试 正则 ' + t('reversematchsubgrouptestregex')},
-  {name: 'proxy', label: t('proxy'), description: t('networkproxyandconnectionsettings'), keywords: '代理 网络 http socks 测试 ' + t('proxynetworkhttpsockstest')},
-  {name: 'security', label: t('security'), description: t('accountandaccesssecurity'), keywords: '密码 账号 api key 白名单 跨域 登录 ' + t('passwordaccountapikeyallowlistcorslogin')},
-  {name: 'notification', label: t('notifications'), description: t('channelsandeventnotifications'), keywords: 'telegram 通知 webhook json 模板 emby ' + t('telegramnotificationwebhookjsontemplateemby')},
-  {name: 'developer', label: t('developer'), description: t('developeroptionsrequestdiagnosticsandcustomt'), keywords: '开发者 种子 info_hash 调试 诊断 ua 请求日志 ' + t('developertorrentinfohashdebugdiagnosticsuare')},
-  {name: 'afdian', label: t('donate'), description: t('supportongoingmaintenance'), keywords: '捐赠 爱发电 ' + t('donateafdian')},
-  {name: 'about', label: t('about'), description: t('versionandprojectlinks'), keywords: '版本 更新 开发者 关于 日志 ' + t('versionupdatedeveloperaboutlogs')}
+const groups = [
+  {
+    name: 'common',
+    label: t('navgroupcommon'),
+    items: [
+      {
+        name: 'appearance',
+        label: t('appearanceandtheme'),
+        description: t('appearancehint'),
+        keywords: '外观 主题 背景 模糊 透明度 圆角 强调色 logo 布局 排序 apperance theme background blur opacity'
+      },
+      {
+        name: 'subscription',
+        label: t('subscriptionsandupdates'),
+        description: t('rssandupdateshint'),
+        keywords: 'rss 订阅 刷新 间隔 并发 总集数 完结 备用 跳过 om it 偏移 默认规则'
+      },
+      {
+        name: 'naming',
+        label: t('namingandpaths'),
+        description: t('naming') + ' · ' + t('savingpaths'),
+        keywords: '重命名 模板 保存位置 路径 剧场版 合集 字幕文件夹 rename path template'
+      },
+      {
+        name: 'download',
+        label: t('downloadandtasks'),
+        description: t('downloaderconnection') + ' · ' + t('taskexecution'),
+        keywords: 'qbittorrent 下载器 地址 标签 限速 做种 延迟 重试 清理 priority'
+      }
+    ]
+  },
+  {
+    name: 'rules',
+    label: t('navgrouprules'),
+    items: [
+      {
+        name: 'match',
+        label: t('matchingrules'),
+        description: t('excludeunwantedreleasesinoneplace'),
+        keywords: '匹配 排除 反匹配 正则 字幕组 match exclude reverse regex'
+      },
+      {
+        name: 'notification',
+        label: t('notifications'),
+        description: t('channelsandeventnotifications'),
+        keywords: 'telegram 通知 webhook json 模板 emby 状态样式'
+      }
+    ]
+  },
+  {
+    name: 'services',
+    label: t('navgroupservice'),
+    items: [
+      {
+        name: 'metadata',
+        label: t('metadatasource'),
+        description: t('siteandmetadatahint'),
+        keywords: 'mikan bangumi tmdb 元数据 token api 封面 github'
+      },
+      {
+        name: 'network',
+        label: t('networkandproxy'),
+        description: t('networkproxyandconnectionsettings'),
+        keywords: '代理 proxy http socks 网络 测试'
+      },
+      {
+        name: 'security',
+        label: t('securityandaccess'),
+        description: t('accountandaccesssecurity'),
+        keywords: '密码 账号 api key 白名单 跨域 登录 反代 会话'
+      },
+      {
+        name: 'system',
+        label: t('systemandmaintenance'),
+        description: t('maintenance'),
+        keywords: '备份 缓存 日志 自启 更新 debug ics'
+      }
+    ]
+  },
+  {
+    name: 'more',
+    label: t('navgroupother'),
+    items: [
+      {
+        name: 'developer',
+        label: t('developer'),
+        description: t('developeroptionsrequestdiagnosticsandcustomt'),
+        keywords: '开发者 种子 info_hash 调试 诊断 ua 请求日志'
+      },
+      {
+        name: 'about',
+        label: t('about'),
+        description: t('versionandprojectlinks'),
+        keywords: '版本 更新 关于 重启 关闭 退出'
+      },
+      {
+        name: 'donate',
+        label: t('donate'),
+        description: t('supportongoingmaintenance'),
+        keywords: '捐赠 爱发电'
+      }
+    ]
+  }
 ]
 
-const activeDescription = computed(() => tabs.find(tab => tab.name === activeName.value)?.description || '')
+const views = {
+  appearance: AppearanceSettingsView,
+  subscription: SubscriptionSettingsView,
+  naming: NamingSettingsView,
+  download: DownloadSettingsView,
+  match: MatchRulesView,
+  notification: NotificationView,
+  metadata: MetadataSettingsView,
+  network: NetworkSettingsView,
+  security: SecuritySettingsView,
+  system: SystemSettingsView,
+  developer: DeveloperView,
+  about: AboutView,
+  donate: AfdianView
+}
 
-const filteredTabs = computed(() => {
+const allTabs = groups.flatMap(group => group.items)
+const activeTab = computed(() => allTabs.find(tab => tab.name === activeName.value))
+const activeDescription = computed(() => activeTab.value?.description || '')
+const activeComponent = computed(() => views[activeName.value] || AppearanceSettingsView)
+
+const filteredGroups = computed(() => {
   const keyword = searchText.value.trim().toLowerCase()
-  if (!keyword) return tabs
-  return tabs.filter(tab =>
-      `${tab.label} ${tab.description} ${tab.keywords || ''}`.toLowerCase().includes(keyword))
+  const matches = tab => !keyword
+      || `${tab.label} ${tab.description} ${tab.keywords || ''}`.toLowerCase().includes(keyword)
+  return groups
+      .map(group => ({...group, items: group.items.filter(matches)}))
+      .filter(group => group.items.length)
 })
 
-watch(filteredTabs, list => {
-  if (!list.length) return
-  if (!list.some(tab => tab.name === activeName.value)) {
-    activeName.value = list[0].name
+watch(filteredGroups, list => {
+  const items = list.flatMap(group => group.items)
+  if (!items.length) return
+  if (!items.some(tab => tab.name === activeName.value)) {
+    activeName.value = items[0].name
   }
 })
 
@@ -164,33 +272,63 @@ const changedKeys = computed(() => {
 const dirty = computed(() => changedKeys.value.length > 0)
 
 const tabKeyMap = {
-  download: new Set([
-    'downloadToolType', 'downloadToolHost', 'downloadToolPassword', 'downloadRetry', 'qbAuthType',
-    'qbUsername', 'qbPassword', 'qbUseDownloadPath', 'qbContentLayout', 'ratioLimit', 'seedingTimeLimit',
-    'inactiveSeedingTimeLimit', 'downloadPathTemplate', 'ovaDownloadPathTemplate',
-    'collectionDownloadPathTemplate', 'customTags',
-    'priorityKeywordsEnable', 'priorityKeywords', 'delayedDownload', 'delete', 'awaitStalledUP',
-    'deleteStandbyRSSOnly', 'downloadCount', 'upLimit', 'dlLimit'
+  appearance: new Set([
+    'accentColor', 'themeDynamicColor', 'cardOpacity', 'cardBlur', 'appCornerRadius',
+    'navOpacity', 'navBlur', 'dialogOpacity', 'dialogBlur',
+    'appBackgroundImage', 'appBackgroundImageDark', 'loginBackgroundImage', 'loginBackgroundImageDark',
+    'backgroundBlur', 'backgroundOpacity', 'loginLogoImage', 'appLogoImage',
+    'customCss', 'customJs', 'sortType'
   ]),
-  exclude: new Set(['exclude']),
-  match: new Set(['globalMatch']),
-  'reverse-match': new Set(['globalReverseMatchRules', 'globalReverseMatch']),
-  proxy: new Set(['proxy', 'proxyHost', 'proxyPort', 'proxyUsername', 'proxyPassword', 'proxyList']),
+  subscription: new Set([
+    'rss', 'rssSleepSeconds', 'rssSleepMinutes', 'rssConcurrency', 'rssTimeout',
+    'fileExist', 'skip5', 'omit', 'updateTotalEpisodeNumber', 'forceUpdateTotalEpisodeNumber',
+    'autoDisabled', 'completed', 'completedPathTemplate', 'standbyRss', 'coexist',
+    'downloadNew', 'titleYear', 'offset', 'offsetType', 'bgmJpName', 'bgmImageSize',
+    'customEpisode', 'customEpisodeStr', 'customEpisodeGroupIndex',
+    'enabledExclude', 'importExclude', 'enabledGlobalMatch', 'importGlobalMatch',
+    'enabledGlobalReverseMatch', 'importGlobalReverseMatch'
+  ]),
+  naming: new Set([
+    'rename', 'renameSleepSeconds', 'renameTemplate', 'maxFileNameLength',
+    'renameDelYear', 'renameDelTmdbId', 'subtitleIndependentFolderEnabled',
+    'subtitleIndependentFolderName', 'downloadPathTemplate', 'ovaDownloadPathTemplate',
+    'collectionDownloadPathTemplate'
+  ]),
+  download: new Set([
+    'downloadToolType', 'downloadToolHost', 'downloadToolPassword', 'qbAuthType',
+    'qbUsername', 'qbPassword', 'qbUseDownloadPath', 'qbContentLayout',
+    'ratioLimit', 'seedingTimeLimit', 'inactiveSeedingTimeLimit', 'upLimit', 'dlLimit',
+    'downloadCount', 'delayedDownload', 'downloadRetry', 'customTags',
+    'delete', 'awaitStalledUP', 'deleteStandbyRSSOnly',
+    'priorityKeywordsEnable', 'priorityKeywords'
+  ]),
+  match: new Set(['exclude', 'globalMatch', 'globalReverseMatchRules', 'globalReverseMatch', 'reverseMatchMissBehavior']),
+  notification: new Set(['notificationConfigList', 'notificationTemplateList', 'notificationTemplate', 'notificationStatusStyles']),
+  metadata: new Set([
+    'mikanHost', 'bgmApi', 'bgmTokenType', 'bgmToken', 'bgmAppID', 'bgmAppSecret',
+    'bgmRefreshToken', 'bgmRedirectUri', 'tmdb', 'tmdbId', 'tmdbIdPlexMode',
+    'tmdbLanguage', 'tmdbRomaji', 'tmdbOriginalName', 'tmdbAnime',
+    'tmdbApiKey', 'tmdbApi', 'tmdbImage', 'githubToken'
+  ]),
+  network: new Set(['proxy', 'proxyHost', 'proxyPort', 'proxyUsername', 'proxyPassword', 'proxyList']),
   security: new Set([
-    'login', 'loginEffectiveHours', 'multiLoginForbidden', 'innerIP', 'verifyLoginIp',
-    'limitLoginAttempts', 'allowCors', 'ipWhitelist', 'ipWhitelistStr',
+    'login', 'loginEffectiveHours', 'multiLoginForbidden', 'verifyLoginIp', 'limitLoginAttempts',
+    'innerIP', 'allowCors', 'ipWhitelist', 'ipWhitelistStr',
     'reverseProxyTrustIpListEnabled', 'reverseProxyTrustIpList', 'apiKey'
   ]),
-  notification: new Set(['notificationConfigList', 'notificationTemplateList', 'notificationTemplate']),
+  system: new Set([
+    'configBackup', 'configBackupDay', 'cacheAutoClear', 'cacheAutoClearHours',
+    'cacheLastClearTime', 'logsMax', 'debug', 'autoUpdate', 'autoStart'
+  ]),
   developer: new Set(['developerOptionsEnabled', 'customTorrentUrl', 'customUserAgent', 'devHttpTrace']),
-  about: new Set(['gitInfo', 'version'])
+  about: new Set(['gitInfo', 'version', 'branch', 'shortCommitId', 'commitId', 'uuid'])
 }
 
 const classifyKey = key => {
   for (const [tab, keys] of Object.entries(tabKeyMap)) {
     if (keys.has(key)) return tab
   }
-  return 'basic'
+  return 'system'
 }
 
 const isTabDirty = tabName => changedKeys.value.some(key => classifyKey(key) === tabName)
@@ -315,8 +453,7 @@ const discardChanges = () => {
         applyUiCustomization(config.value)
         ElMessage.info(t('restoredthelastsavedsettings'))
       })
-      .catch(() => {
-      })
+      .catch(() => {})
 }
 
 /**
@@ -368,6 +505,7 @@ onActivated(() => {
   }
 })
 </script>
+
 <style scoped>
 .config-page {
   padding-bottom: 8px;
@@ -382,48 +520,144 @@ onActivated(() => {
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 
 .config-search {
   max-width: 320px;
 }
 
-.config-tabs {
+.settings-layout {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 18px;
 }
 
-.config-tabs :deep(.el-tabs__header) {
-  flex-shrink: 0;
-}
-
-.config-tabs :deep(.el-tabs__content) {
-  flex: 1;
+.settings-nav {
   min-height: 0;
-  overflow: hidden;
-  border-radius: 8px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 10px;
   background: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
   backdrop-filter: blur(var(--app-card-blur));
+  scrollbar-width: thin;
 }
 
-.config-tabs :deep(.el-tab-pane) {
-  height: 100%;
+.settings-nav-group + .settings-nav-group {
+  margin-top: 14px;
 }
 
-.config-tab-label {
-  display: inline-flex;
+.settings-nav-title {
+  padding: 4px 10px;
+  color: var(--el-text-color-placeholder);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+
+.settings-nav-item {
+  display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--el-text-color-regular);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--el-transition-duration), color var(--el-transition-duration);
 }
 
-.config-tab-dot {
+.settings-nav-item:hover,
+.settings-nav-item:focus-visible {
+  color: var(--el-color-primary);
+  background: var(--el-fill-color-light);
+  outline: none;
+}
+
+.settings-nav-item.is-active {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  font-weight: 600;
+}
+
+.settings-nav-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings-nav-dot {
+  flex-shrink: 0;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--el-color-warning);
+}
+
+.settings-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--el-bg-color) var(--app-card-opacity), transparent);
+  backdrop-filter: blur(var(--app-card-blur));
+}
+
+.settings-panel-heading {
+  flex-shrink: 0;
+  padding: 16px 22px 10px;
+  border-bottom: 1px solid var(--el-border-color-extra-light);
+}
+
+.settings-panel-title {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.settings-panel-description {
+  margin: 4px 0 0;
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings-scrollbar {
+  flex: 1;
+  min-height: 0;
+}
+
+.settings-panel-content {
+  max-width: 1180px;
+  padding: 20px 22px 32px;
+  animation: settings-content-in .22s ease-out both;
+  box-sizing: border-box;
+}
+
+.settings-panel-content :deep(.proxy-settings) {
+  display: block;
+}
+
+@keyframes settings-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .config-skeleton {
@@ -441,80 +675,6 @@ onActivated(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.config-scrollbar {
-  height: 100%;
-}
-
-.tab-scroll-content {
-  width: 100%;
-  max-width: 1180px;
-  animation: tab-content-in .22s ease-out both;
-  min-width: 0;
-  margin: 0 auto;
-  padding: 24px 28px 40px;
-}
-
-/* 宽屏下把设置项排成两列，避免内容被窄栏居中后在左右留下大片空白。 */
-@media (min-width: 1280px) {
-  .tab-scroll-content {
-    max-width: 1520px;
-    padding: 24px 32px 40px;
-  }
-
-  .tab-download :deep(.settings-section),
-  .tab-basic :deep(.el-collapse-item__content),
-  .tab-proxy :deep(.proxy-settings),
-  .tab-security {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 44px;
-    align-items: start;
-  }
-
-  .tab-download :deep(.settings-section) > *,
-  .tab-basic :deep(.el-collapse-item__content) > *,
-  .tab-proxy :deep(.proxy-settings) > *,
-  .tab-security > * {
-    min-width: 0;
-  }
-
-  /* 分组标题、折叠面板与整块内容跨满两列。 */
-  .tab-download :deep(.settings-section-heading),
-  .tab-download :deep(.settings-section > .el-collapse) {
-    grid-column: 1 / -1;
-  }
-
-  .tab-basic :deep(.el-collapse-item__content > .content) {
-    grid-column: 1 / -1;
-  }
-}
-
-@keyframes tab-content-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tab-scroll-content {
-    animation: none;
-  }
-}
-
-.config-tabs :deep(.el-alert) {
-  border-radius: 6px;
-}
-
-.global-match-content {
-  display: grid;
-  gap: 16px;
 }
 
 .config-savebar {
@@ -547,11 +707,60 @@ onActivated(() => {
   gap: 8px;
 }
 
-@media (max-width: 700px) {
-  .tab-scroll-content {
-    padding: 18px 4px 30px;
+@media (prefers-reduced-motion: reduce) {
+  .settings-panel-content {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
+  .settings-nav {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px;
+    scrollbar-width: none;
+  }
+
+  .settings-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .settings-nav-group + .settings-nav-group {
+    margin-top: 0;
+  }
+
+  .settings-nav-title {
+    display: none;
+  }
+
+  .settings-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  .settings-panel-heading {
+    padding: 14px 16px 8px;
+  }
+
+  .settings-panel-content {
+    padding: 16px 4px 26px;
+  }
+}
+
+@media (max-width: 700px) {
   .config-toolbar {
     flex-wrap: wrap;
   }
