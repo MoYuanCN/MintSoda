@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# 提交信息校验钩子：安装方式见 docs/CONTRIBUTING.md。
+# 启用：git config core.hooksPath .githooks
+set -euo pipefail
+
+message_file="${1:-}"
+[ -n "$message_file" ] || exit 0
+
+subject=$(grep -vE '^[[:space:]]*(#|$)' "$message_file" 2>/dev/null | head -n 1 | sed -E 's/[[:space:]]+$//' || true)
+[ -n "$subject" ] || exit 0
+
+bash .github/scripts/check-subject.sh "$subject"
