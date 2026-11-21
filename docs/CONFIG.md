@@ -234,7 +234,7 @@
 | `customTorrentUrl` | `String` | 空 | 自定义种子下载地址，留空使用来源站默认 |
 | `customUserAgent` | `String` | 空 | 自定义 User-Agent |
 | `devHttpTrace` | `Boolean` | `false` | 记录出站请求日志 |
-| `githubToken` | `String` | 空 | GitHubToken |
+| `githubToken` | `String` | 空 | GitHub Token，用于提高 GitHub 接口限额 |
 
 ### 其他
 

@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="#-快速开始">快速开始</a> ·
-  <a href="#-功能特色">功能特色</a> ·
+  <a href="#-功能">功能</a> ·
   <a href="#-插件系统">插件系统</a> ·
   <a href="#-本地构建">本地构建</a> ·
   <a href="docs/README.md">文档导航</a> ·
@@ -25,7 +25,7 @@
 
 ## 项目简介
 
-**MintSoda** 面向自托管场景：只保留 qBittorrent 下载器，收敛通知渠道，重写匹配规则与通知模板，并内置插件系统与多语言 WebUI。项目最初派生自 [ANI-RSS](https://github.com/wushuo894/ani-rss)，现已独立演进，代码命名空间、产物与文档均使用 MintSoda。
+**MintSoda** 是番剧订阅与下载服务：通过 RSS 订阅番剧，按匹配规则筛选条目后交给 qBittorrent 下载，并提供 Vue WebUI 管理订阅、规则、通知与主题。
 
 ## 🚀 快速开始
 
@@ -64,36 +64,19 @@ mintsoda uninstall  # 卸载服务
 
 > 默认端口 **17789**，首次访问会按平台规则生成凭据或进入账号设置引导。
 
-## ✨ 功能特色
+## ✨ 功能
 
-| 能力 | 说明 |
-| --- | --- |
-| 匹配规则 | 反匹配 > 全局匹配 > 排除，本地匹配为普通路径必要条件；下载、预览、合集预览共用同一判定 |
-| 下载 | 仅 qBittorrent，支持 API Key 与用户名密码两种认证，备用 RSS 与洗版可预期 |
-| 通知 | Telegram、自定义 HTTP 请求、媒体库刷新，多套命名模板直接渲染字段变量 |
-| 插件 | Java / JavaScript / Lua 三种运行时，细粒度权限、私有数据、市场安装 |
-| 外观 | 主题色与动态取色、亚克力与模糊、自定义背景与 Logo、自定义 CSS/JS |
-| 部署 | Windows EXE 便携配置，Linux 一键安装并注册 systemd |
-| 多语言 | 简体中文、繁体中文与英文，切换不影响服务端配置 |
+- **订阅**：Mikan、AniBT 与手动 RSS，支持批量添加、备用 RSS、完结迁移与集数偏移。
+- **匹配规则**：本地匹配、本地排除、全局排除、全局匹配与反匹配，优先级固定为反匹配 > 全局匹配 > 排除；下载、RSS 预览与合集预览共用同一判定。
+- **下载**：qBittorrent，支持 API Key 与用户名/密码认证；可设并发、延迟、清理规则、优先保留与保存路径模板。
+- **通知**：Telegram、自定义 HTTP 请求、媒体库刷新与插件渠道；多套文本 / JSON 模板，可直接作为请求 Body。
+- **重命名**：模板化命名与保存路径，支持单条订阅覆盖。
+- **外观**：浅色 / 深色、动态或固定强调色、浅深两套背景与 Logo、卡片 / 导航 / 弹窗的透明度与模糊度、圆角，以及五套预设；设置页实时预览。
+- **插件**：Java、JavaScript 与 Lua 三种运行时，扩展通知渠道、订阅过滤、下载拦截、条目改写、界面页面与自定义接口，权限按插件逐项授权。
+- **多语言**：简体中文、繁體中文与 English。
+- **平台**：Windows（EXE / JAR）与 Linux（JAR + systemd）。
 
-完整的功能清单、配置说明与实现约定见 [功能与实现](docs/SPECIAL_FEATURE.md)；日常使用见 [使用指南](docs/USER_GUIDE.md)；对接脚本见 [API 参考](docs/API.md)。
-
-## 🎨 外观与主题
-
-- 主题色自由选择，或开启「从背景图动态取色」。
-- 卡片、导航栏、弹窗支持不透明度与模糊度，内置多套预设。
-- 可自定义应用/登录背景与 Logo、圆角、内容宽度与启动页。
-- 支持自定义 CSS/JS 注入，以及 WebUI 在线更新。
-
-## 🧩 插件系统
-
-- 独立接口模块 `mint-soda-plugin-api`，插件以单独 JAR 加载，宿主与插件只共享稳定接口。
-- Java 插件以 JAR 分发；**JavaScript / Lua 插件**只需一个 `plugin.json` 加一个脚本打成 ZIP。
-- 扩展点：通知渠道、订阅过滤器、订阅事件、周期任务、设置区块、模板变量、下载拦截、下载事件、自定义 HTTP 接口。
-- 每个插件的能力按组逐项授权，可随时调整并立即生效；插件可在私有目录持久化数据，升级不受影响。
-- 支持插件市场：填写 JSON 索引地址即可浏览、安装与检查更新。
-- 安装与更新校验 `sha256` 与文件大小，地址限公网 `http`/`https`。
-- 详见 [插件开发指南](docs/PLUGIN_DEVELOPMENT.md)，示例见 `examples/plugins/`。
+功能范围与实现约定见 [功能与实现](docs/SPECIAL_FEATURE.md)。
 
 ## 🛠️ 本地构建
 
@@ -123,23 +106,12 @@ bash ./package.sh
 
 ## 📚 文档导航
 
-| 我想… | 看这里 |
-| --- | --- |
-| 安装并跑起来 | [使用指南 · 运行与配置文件](docs/USER_GUIDE.md#运行与配置文件) |
-| 了解功能边界与实现 | [功能与实现](docs/SPECIAL_FEATURE.md) |
-| 写脚本调用接口 | [API 参考](docs/API.md) |
-| 排查或迁移配置 | [配置参考](docs/CONFIG.md) |
-| 编写插件 | [插件开发指南](docs/PLUGIN_DEVELOPMENT.md) |
-| 参与开发 | [开发指南](docs/DEVELOPMENT.md) · [贡献指南](docs/CONTRIBUTING.md) |
-| 翻译界面 | [多语言与翻译贡献](docs/I18N.md) |
-| 部署安全与已知限制 | [安全说明](docs/SECURITY.md) |
-
-全部文档的索引见 [docs/README.md](docs/README.md)。
+全部文档的索引见 [README.md](docs/README.md)。
 
 ## 📄 许可
 
 本项目采用 **GPL-2.0** 许可证，详见 [LICENSE](LICENSE)。
 
 <p align="center">
-  <sub>欢迎提交 Issue 与 PR，也欢迎点个 ⭐ Star</sub>
+  <sub>Issue 与 PR 请提交到本仓库</sub>
 </p>
